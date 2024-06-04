@@ -1,5 +1,5 @@
 
-![header](https://capsule-render.vercel.app/api?type=venom&text=XV-Swarm-2024&ccolor=auto)
+![header](https://capsule-render.vercel.app/api?type=venom&text=XV-Swarm-2024&ccolor=blue)
 
 <details>  
     <summary>Description of XV-Swarm-24</summary>
