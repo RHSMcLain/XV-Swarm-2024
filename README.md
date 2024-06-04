@@ -1,5 +1,5 @@
 
-![header](https://capsule-render.vercel.app/api?type=venom&text=XV-Swarm-2024&width=1000)
+![header](https://capsule-render.vercel.app/api?type=venom&text=XV-Swarm-2024&width=100)
 
 <details>  
     <summary>Description of XV-Swarm-24</summary>
