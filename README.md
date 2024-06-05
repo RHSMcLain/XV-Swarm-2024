@@ -16,3 +16,33 @@
     - Request Fria 
 
 </details>
+
+<details> 
+    <summary>Base Station/Keyboard Control Code</summary>
+
+
+    
+</details>
+
+<details> 
+    <summary>Flexstick Control Code</summary>
+
+
+    
+</details>
+
+<details> 
+    <summary>Access Point Code</summary>
+
+    
+    
+</details>
+
+<details> 
+    <summary>Phone Numbers</summary>
+
+
+    
+</details>
+
+
