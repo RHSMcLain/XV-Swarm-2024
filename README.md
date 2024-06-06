@@ -72,5 +72,8 @@
         -<a href="https://www.amazon.com/M1-6x4mm-0-35mm-Pitch-Socket-100pcs/dp/B00XP4ZWY2/ref=sr_1_13?crid=H5KH0H4M0INP&keywords=m1.6+screws&qid=1704831251&s=hi&sprefix=m1.6+screws%2Ctools%2C123&sr=1-13">M1.6 .35mm Screw</a> <br>
         -<a href="https://www.amazon.com/initeq-M3-0-5-Threaded-Inserts-Printing/dp/B077CJV3Z9?th=1">M3 Brass Screw Insert</a> <br>
         -<a href="https://www.amazon.com/Socket-Screws-Bolts-Thread-100pcs/dp/B07CNFTK99/ref=sr_1_3?crid=35UJIKL633YXJ&dib=eyJ2IjoiMSJ9.V_gDm7ESMeIo97fLWGQNmFlomiYVCGIPnWED3Y3Rms9MFpWTToYL3cxsTUpSsaV8R714BC67_QRT3Vo5RvrRcJTYQtaIVcy5crKdhkuFxj4jzhkEdaz5k46nMluhti4cHcKDeJfvPvoZlKnusmHvHRaYAluaCqt8RDdrJ6sHAZLitWjBnjSr0pAM2s8yo8Kuzl-GrbAJhoYED8w90Vbyy2n6uXMIcMTEoskzIvMzHmTOEPhf0xayDmpOBLuzhUD0515MnIU9iwsBIeh5KqbNrG-BdkdMrp81OtmZ6_xKDgk.URAu2aWqW-k1S9PAmIsFk2jZMnAW4nDT19p-t1PMlbU&dib_tag=se&keywords=m3%2B12mm%2Bscrew&qid=1717710124&s=hi&sprefix=m3%2B12mm%2Bscre%2Ctools%2C190&sr=1-3&th=1">M3 12mm Screw</a> <br>
+        <p>Needed:
+            8pcs M3 x 12mm 0.5mm Pitch
+            4pcs M1.6 x 4mm 0.35mm Pitch</p>
     </details>
 </details>
