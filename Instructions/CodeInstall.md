@@ -1,0 +1,1 @@
+![header](https://capsule-render.vercel.app/api?type=waving&text=Code%20Installation%20Instructions&animation=scaleIn&color=gradient&fontColor=000000&customColorList=1&height=150&fontSize=50&fontAlignY=35)
