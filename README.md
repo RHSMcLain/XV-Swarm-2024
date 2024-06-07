@@ -52,13 +52,13 @@
         <summary>
             <b>Frame Construction</b>
         </summary>
-        <a href="https://github.com/Kbratland/DronSbusCod/blob/main/Instructions/FrameConstruction.md">Frame Instructions</a>
+        <a href="https://github.com/RHSMcLain/XV-Swarm-2024/blob/main/Instructions/FrameConstruction.md">Frame Instructions</a>
     </details>
     <details>
         <summary>
             <b>Wiring!</b>
         </summary>
-        <a href="https://github.com/Kbratland/DronSbusCod/blob/main/Instructions/Wiring.md">Wiring Instructions</a>
+        <a href="https://github.com/RHSMcLain/XV-Swarm-2024/blob/main/Instructions/Wiring.md">Wiring Instructions</a>
     </details>
     <details>
         <summary>
@@ -68,13 +68,13 @@
                 <summary>
                        Code
                 </summary>
-             <a href="https://github.com/Kbratland/DronSbusCod/blob/main/Instructions/CodeInstall.md">Code Installation Instructions</a>
+             <a href="https://github.com/RHSMcLain/XV-Swarm-2024/blob/main/Instructions/CodeInstall.md">Code Installation Instructions</a>
             </details>
             <details>
                 <summary>
                     Configuration
                 </summary>
-                <a href="https://github.com/Kbratland/DronSbusCod/blob/main/Instructions/Configuration.md">Configuration Instructions</a>
+                <a href="https://github.com/RHSMcLain/XV-Swarm-2024/blob/main/Instructions/Configuration.md">Configuration Instructions</a>
             </details>
     </details>
     <details>
