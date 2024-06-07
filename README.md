@@ -99,3 +99,7 @@
         <br><p>Needed: 8pcs M3 x 12mm 0.5mm Pitch & 4pcs M1.6 x 4mm 0.35mm Pitch</p>
     </details>
 </details>
+
+## Contributors: 
+
+Willem Abbassi, Konner Bratland, Dylan Bratt, Nadir Chaer, Sylas Christopher, Thomas Fredricks, Lane Gilliam, Ethan Green, Christian Hanson, Connor Madriago, Assaf Nachum, Leo Novack, Spencer Parsons, Björn Roberts, Max Symmes, Brendan Vasanth, and Cyrus Weeden
