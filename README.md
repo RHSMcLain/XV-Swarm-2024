@@ -3,7 +3,7 @@
     <summary>
         <b>Description of XV-Swarm-24</b>
     </summary>
-    <p>The objective of this class was to create and program swarm drones ourselves. For the first few weeks of class, we worked on building the drones using a parts kit. To legally fly the drone, we needed approval for multiple FAA and school district waivers, some of which had to be revised. We also created the necessary code from scratch, including the keyboard and flex stick controls, the communications from the Arduino to the flight controller, the access point, and the base station.</p>
+    <p>The objective of this class was to create and program swarm drones ourselves. For the first few weeks of class, we worked on building the drones using a parts kit. To legally fly the drone, we needed approval for multiple FAA and school district waivers, some of which had to be revised. We also created the necessary code from scratch, including the keyboard and flightstick controls, the communications from the Arduino to the flight controller, the access point, and the base station.</p>
 </details>
 
 <details> 
@@ -17,6 +17,30 @@
     - Register With FAA
     - Register RSD with ODA
     - Request Fria 
+
+</details>
+
+<details> 
+    <summary>
+        <b>Summary of Flightstick Code</b>
+    </summary>
+    <p>Code for flightstick that outputs value for  pitch, roll, yaw, and throttle for the drone. </p>
+
+</details>
+
+<details> 
+    <summary>
+        <b>Summary of Base Station Code</b>
+    </summary>
+    <p> Code for both the base station and keyboard controls for pitch, roll, yaw, and throttle. The base station is responsible for transmitting and receiving signals to and from the drone in its coverage area.</p>
+
+</details>
+
+<details> 
+    <summary>
+        <b>Summary of Access Point Code</b>
+    </summary>
+    <p>The access point provides WIFI, collects basd station IP, and shares the base station IP with the drone. This code makes all of these possible. </p>
 
 </details>
 
