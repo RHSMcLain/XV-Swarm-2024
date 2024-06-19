@@ -13,13 +13,13 @@
     <summary>
         <b>Regulatory Compliance</b>
     </summary>
-    What we have done:
-    - FAA Multi Waiver
-    - RSD Multi Waiver
-    - § 107.35 – Operation of Multiple Small UAS
-    - Register With FAA
-    - Register RSD with ODA
-    - Request Fria 
+    What we have done:<br>
+    - FAA Multi Waiver<br>
+    - RSD Multi Waiver<br>
+    - § 107.35 – Operation of Multiple Small UAS<br>
+    - Register With FAA<br>
+    - Register RSD with ODA<br>
+    - Request Fria <br>
 
 </details>
 
