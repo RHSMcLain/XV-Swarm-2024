@@ -105,4 +105,4 @@
 
 ## Contributors: 
 
-Willem Abbassi, Konner Bratland, Dylan Bratt, Nadir Chaer, Sylas Christopher, Thomas Fredricks, Lane Gilliam, Ethan Green, Christian Hanson, Connor Madriago, Assaf Nachum, Leo Novack, Spencer Parsons, Björn Roberts, Max Symmes, Brendan Vasanth, and Cyrus Weeden
+Willem Abbassi, <a href="https://github.com/Kbratland/XVBlendFiles/blob/main/800978_final.gif" style="text-decoration:none">Konner Bratland</a>, Dylan Bratt, Nadir Chaer, Sylas Christopher, Thomas Fredricks, Lane Gilliam, Ethan Green, Christian Hanson, Connor Madriago, Assaf Nachum, Leo Novack, Spencer Parsons, Björn Roberts, Max Symmes, Brendan Vasanth, and Cyrus Weeden
