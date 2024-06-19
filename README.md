@@ -9,7 +9,7 @@
     <p>The objective of this class was to create and program swarm drones ourselves. For the first few weeks of class, we worked on building the drones using a parts kit. To legally fly the drone, we needed approval for multiple FAA and school district waivers, some of which had to be revised. We also created the necessary code from scratch, including the keyboard and flightstick controls, the communications from the Arduino to the flight controller, the access point, and the base station.</p>
 </details>
 
-<details style="margin-left: 400px"> 
+<details> 
     <summary>
         <b>Regulatory Compliance</b>
     </summary>
