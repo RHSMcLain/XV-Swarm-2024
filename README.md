@@ -1,6 +1,6 @@
 ![header](https://capsule-render.vercel.app/api?type=waving&text=XV:%20Swarm-2024&animation=scaleIn&color=gradient&fontColor=000000&customColorList=2&height=150&fontAlignY=30)
 <center>
-<img src="https://github.com/Kbratland/XVBlendFiles/blob/main/800978_final.gif" width="3000" align="middle"/>
+![](https://github.com/Kbratland/XVBlendFiles/blob/main/800978_final.gif)
 </center>
 <details>  
     <summary>
