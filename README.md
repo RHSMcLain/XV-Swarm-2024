@@ -107,8 +107,8 @@
 
 Willem Abbassi, 
 <a href="https://github.com/Kbratland" 
-style="text-decoration: none">Konner Bratland</a>
-, Dylan Bratt, Nadir Chaer, Sylas Christopher, Thomas Fredricks, Lane Gilliam, Ethan Green, Christian Hanson, Connor Madriago, Assaf Nachum, Leo Novack, Spencer Parsons, 
+style="text-decoration: none">Konner Bratland</a>, 
+Dylan Bratt, Nadir Chaer, Sylas Christopher, Thomas Fredricks, Lane Gilliam, Ethan Green, Christian Hanson, Connor Madriago, Assaf Nachum, Leo Novack, Spencer Parsons, 
 <a href="https://github.com/bjornwroberts" 
 style="text-decoration: none">Bjorn Roberts</a>, 
 Max Symmes, Brendan Vasanth, and Cyrus Weeden
