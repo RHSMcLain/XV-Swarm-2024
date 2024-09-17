@@ -12,7 +12,7 @@
     <summary>
         <b>Regulatory Compliance</b>
     </summary>
-      What we have done:<br>
+      What we have applied for and received:<br>
     - FAA Multi Waiver<br>
     - RSD Multi Waiver<br>
     - § 107.35 – Operation of Multiple Small UAS<br>
