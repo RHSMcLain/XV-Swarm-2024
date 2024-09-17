@@ -1,6 +1,6 @@
 
 
-![header](https://capsule-render.vercel.app/api?type=waving&text=XV:%20Swarm-2024&animation=scaleIn&color=gradient&fontColor=000000&customColorList=2&height=175&fontAlignY=30&desc=Riverdale%20High%20Schools%20Student-run%20Engineering%20Class&descAlignY=48)
+![header](https://capsule-render.vercel.app/api?type=waving&text=XV:%20Swarm-2024&animation=scaleIn&color=gradient&fontColor=000000&customColorList=2&height=175&fontAlignY=30&desc=Riverdale%20High%20School%20Student-Run%20Engineering%20Class&descAlignY=48)
 ##
 <details>  
     <summary>
