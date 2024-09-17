@@ -1,13 +1,14 @@
 
 
 ![header](https://capsule-render.vercel.app/api?type=waving&text=XV:%20Swarm-2024&animation=scaleIn&color=gradient&fontColor=000000&customColorList=2&height=175&fontAlignY=30&Desc=A%20student%20)
+##
 <details>  
     <summary>
         <b>Description of XV-Swarm-24</b>
     </summary>
     <p>The objective of this class was to create and program swarm drones ourselves. For the first few weeks of class, we worked on building the drones using a parts kit. To legally fly the drone, we needed approval for multiple FAA and school district waivers, some of which had to be revised. We also created the code from scratch, including the keyboard and flight stick controls, the communications from the Arduino to the flight controller, the access point, and the base station.</p>
 </details>
-##
+
 <details> 
     <summary>
         <b>Regulatory Compliance</b>
