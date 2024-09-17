@@ -1,9 +1,6 @@
 
 
 ![header](https://capsule-render.vercel.app/api?type=waving&text=XV:%20Swarm-2024&animation=scaleIn&color=gradient&fontColor=000000&customColorList=2&height=175&fontAlignY=30)
-<p align="center">
-  <img src="https://github.com/Kbratland/XVBlendFiles/blob/main/800978_final.gif" alt="animated" />
-</p>
 <details>  
     <summary>
         <b>Description of XV-Swarm-24</b>
@@ -114,3 +111,7 @@ Dylan Bratt, Nadir Chaer, Sylas Christopher, Thomas Fredricks, Lane Gilliam, Eth
 <a href="https://github.com/bjornwroberts" 
 style="text-decoration: none">Bjorn Roberts</a>, 
 Max Symmes, Brendan Vasanth, and Cyrus Weeden
+
+<p align="center">
+  <img src="https://github.com/Kbratland/XVBlendFiles/blob/main/800978_final.gif" alt="animated" />
+</p>
