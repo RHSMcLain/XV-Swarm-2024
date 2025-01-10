@@ -8,6 +8,21 @@ uint16_t rc_values[8];
 long start;
 bool light;
 
+struct{
+  int16_t roll;       //degrees / 10
+  int16_t pitch;      //degrees / 10
+  int16_t yaw;        //degrees
+} msp_attitude;
+
+struct{
+  uint8_t gpsFix;     //0 or 1
+  uint8_t numSat;
+  uint32_t lat;       //degrees / 10,000,000
+  uint32_t lon;       //degrees / 10,000,000
+  uint16_t gpsAlt;    //meters
+  uint16_t gpsSpeed;  //cm / seconds
+  uint16_t gpsCourse; //degrees
+} msp_raw_gps;
 
 void setup() {
   pinMode(13, OUTPUT);
@@ -138,6 +153,9 @@ void readAttitudeData() {
   Serial.print("Roll: " + String(rollRec/10.0));
   Serial.print(" Pitch: " + String(pitchRec/10.0));
   Serial.println(" Yaw: " + String(yawRec));
+  msp_attitude.roll = rollRec;
+  msp_attitude.pitch = pitchRec;
+  msp_attitude.yaw = yawRec;
 }
 
 void readGPSData()
@@ -227,4 +245,11 @@ void readGPSData()
   Serial.print(" GPSALT: " + String(gpsAlt));
   Serial.print(" SOG: " + String(gpsSpeed));
   Serial.println(" GPSCourse: " + String(gpsCourse/10.0));
+  msp_raw_gps.gpsFix = gpsFix;
+  msp_raw_gps.numSat = numSat;
+  msp_raw_gps.lat = lat;
+  msp_raw_gps.lon = lon;
+  msp_raw_gps.gpsAlt = gpsAlt;
+  msp_raw_gps.gpsSpeed = gpsSpeed;
+  msp_raw_gps.gpsCourse = gpsCourse;
 }
