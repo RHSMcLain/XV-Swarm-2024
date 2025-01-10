@@ -103,7 +103,7 @@
 </details>
 
 ## Contributors: 
-
+Adam McLain,
 Willem Abbassi, 
 <a href="https://github.com/Kbratland" 
 style="text-decoration: none">Konner Bratland</a>, 
