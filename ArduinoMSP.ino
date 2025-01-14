@@ -27,6 +27,8 @@ uint16_t rc_values[8];                   //RC Channels 0-7
 long start;
 bool light;
 int droneState = 0;
+bool manualControl = false;
+bool newWP;
 
 struct{
   int lat;
@@ -134,12 +136,17 @@ void loop() {
   }
   uint8_t datad = 0;
   uint8_t *data = &datad;
-  // commandMSPRC(MSP_SET_RAW_RC, rc_values, 16);
-  // mspWPSet(MSP_SET_WP);
-  // sendMSP(MSP_RAW_GPS, 0, 0);
-  // readGPSData();
-  sendMSP(MSP_ATTITUDE, data, 0);
-  readAttitudeData();
+  if(manualControl){
+    commandMSPRC(MSP_SET_RAW_RC, rc_values, 16);
+  }
+  if(newWP){  
+    mspWPSet(MSP_SET_WP);
+    newWp = false;
+  }
+  sendMSP(MSP_RAW_GPS, 0, 0);
+  readGPSData();
+  // sendMSP(MSP_ATTITUDE, data, 0);
+  // readAttitudeData();
 }
 
 void commandMSPRC(uint8_t cmd, uint16_t data[], uint8_t n_cbytes){
