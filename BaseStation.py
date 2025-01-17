@@ -12,26 +12,31 @@ import customtkinter
 import tkinter
 import tkinter.messagebox
 from PIL import Image
-from FlightStick import FlightStick
-
 #pip3 install "requests>=2.*"
 #pip3 install netifaces
 #python3 -m pip install customtkinter
 #python3 -m pip install --upgrade Pillow
-global UDP_IP
+global UDP_IP, ip, ipv4_address
+ip = 0
 UDP_IP = 0
 def getMyIP():
+    #TODO: DETECT THE CORRECT OPERATING SYSTEM SO IT DOES IT ITSELF
     try:
+        global ipv4_address, ip, UDP_IP, UDP_PORT
         hostname = socket.gethostname()
         print(hostname)
         print("00000")
+        #IP ADDRESS FOR WINDOWS OS -------------------------------------------------
         # ipv4_address = socket.gethostbyname(hostname + ".local")
         # print(f"Internal IPv4 Address for {hostname}: {ipv4_address}")
+        # ip = ipv4_address
+        #IP ADDRESS FOR WINDOWS OS -------------------------------------------------
         # 
-        #
-        #ip = ni.ifaddresses('en1')[ni.AF_INET][0]['addr']
-        #UDP_IP = ip
-        ip = "0.0.0.0"
+        # IP ADRESSS FOR MAC OS =================================================================
+        ip = ni.ifaddresses('en1')[ni.AF_INET][0]['addr']
+        UDP_IP = ip
+        # ip = "0.0.0.0"
+        # IP ADRESSS FOR MAC OS =================================================================
         UDP_PORT = 5005
         print(ip)
     except socket.gaierror as e:
@@ -41,14 +46,15 @@ def getMyIP():
         print(f"An unexpected error occurred: {e}")
 
 getMyIP()
-#ip = ni.ifaddresses('en1')[ni.AF_INET][0]['addr']
- #ask mclain how to do this on windows
-ip = "0.0.0.0"
-UDP_IP = ip
-UDP_PORT = 5005
+
+
+#ip = "0.0.0.0"
+# UDP_IP = ipv4_address
+# ip = ipv4_address
+print("UDP IP is " + str(UDP_IP))
 
 #BRENDAN CODE _____________________________________________________________________________________________________
-global yaw, roll, pitch, throttle, keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, shouldQuit
+global yaw, roll, pitch, throttle, keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, shouldQuit, navHold
 yaw = 0
 keyQ = False
 keyE = False
@@ -71,6 +77,8 @@ droneNumber = 0
 global selectedDrone
 global killswitch
 killswitch = 1000
+armVar = 1000
+navHold = 1000
 my_image = customtkinter.CTkImage(light_image=Image.open('connecteddrone.jpg'))
 dark_image=Image.open('connecteddrone.jpg')
 selectedDrone = "None"
@@ -91,10 +99,12 @@ def clamp(val):
         val = highLimit   
     return val
 def introToAP():
+    global sock
     #tell the AP that we are the base station. 
     #AP needs to save that IP address to tell it to drones (so they can connect to the base station)
     sendMessage("192.168.4.22", 80, "BaseStationIP")
     print ("sent message to AP")
+    print("Listening for Response from AP.........")
     #listen 
     #TODO: PUT IN A RESEND EVERY FEW SECONDS
     #CODE FOR THAT INCLUDES: curr_time = round(time.time()*1000)
@@ -105,6 +115,8 @@ def introToAP():
         data = b""    #the b prefix makes it byte dat
         try:
             data, addr = sock.recvfrom(1024)
+            print(data)
+            print("Decoding Data...")
             strData = data.decode("utf-8")
             print("Received message %s" % data)
             
@@ -212,18 +224,18 @@ def handshake(msg, addr):
             drones[i].port = addr[1]
     #droneList.update()    
 def sendMessage(ipAddress, port, msg):
-    #print("sendMessage")
-    #print(ipAddress)
-    #print(port)
-    #print(msg)
-    #print("----------------------------")
-    print(msg)    
+    global sock
+    print("sendMessage")
+    print(ipAddress)
+    print(port)
+    print(msg)
+    print("----------------------------")    
     bMsg = msg.encode("ascii")
-    sendSocket.sendto(bMsg, (ipAddress, int(port)))
-    print("sent message")
+    sock.sendto(bMsg, (ipAddress, int(port)))
+    #print("sent message")
     time.sleep(0.0001)
-def keyboardControl():
-    global yaw, roll, pitch, throttle, keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, shouldQuit, manualyes, killswitch
+def manualControl():
+    global yaw, roll, pitch, throttle, keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, shouldQuit, manualyes, killswitch, armVar, navHold
     global selDrone
     global selDroneTK
     listener =  Listener(on_press = show, on_release = release)   
@@ -242,12 +254,7 @@ def keyboardControl():
     # keyAU = False
     # keyAD = False
     # shouldQuit = False
-    print("hewiufh")
-    #instantiate flight stick
     while True:
-        #call the flightstick's readflightstick method
-        #yaw = fs.yaw
-        #pitch = fs.ptitch
         if keyQ:
             yaw -= 1
         elif keyE:
@@ -263,7 +270,7 @@ def keyboardControl():
         if keyAU:
             throttle += 1
         elif keyAD:
-            throttle -= 5
+            throttle -= 1
         if shouldQuit:
             #listener.stop()
             #break
@@ -283,10 +290,10 @@ def keyboardControl():
             pitch -= 1
         elif pitch < 1500 and keyW == False and keyS == False:
             pitch += 1
-        if throttle > 1000 and keyAU == False and keyAD == False:
-            throttle -= 1
-        elif throttle < 1000 and keyAU == False and keyAD == False:
-            throttle += 1
+        # if throttle > 1000 and keyAU == False and keyAD == False:
+        #     # throttle -= 1
+        # elif throttle < 1000 and keyAU == False and keyAD == False:
+        #     throttle += 1
 
         
         yaw = clamp(yaw)
@@ -307,43 +314,7 @@ def keyboardControl():
         
         #print(selDrone.ipAddress)Fa
         if (manualyes == True):
-            sendMessage(selDrone.ipAddress, selDrone.port, "MAN" + "|" + ip + "|" + str(yaw) + "|" + str(pitch) + "|" + str(roll) + "|" + str(throttle) + "|" + str(killswitch) + "|")
-        #sendMessage(selDrone.ipAddress, selDrone.port, yaw + str(i))
-        
-        time.sleep(0.01)
-
-def manualControl():
-    global yaw, roll, pitch, throttle, keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, shouldQuit, manualyes, killswitch
-    global selDrone
-    global selDroneTK
-    fs = FlightStick
-    fs.__init__(fs)
-    #instantiate flight stick
-    while True:
-        #call the flightstick's readflightstick method
-        #yaw = fs.yaw
-        #pitch = fs.ptitch
-        fs.readFlightStick(fs)    
-        
-        yaw = clamp(fs.yaw)
-        roll = clamp(fs.roll)
-        pitch = clamp(fs.pitch)
-        throttle = clamp(fs.throttle)
-        yaw = round(yaw, 2)
-        roll = round(roll, 2)
-        pitch = round(pitch, 2)
-        throttle = round(throttle, 2)
-        #(yaw, " -- yaw")
-        #(roll, " -- roll")
-        #(pitch, " -- pitch")
-        #(throttle, " -- throttle")
-        # for i in droneList.curselection():
-        #     selDrone = drones[i]
-            #print(selDrone)
-        
-        #print(selDrone.ipAddress)Fa
-        if (manualyes == True):
-            sendMessage(selDrone.ipAddress, selDrone.port, "MAN" + "|" + ip + "|" + str(yaw) + "|" + str(pitch) + "|" + str(roll) + "|" + str(throttle) + "|" + str(killswitch) + "|")
+            sendMessage(selDrone.ipAddress, selDrone.port, "MAN" + "|" + ip + "|" + str(yaw) + "|" + str(pitch) + "|" + str(roll) + "|" + str(throttle) + "|" + str(killswitch) + "|" + str(armVar) + "|" + str(navHold) + "|")
         #sendMessage(selDrone.ipAddress, selDrone.port, yaw + str(i))
         
         time.sleep(0.01)
@@ -413,9 +384,35 @@ def kill():
     app.radio_button_1.configure(fg_color="Red", text="Drone Killed", text_color="Red")
     app.radio_button_2.configure(fg_color="Red", text="Drone Killed", text_color="Red")
     app.radio_button_3.configure(fg_color="Red", text="Drone Killed", text_color="Red")
-    
+def arm():
+    global armVar
+    if(app.checkbox_2.get() == 1):
+        armVar = 1575
+        print(app.checkbox_2.get())
+        print("armed!!!!!!!!!")
+    else:
+        armVar = 1000
+        print(app.checkbox_2.get())
+        print("UNarmed!!!!!!!!!")
+def navHoldFunc():
+    global navHold
+    if(app.checkbox_3.get() == 1):
+        navHold = 1600
+        print(app.checkbox_3.get())
+        print("HOLDING!!!!!!!!!")
+    else:
+        navHold = 1000
+        print(app.checkbox_3.get())
+        print("DRIFITNG!!!!!!!!!")
 
-
+def quit():
+    qToComms.put("TERMINATE") #tell the subloop on the backup thread to quit.
+    t = qFromComms.get(timeout=3.0)
+    #give it a chance to quit
+    print("all done")
+    app.destroy()
+    App.destroy()
+    exit()
 def checkQueue(q_in):
     global selDrone
     global selDroneTK
@@ -530,6 +527,8 @@ class App(customtkinter.CTk):
         self.sidebar_button_2.grid(row=2, column=0, padx=20, pady=10)
         self.sidebar_button_3 = customtkinter.CTkButton(self.sidebar_frame, command=self.sidebar_button_event, text="Test")
         self.sidebar_button_3.grid(row=3, column=0, padx=20, pady=10)
+        self.sidebar_button_4 = customtkinter.CTkButton(self.sidebar_frame, command=self.sidebar_button_event, text="Quit")
+        self.sidebar_button_4.grid(row=4, column=0, padx=20, pady=10)
 
 
 
@@ -686,9 +685,9 @@ class App(customtkinter.CTk):
         self.checkbox_slider_frame.grid(row=1, column=3, padx=(20, 20), pady=(20, 0), sticky="nsew")
         self.checkbox_1 = customtkinter.CTkCheckBox(master=self.checkbox_slider_frame, text="Basestation Comms")
         self.checkbox_1.grid(row=1, column=0, pady=(20, 0), padx=20, sticky="n")
-        self.checkbox_2 = customtkinter.CTkCheckBox(master=self.checkbox_slider_frame, text="SBUS Signal")
+        self.checkbox_2 = customtkinter.CTkCheckBox(master=self.checkbox_slider_frame, text="ARM ME")
         self.checkbox_2.grid(row=2, column=0, pady=(20, 0), padx=20, sticky="n")
-        self.checkbox_3 = customtkinter.CTkCheckBox(master=self.checkbox_slider_frame, text="Assaf")
+        self.checkbox_3 = customtkinter.CTkCheckBox(master=self.checkbox_slider_frame, text="NAV HOLD")
         self.checkbox_3.grid(row=3, column=0, pady=20, padx=20, sticky="n")
 
 
@@ -705,8 +704,12 @@ class App(customtkinter.CTk):
 
         # set default values
         self.sidebar_button_3.configure(command=lambda: addDrone(), text="Connect to Swarm")
-        self.checkbox_3.configure(state="disabled")
+        self.sidebar_button_4.configure(command=lambda: quit(), hover_color='Red', fg_color='Black', text_color = 'Red4')
+      
         self.checkbox_1.select()
+        self.checkbox_2.configure(command=lambda: arm())
+        self.checkbox_3.configure(command=lambda: navHoldFunc())
+        
         self.scrollable_frame_switches[0].select()
         self.scrollable_frame_switches[4].select()
         self.radio_button_3.configure(state="disabled", text="Auto Mode")
