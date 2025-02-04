@@ -297,7 +297,7 @@ void MSPLoop(){
   }
   uint8_t datad = 0;
   uint8_t *data = &datad;
-  commandMSP(MSP_SET_RAW_RC, rc_values, 16);
+  commandMSP(MSP_SET_RAW_RC, rc_values, (2*sizeof(rc_values));
   // sendMSP(MSP_RAW_GPS, 0, 0);
   // readGPSData();
       // sendMSP(MSP_ATTITUDE, data, 0);
