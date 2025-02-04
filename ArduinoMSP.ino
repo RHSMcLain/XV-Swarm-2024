@@ -3,6 +3,8 @@
 #include <WiFiUDP.h>                     
 //#include <sbus.h>                        //https://github.com/bolderflight/SBUS
 
+char droneName = "DRONE_NAME_HERE";
+
 char ssid[] = "XV_Basestation";          //  network SSID (name)
 int status = WL_IDLE_STATUS;             // the Wi-Fi radio's status
 int ledState = LOW;                      //ledState used to set the LED
@@ -387,7 +389,7 @@ void loop() {
   }
   else if (wifiState == 4) {
     Udp.beginPacket(bsip, 5005);
-    Udp.write("HND|-1|NEWDRONE");
+    Udp.write("HND|-1|" +droneName);
     Udp.endPacket();
     wifiState = 5;
   }
