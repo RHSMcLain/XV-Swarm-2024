@@ -1,3 +1,4 @@
+#include <string>
 #include <WiFiNINA.h>                    //https://github.com/arduino-libraries/WiFiNINA/tree/master
 #include <WiFiUDP.h>                     
 //#include <sbus.h>                        //https://github.com/bolderflight/SBUS
