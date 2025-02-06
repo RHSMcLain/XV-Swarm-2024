@@ -9,30 +9,49 @@ from queue import Queue
 from pynput.keyboard import Key, Listener
 import time
 import customtkinter
+import platform
 import tkinter
 import tkinter.messagebox
 from PIL import Image
-from FlightStick import FlightStick
 
 #pip3 install "requests>=2.*"
-#pip3 install netifaces
+#pip3 install netifaces (make sure you have c++ build tools for window)
 #python3 -m pip install customtkinter
 #python3 -m pip install --upgrade Pillow
-global UDP_IP
+
+
+
+#This section resets the IP assignment so that baseStation doesnt get confused about which computer it is
+global UDP_IP, ip, ipv4_address
+ip = 0
 UDP_IP = 0
+
+ #This function detects the local operating system and grabs the IP in slightly different ways depending
 def getMyIP():
     try:
+        global ipv4_address, ip, UDP_IP, UDP_PORT
         hostname = socket.gethostname()
         print(hostname)
-        print("00000")
-        # ipv4_address = socket.gethostbyname(hostname + ".local")
-        # print(f"Internal IPv4 Address for {hostname}: {ipv4_address}")
-        # 
-        #
-        #ip = ni.ifaddresses('en1')[ni.AF_INET][0]['addr']
-        #UDP_IP = ip
-        ip = "0.0.0.0"
+        print("Checking for operating system...")
+        if platform.system() == ("Windows"):
+            #IP ADDRESS FOR WINDOWS OS -------------------------------------------------
+            print(" ")
+            print("Operating system is WINDOWS")
+            print(" ")
+            ipv4_address = socket.gethostbyname(hostname + ".local")
+            print(f"Internal IPv4 Address for {hostname}: {ipv4_address}")
+            ip = ipv4_address
+            #IP ADDRESS FOR WINDOWS OS -------------------------------------------------
+        if platform.system() == ("Darwin"):
+            # IP ADRESSS FOR MAC OS =================================================================
+            print(" ")
+            print("Operating system is MACOS")
+            print(" ")
+            ip = ni.ifaddresses('en1')[ni.AF_INET][0]['addr']
+            # ip = "0.0.0.0"
+            # IP ADRESSS FOR MAC OS =================================================================
         UDP_PORT = 5005
+        UDP_IP = ip
         print(ip)
     except socket.gaierror as e:
         print("There was an error resolving the hostname.")
@@ -41,15 +60,37 @@ def getMyIP():
         print(f"An unexpected error occurred: {e}")
 
 getMyIP()
-#ip = ni.ifaddresses('en1')[ni.AF_INET][0]['addr']
- #ask mclain how to do this on windows
-ip = "0.0.0.0"
-UDP_IP = ip
-UDP_PORT = 5005
 
-#BRENDAN CODE _____________________________________________________________________________________________________
-global yaw, roll, pitch, throttle, keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, shouldQuit
+#error protection
+if UDP_IP == 0:
+    print('\033[31m=========================================================\033[0m')
+    print('\033[31mFATAL ERROR: IP IS 0, IP GRABBING CODE FAILED\033[0m')
+    print('\033[31m=========================================================\033[0m')
+if UDP_PORT == 0:
+    print('\033[31m=========================================================\033[0m')
+    print('\033[31mFATAL ERROR: PORT IS 0, PORT GRABBING CODE FAILED\033[0m')
+    print('\033[31m=========================================================\033[0m')
+print("UDP IP is " + str(UDP_IP))
+
+#Variable decloration for most functions of the drone including keyboard and modes
+    #Global ensures that functions dont create copys of variables and actually edit the right ones
+global yaw, roll, pitch, throttle, keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, shouldQuit, navHold, my_image
+global manualyes
+global selDrone
+global selDroneTK
+global droneNumber
+global selectedDrone
+global killswitch
+    #default values:
 yaw = 0
+droneName0 = "Connecting"
+droneName1 = "Connecting"
+droneName2 = "Connecting"
+droneName3 = "Connecting"
+droneName4 = "Connecting"
+droneName5 = "Connecting"
+droneName6 = "Connecting"
+droneName7 = "Connecting"
 keyQ = False
 keyE = False
 roll = 0 
@@ -61,27 +102,73 @@ keyS = False
 throttle = 0
 keyAU = False
 keyAD = False
+keyR = False
 shouldQuit = False
-global manualyes
-global selDrone
-global selDroneTK
-manualyes = False
-global droneNumber
 droneNumber = 0
-global selectedDrone
-global killswitch
+manualyes = False
 killswitch = 1000
-my_image = customtkinter.CTkImage(light_image=Image.open('connecteddrone.jpg'))
+armVar = 1000
+navHold = 1000
+displayVar = "default Text"
+my_image = customtkinter.CTkImage(light_image=Image.open('connecteddrone.jpg'),size=(150, 150))
 dark_image=Image.open('connecteddrone.jpg')
 selectedDrone = "None"
 curr_time = round(time.time()*1000)
 
+#We love customTkinter for making application pretty
 customtkinter.set_appearance_mode("dark")
 customtkinter.set_default_color_theme("blue")
+#This function clamps drone control signals to acceptable levels
 
+def setDroneName():
+            global droneName0, droneName1, droneName2, droneName3, droneName4, droneName5, droneName6, droneName7, drones, selectedDrone,app
+  
+            try:
+                droneName0 = drones[0].name
+            except:
+                droneName0 = "Drone Connecting..."
+            try:
+                droneName1 = drones[1].name
+            except:
+                droneName1 = "Drone Connecting..."
+            try:
+                droneName2 = drones[2].name
+            except:
+                droneName2 = "Drone Connecting..."
+            try:
+                droneName3 = drones[3].name
+            except:
+                droneName3 = "Drone Connecting..."
+            try:
+                droneName4 = drones[4].name
+            except:
+                droneName4 = "Drone Connecting..."
+            try:
+                droneName5 = drones[5].name
+            except:
+                droneName5 = "Drone Connecting..."
+            try:
+                droneName6 = drones[6].name
+            except:
+                droneName6 = "Drone Connecting..."
+            try:
+                droneName7 = drones[7].name
+            except:
+                droneName7 = "Drone Connecting..."
+            app.optionmenu_1.configure(command=lambda x: updateDroneNames(),values=[droneName0, droneName1, droneName2, droneName3, droneName4, droneName5, droneName6, droneName7])
+def updateDroneNames():
+            global selectedDrone, selDrone,app
+            selectedDrone = app.optionmenu_1.get() #SELECTED DRONE AS A NAME
+            print("-----------------------------------------Drone List Updated-----------------------------------------")
+            print("Drone " + selectedDrone + " now selected.")
+            setDroneName() #updates the list
 
-
-
+            for i in range(len(drones)):
+                if (selectedDrone == str(drones[i].name)):
+                    selDrone = drones[i]
+                    print ("Drone " + selDrone.name + " Connected with Port: " + str(selDrone.port) + " and IP: " + str(selDrone.ipAddress))
+            setDroneName()
+            
 def clamp(val):
     lowLimit = 1000
     highLimit = 2000
@@ -90,11 +177,15 @@ def clamp(val):
     if val > highLimit:
         val = highLimit   
     return val
+
+#This function runs the initial acces point connection
 def introToAP():
+    global sock
     #tell the AP that we are the base station. 
     #AP needs to save that IP address to tell it to drones (so they can connect to the base station)
     sendMessage("192.168.4.22", 80, "BaseStationIP")
     print ("sent message to AP")
+    print("Listening for Response from AP.........")
     #listen 
     #TODO: PUT IN A RESEND EVERY FEW SECONDS
     #CODE FOR THAT INCLUDES: curr_time = round(time.time()*1000)
@@ -105,6 +196,8 @@ def introToAP():
         data = b""    #the b prefix makes it byte dat
         try:
             data, addr = sock.recvfrom(1024)
+            print(data)
+            print("Decoding Data...")
             strData = data.decode("utf-8")
             print("Received message %s" % data)
             
@@ -119,8 +212,9 @@ def introToAP():
         #test the input to see if it is the confirmation code
         #if it is, we can break
 
+#The follwing two functions are used to capture keyboard inputs
 def show(key):
-    global yaw, roll, pitch, throttle, keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, shouldQuit
+    global yaw, roll, pitch, throttle, keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, shouldQuit, keyR
     try:
         if key == Key.up:
             #print("Up")
@@ -143,10 +237,12 @@ def show(key):
             keyS = True
         if key.char == 'p':
             shouldQuit = True
+        if key.char == 'r':
+            keyR = True
     except:
         pass
 def release(key):
-    global keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, throttle
+    global keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, throttle, keyR
     try:
         if key == Key.up:
             keyAU = False
@@ -166,26 +262,27 @@ def release(key):
             keyW = False
         if key.char == 's':
             keyS = False
+        if key.char == 'r':
+            keyR = False
     except:
         pass
-def begin():
-    global manualyes
-    if (manualyes == True):
-        manualyes = False
-        print("MANUAL STOPPED")
-    elif (manualyes == False):
-        manualyes = True
+
+#This function switches from Manual to Swarm
 def MODESwarm():
     global manualyes
     manualyes = False
     print("|||  MANUAL STOPPED  |||")
+
+#This function switches from Swarm to Manual
 def MODEManual():
     global manualyes
     manualyes = True
     print("|||  MANUAL ENABLED   |||")
+
 # Collect all event until released
 #BRENDAN CODE _____________________________________________________________________________________________________
 
+#This function handles the initial connection when a drone's arduino reaches out to basestation
 def handshake(msg, addr):
     global droneNumber
     parts = msg.split("|")
@@ -199,9 +296,10 @@ def handshake(msg, addr):
         drone =  Drone(i, parts[2], addr[0], addr[1])
         drones.append(drone)
         droneNumber = (droneNumber+1)
-        app.my_label.configure(text="DRONE CONNECTED", image=my_image, size=(150,150))
+        app.my_label.configure(text="DRONE CONNECTED", image=my_image)
         for adrone in drones:
             print(adrone)
+            
         #updateList()
         #sendMessage(drone.ipAddress, drone.port, "HSC|" + str(i))
 
@@ -210,25 +308,30 @@ def handshake(msg, addr):
             #we could update here
             drones[i].ipAddress = addr[0]
             drones[i].port = addr[1]
-    #droneList.update()    
+    #droneList.update() 
+
+#This function is used to send the packets of instructions to the drone
 def sendMessage(ipAddress, port, msg):
-    #print("sendMessage")
-    #print(ipAddress)
-    #print(port)
-    #print(msg)
-    #print("----------------------------")
-    print(msg)    
+    global sock, displayVar
+    print("sendMessage")
+    print(ipAddress)
+    print(port)
+    print(msg)
+    print("----------------------------")    
     bMsg = msg.encode("ascii")
-    sendSocket.sendto(bMsg, (ipAddress, int(port)))
-    print("sent message")
-    time.sleep(0.0001)
-def keyboardControl():
-    global yaw, roll, pitch, throttle, keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, shouldQuit, manualyes, killswitch
+    sock.sendto(bMsg, (ipAddress, int(port)))
+    app.textbox1.configure(text = displayVar)
+    #print("sent message")
+    time.sleep(0.002)
+
+#This function is where all of the manual contol is handled
+def manualControl():
+    global yaw, displayVar, roll, pitch, throttle, keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, shouldQuit, manualyes, killswitch, armVar, navHold, app, keyR
     global selDrone
     global selDroneTK
     listener =  Listener(on_press = show, on_release = release)   
     listener.start()
-
+    
     # yaw = 0
     # keyQ = False
     # keyE = False
@@ -242,12 +345,7 @@ def keyboardControl():
     # keyAU = False
     # keyAD = False
     # shouldQuit = False
-    print("hewiufh")
-    #instantiate flight stick
     while True:
-        #call the flightstick's readflightstick method
-        #yaw = fs.yaw
-        #pitch = fs.ptitch
         if keyQ:
             yaw -= 1
         elif keyE:
@@ -263,14 +361,17 @@ def keyboardControl():
         if keyAU:
             throttle += 1
         elif keyAD:
-            throttle -= 5
+            throttle -= 1
+        if keyR:
+            kill()
         if shouldQuit:
             #listener.stop()
             #break
             pass
 
 
-
+        displayVar = "Throttle: " + str(throttle) + "\n Pitch: " + str(pitch) + "\n Yaw: " + str(yaw) + "\n Roll: " + str(roll) + "\nArmVar: " + str(armVar) + "\nNavHold: " + str(navHold)
+        # App.textbox1.configure(text = displayVar)
         if yaw > 1500 and keyQ == False and keyE == False:
             yaw -= 1
         elif yaw < 1500 and keyQ == False and keyE == False:
@@ -283,12 +384,11 @@ def keyboardControl():
             pitch -= 1
         elif pitch < 1500 and keyW == False and keyS == False:
             pitch += 1
-        if throttle > 1000 and keyAU == False and keyAD == False:
-            throttle -= 1
-        elif throttle < 1000 and keyAU == False and keyAD == False:
-            throttle += 1
+        # if throttle > 1000 and keyAU == False and keyAD == False:
+        #     # throttle -= 1
+        # elif throttle < 1000 and keyAU == False and keyAD == False:
+        #     throttle += 1
 
-        
         yaw = clamp(yaw)
         roll = clamp(roll)
         pitch = clamp(pitch)
@@ -304,65 +404,24 @@ def keyboardControl():
         # for i in droneList.curselection():
         #     selDrone = drones[i]
             #print(selDrone)
-        
+       
         #print(selDrone.ipAddress)Fa
         if (manualyes == True):
-            sendMessage(selDrone.ipAddress, selDrone.port, "MAN" + "|" + ip + "|" + str(yaw) + "|" + str(pitch) + "|" + str(roll) + "|" + str(throttle) + "|" + str(killswitch) + "|")
+            sendMessage(selDrone.ipAddress, selDrone.port, "MAN" + "|" + ip + "|" + str(yaw) + "|" + str(pitch) + "|" + str(roll) + "|" + str(throttle) + "|" + str(killswitch) + "|" + str(armVar) + "|" + str(navHold) + "|")
+            if(killswitch == 1700):
+                print("======================================KILL SWITCH ACTIVATED=======================================")
+    
         #sendMessage(selDrone.ipAddress, selDrone.port, yaw + str(i))
         
         time.sleep(0.01)
 
-def manualControl():
-    global yaw, roll, pitch, throttle, keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, shouldQuit, manualyes, killswitch
-    global selDrone
-    global selDroneTK
-    fs = FlightStick
-    fs.__init__(fs)
-    #instantiate flight stick
-    while True:
-        #call the flightstick's readflightstick method
-        #yaw = fs.yaw
-        #pitch = fs.ptitch
-        fs.readFlightStick(fs)    
-        
-        yaw = clamp(fs.yaw)
-        roll = clamp(fs.roll)
-        pitch = clamp(fs.pitch)
-        throttle = clamp(fs.throttle)
-        yaw = round(yaw, 2)
-        roll = round(roll, 2)
-        pitch = round(pitch, 2)
-        throttle = round(throttle, 2)
-        #(yaw, " -- yaw")
-        #(roll, " -- roll")
-        #(pitch, " -- pitch")
-        #(throttle, " -- throttle")
-        # for i in droneList.curselection():
-        #     selDrone = drones[i]
-            #print(selDrone)
-        
-        #print(selDrone.ipAddress)Fa
-        if (manualyes == True):
-            sendMessage(selDrone.ipAddress, selDrone.port, "MAN" + "|" + ip + "|" + str(yaw) + "|" + str(pitch) + "|" + str(roll) + "|" + str(throttle) + "|" + str(killswitch) + "|")
-        #sendMessage(selDrone.ipAddress, selDrone.port, yaw + str(i))
-        
-        time.sleep(0.01)
-
-#def updateList():
-    #clear the list box
-    #droneList.delete(0, len(drones)-1)
-
-    #walk through drones
-    #for i in range(len(drones)):
-        #droneList.insert(i, str(drones[i]))
-    #insert all the drone elements
-
-
+#This function just prints the list of drones
 def listDrones():
     global drones
     for drone in drones:
         print(drone.name, drone.ipAddress, drone.port, "\t") 
 
+#I dont atcually know what magic this function does but it is part of how we connect
 def listen(q_out, q_in):#happens on a separate thread
     print("Listener Thread began")
     while True:
@@ -391,13 +450,16 @@ def listen(q_out, q_in):#happens on a separate thread
         #     #HANDSHAKE
         #     handshake(parts, addr)
     print("goodbye")
-def addDrone():
-    global droneNumber, app
+
+#This function adds a drone object to the list
+def  addDrone():
+    global droneNumber, app, drones, my_image
     #this is just to test if tkinter will add them to the listbox on a button press.
     drones.append(Drone(8, "test", "none", 17))
     droneNumber = (droneNumber+1)
     print(str(drones))
-    app.my_label.configure(text="DRONE CONNECTED", image=my_image, size=(150,150))
+    app.my_label.configure(text="DRONE CONNECTED", image=my_image)
+#This function k0..ills the drone by turning on the killswitch
 def kill():
     global killswitch
     killswitch = 1700
@@ -413,9 +475,42 @@ def kill():
     app.radio_button_1.configure(fg_color="Red", text="Drone Killed", text_color="Red")
     app.radio_button_2.configure(fg_color="Red", text="Drone Killed", text_color="Red")
     app.radio_button_3.configure(fg_color="Red", text="Drone Killed", text_color="Red")
-    
 
+#This funcion sends the drone arming values
+def arm():
+    global armVar
+    if(app.checkbox_2.get() == 1):
+        armVar = 1575
+        print(app.checkbox_2.get())
+        print("armed!!!!!!!!!")
+    else:
+        armVar = 1000
+        print(app.checkbox_2.get())
+        print("UNarmed!!!!!!!!!")
 
+#This function tells the drone to hold in place
+def navHoldFunc():
+    global navHold
+    if(app.checkbox_3.get() == 1):
+        navHold = 1600
+        print(app.checkbox_3.get())
+        print("HOLDING!!!!!!!!!")
+    else:
+        navHold = 1000
+        print(app.checkbox_3.get())
+        print("DRIFITNG!!!!!!!!!")
+
+#This function closes the application
+def quit():
+    qToComms.put("TERMINATE") #tell the subloop on the backup thread to quit.
+    t = qFromComms.get(timeout=3.0)
+    #give it a chance to quit
+    print("all done")
+    app.destroy()
+    App.destroy()
+    exit()
+
+#This function checks and connects to drones waiting in the connection que
 def checkQueue(q_in):
     global selDrone
     global selDroneTK
@@ -455,55 +550,17 @@ terminate = False
 maxDrones = 3
 drones = []
 #these next two lines are for testing only. Remove them
-drones.append(Drone(0, "one", "10.20.18.23", 85))
-droneNumber = (droneNumber+1)
-drones.append(Drone(1, "two", "10.20.18.23", 85))
-droneNumber = (droneNumber+1)
-drones.append(Drone(2, "three", "192.168.4.22", 80))
+drones.append(Drone(0, "HelloWorldDrone", "10.20.18.23", 85))
 droneNumber = (droneNumber+1)
 selDrone = drones[0]
-
-#----- Setup our OLD GUI --------
-#OLD GUI==============================
-'''
-root = Tk()
-root.geometry("400x400")
-root.title("Drone Manager")
-
-frm = ttk.Frame(root, padding=10)
-frm.grid()
-ttk.Label(frm, text="hello world").grid(column = 0, row = 0)
-ttk.Label(frm, text="Drones List").grid(column = 0, row = 1)
-
-listVar = StringVar(value = drones)
-droneList = Listbox(master = root,width =10, height = 25, listvariable = listVar)
-
-droneList.grid(column = 0, row = 2)
-black = "black"
-
-manualbutton = Button(root, text="Manual", width=5, height=5, command=lambda: begin()).grid(column=3, row=2, padx=50)
-
-selDroneTK = tk.StringVar(root)
-button = Button(root,text = "Test!", width=5, height=5, command=lambda: introToAP()).grid()
-ttk.Label(root, text="Name | IP | Port").grid(column = 2, row = 1,padx=50)
-lblDroneIP = ttk.Label(root, textvariable=selDroneTK).grid(column = 2, row = 2,padx=50)
-'''
-
 
 #-------------------------------------------------------------------------------------------------
 #------------------------------------CUSTOM TKINTER GUI----------------------------
 #-----------------------------------------------------------------------------
 
-# #create window
-# custom = customtkinter.CTk()
-# custom.geometry("300x400")
-# #create button
-# button = customtkinter.CTkButton(master=custom, text="test")
-# button.place(relx=0.5, rely=0.5, anchor=CENTER)
-
 #run loop
-#-------------custom.mainloop()
 
+#THIS PART IS ALL OF THE APPLICATION COMPONENTS. DONT TOUCH
 class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
@@ -530,6 +587,8 @@ class App(customtkinter.CTk):
         self.sidebar_button_2.grid(row=2, column=0, padx=20, pady=10)
         self.sidebar_button_3 = customtkinter.CTkButton(self.sidebar_frame, command=self.sidebar_button_event, text="Test")
         self.sidebar_button_3.grid(row=3, column=0, padx=20, pady=10)
+        self.sidebar_button_4 = customtkinter.CTkButton(self.sidebar_frame, command=self.sidebar_button_event, text="Quit")
+        self.sidebar_button_4.grid(row=4, column=0, padx=20, pady=10)
 
 
 
@@ -561,8 +620,8 @@ class App(customtkinter.CTk):
         self.main_button_1.grid(row=3, column=3, padx=(20, 20), pady=(20, 20), sticky="nsew")
 
         # create textbox
-        self.textbox = customtkinter.CTkTextbox(self, width=250)
-        self.textbox.grid(row=0, column=1, padx=(20, 0), pady=(20, 0), sticky="nsew")
+        self.textbox1 = customtkinter.CTkLabel(self, width=250)
+        self.textbox1.grid(row=0, column=1, padx=(20, 0), pady=(20, 0), sticky="nsew")
 
         # create tabview
         self.tabview = customtkinter.CTkTabview(self, width=250)
@@ -573,62 +632,61 @@ class App(customtkinter.CTk):
         self.tabview.tab("Control").grid_columnconfigure(0, weight=1)  # configure grid of individual tabs
         self.tabview.tab("Info").grid_columnconfigure(0, weight=1)
 
-
-
         self.optionmenu_1 = customtkinter.CTkOptionMenu(self.tabview.tab("Control"), dynamic_resizing=True) #creates the optionmenu
-        selectedDrone = self.optionmenu_1.get()
-        def setDroneName():
-            global droneName0, droneName1, droneName2, droneName3, droneName4, droneName5, droneName6, droneName7, drones, selectedDrone
-  
-            try:
-                droneName0 = drones[0].name
-            except:
-                droneName0 = "Drone Connecting..."
-            try:
-                droneName1 = drones[1].name
-            except:
-                droneName1 = "Drone Connecting..."
-            try:
-                droneName2 = drones[2].name
-            except:
-                droneName2 = "Drone Connecting..."
-            try:
-                droneName3 = drones[3].name
-            except:
-                droneName3 = "Drone Connecting..."
-            try:
-                droneName4 = drones[4].name
-            except:
-                droneName4 = "Drone Connecting..."
-            try:
-                droneName5 = drones[5].name
-            except:
-                droneName5 = "Drone Connecting..."
-            try:
-                droneName6 = drones[6].name
-            except:
-                droneName6 = "Drone Connecting..."
-            try:
-                droneName7 = drones[7].name
-            except:
-                droneName7 = "Drone Connecting..."
-            self.optionmenu_1.configure(command=lambda x: updateDroneNames(),
-                                                        values=[droneName0, droneName1, droneName2, droneName3, droneName4, droneName5, droneName6, droneName7])
-        setDroneName()
-        def updateDroneNames():
-            global selectedDrone, selDrone
-            selectedDrone = self.optionmenu_1.get() #SELECTED DRONE AS A NAME
-            print("-----------------------------------------Drone List Updated-----------------------------------------")
-            print("Drone " + selectedDrone + " now selected.")
-            setDroneName() #updates the list
 
-            for i in range(len(drones)):
-                if (selectedDrone == str(drones[i].name)):
-                    selDrone = drones[i]
-                    print ("Drone " + selDrone.name + " Connected with Port: " + str(selDrone.port) + " and IP: " + str(selDrone.ipAddress))
-            setDroneName()
-        self.optionmenu_1.configure(command=lambda x: updateDroneNames(),
-                                                        values=[droneName0, droneName1, droneName2, droneName3, droneName4, droneName5, droneName6, droneName7])
+        
+        selectedDrone = self.optionmenu_1.get()
+
+        # setDroneName()
+#         def updateDroneNames():
+#             global selectedDrone, selDrone
+#             selectedDrone = app.optionmenu_1.get() #SELECTED DRONE AS A NAME
+#             print("-----------------------------------------Drone List Updated-----------------------------------------")
+#             print("Drone " + selectedDrone + " now selected.")
+#             setDroneName() #updates the list
+
+#             for i in range(len(drones)):
+#                 if (selectedDrone == str(drones[i].name)):
+#                     selDrone = drones[i]
+#                     print ("Drone " + selDrone.name + " Connected with Port: " + str(selDrone.port) + " and IP: " + str(selDrone.ipAddress))
+#             setDroneName()
+# def setDroneName():
+#             global droneName0, droneName1, droneName2, droneName3, droneName4, droneName5, droneName6, droneName7, drones, selectedDrone
+  
+#             try:
+#                 droneName0 = drones[0].name
+#             except:
+#                 droneName0 = "Drone Connecting..."
+#             try:
+#                 droneName1 = drones[1].name
+#             except:
+#                 droneName1 = "Drone Connecting..."
+#             try:
+#                 droneName2 = drones[2].name
+#             except:
+#                 droneName2 = "Drone Connecting..."
+#             try:
+#                 droneName3 = drones[3].name
+#             except:
+#                 droneName3 = "Drone Connecting..."
+#             try:
+#                 droneName4 = drones[4].name
+#             except:
+#                 droneName4 = "Drone Connecting..."
+#             try:
+#                 droneName5 = drones[5].name
+#             except:
+#                 droneName5 = "Drone Connecting..."
+#             try:
+#                 droneName6 = drones[6].name
+#             except:
+#                 droneName6 = "Drone Connecting..."
+#             try:
+#                 droneName7 = drones[7].name
+#             except:
+#                 droneName7 = "Drone Connecting..."
+#             app.optionmenu_1.configure(command=lambda x: updateDroneNames(),values=[droneName0, droneName1, droneName2, droneName3, droneName4, droneName5, droneName6, droneName7])
+        self.optionmenu_1.configure(command=lambda x: updateDroneNames(),values=[droneName0, droneName1, droneName2, droneName3, droneName4, droneName5, droneName6, droneName7])
         
         self.optionmenu_1.grid(row=0, column=0, padx=20, pady=(20, 10))
         self.combobox_1 = customtkinter.CTkComboBox(self.tabview.tab("Control"),
@@ -686,9 +744,9 @@ class App(customtkinter.CTk):
         self.checkbox_slider_frame.grid(row=1, column=3, padx=(20, 20), pady=(20, 0), sticky="nsew")
         self.checkbox_1 = customtkinter.CTkCheckBox(master=self.checkbox_slider_frame, text="Basestation Comms")
         self.checkbox_1.grid(row=1, column=0, pady=(20, 0), padx=20, sticky="n")
-        self.checkbox_2 = customtkinter.CTkCheckBox(master=self.checkbox_slider_frame, text="SBUS Signal")
+        self.checkbox_2 = customtkinter.CTkCheckBox(master=self.checkbox_slider_frame, text="ARM ME")
         self.checkbox_2.grid(row=2, column=0, pady=(20, 0), padx=20, sticky="n")
-        self.checkbox_3 = customtkinter.CTkCheckBox(master=self.checkbox_slider_frame, text="Assaf")
+        self.checkbox_3 = customtkinter.CTkCheckBox(master=self.checkbox_slider_frame, text="NAV HOLD")
         self.checkbox_3.grid(row=3, column=0, pady=20, padx=20, sticky="n")
 
 
@@ -705,8 +763,12 @@ class App(customtkinter.CTk):
 
         # set default values
         self.sidebar_button_3.configure(command=lambda: addDrone(), text="Connect to Swarm")
-        self.checkbox_3.configure(state="disabled")
+        self.sidebar_button_4.configure(command=lambda: quit(), hover_color='Red', fg_color='Black', text_color = 'Red4')
+      
         self.checkbox_1.select()
+        self.checkbox_2.configure(command=lambda: arm())
+        self.checkbox_3.configure(command=lambda: navHoldFunc())
+        
         self.scrollable_frame_switches[0].select()
         self.scrollable_frame_switches[4].select()
         self.radio_button_3.configure(state="disabled", text="Auto Mode")
@@ -718,7 +780,7 @@ class App(customtkinter.CTk):
         self.slider_2.configure(command=self.progressbar_3.set)
         self.progressbar_1.configure(mode="indeterminnate")
         self.progressbar_1.start()
-        self.textbox.insert("0.0", "flup\n\n" + "epic box.\n\n" * 20)
+        self.textbox1.configure(text = displayVar)
         self.seg_button_1.configure(values=["Sensitivity", "Throttle", "Max Range"])
         self.seg_button_1.set("Value 2")
 
@@ -764,13 +826,6 @@ class App(customtkinter.CTk):
 
     def sidebar_button_event(self):
         print("sidebar_button click")
-
-
-
-
-
-
-
 
 
 #-----------------------------------------------------------------------------
