@@ -1,6 +1,7 @@
 #include <WiFiNINA.h>                    //https://github.com/arduino-libraries/WiFiNINA/tree/master
 #include <WiFiUDP.h>                     
-//#include <sbus.h>                        //https://github.com/bolderflight/SBUS
+
+char handShake[] = "HND|-1|Betsy";
 
 char ssid[] = "XV_Basestation";          //  network SSID (name)
 int status = WL_IDLE_STATUS;             // the Wi-Fi radio's status
@@ -13,8 +14,7 @@ WiFiUDP Udp;
 unsigned int localPort = 2390;
 char  ReplyBuffer[] = "Drone 1";
 int wifiState = 0;                       //Wifi connection state
-bool firstConnectFrame = false;          //First Loop while connected to wifi
-double pytime = 0;                        //time of python code
+bool firstConnectFrame = false;          //First Loop while connected to wifi                
 
 bool serialUSB = false;
 //KONERRRRRR
@@ -26,7 +26,8 @@ double pitch; // pitch is broken?
 double roll;
 double yaw;
 double throttle;
-int arming;
+double armVar;
+int arming = 1500;
 int updateTime = 0;
 int connectTime = 0;
 long t = 0;
@@ -82,7 +83,7 @@ struct ManualControlMessage{
   double roll;
   double throttle;
   double killswitch;
-  double pytime;
+  double armVar;
 };
 
 struct BSIPMessage{
@@ -307,9 +308,10 @@ void MSPLoop(){
   rc_values[2] = throttle;
   rc_values[3] = yaw;
   rc_values[4] = 1500;
-  rc_values[5] = 1550;
-  rc_values[6] = 1500;
+  rc_values[5] = armVar;
+  rc_values[6] = 1700;
   rc_values[7] = killswitch;
+  rc_values[9] = 1600;
 }
 
 void setup() {
@@ -330,6 +332,7 @@ void setup() {
   pitch = 1500;
   yaw = 1500;
   throttle = 885;
+  armVar = 1000;
   WifiConnection();
 
   //========================NEW MSP STUFF================
@@ -346,6 +349,7 @@ void setup() {
   rc_values[5] = 1000;
   rc_values[6] = 1500;
   rc_values[7] = 1500;
+  rc_values[9] = 1600;
   commandMSP(MSP_SET_RAW_RC, rc_values, 16);
   commandMSP(MSP_SET_RAW_RC, rc_values, 16);
   commandMSP(MSP_SET_RAW_RC, rc_values, 16);
@@ -386,7 +390,7 @@ void loop() {
   }
   else if (wifiState == 4) {
     Udp.beginPacket(bsip, 5005);
-    Udp.write("HND|-1|NEWDRONE");
+    Udp.write(handShake);
     Udp.endPacket();
     wifiState = 5;
   }
@@ -679,7 +683,7 @@ ManualControlMessage parseMessage(char buffer[]){
         msg.killswitch = atoi(token);
         break;
       case 7:
-        msg.pytime = atoi(token);
+        msg.armVar = atoi(token);
         break;
       }
       roll = msg.roll;
@@ -687,7 +691,7 @@ ManualControlMessage parseMessage(char buffer[]){
       throttle = msg.throttle;
       yaw = msg.yaw;
       killswitch = msg.killswitch;
-      pytime = msg.pytime;
+      armVar = msg.armVar;
     i++;
     token = strtok(NULL, "|"); 
   }
