@@ -110,7 +110,7 @@ killswitch = 1000
 armVar = 1000
 navHold = 1000
 displayVar = "default Text"
-my_image = customtkinter.CTkImage(light_image=Image.open('connecteddrone.jpg'),size=(150, 150))
+my_image = customtkinter.CTkImage(light_image=Image.open('connecteddrone.jpg'),size=(215, 70))
 dark_image=Image.open('connecteddrone.jpg')
 selectedDrone = "None"
 curr_time = round(time.time()*1000)
@@ -284,7 +284,7 @@ def MODEManual():
 
 #This function handles the initial connection when a drone's arduino reaches out to basestation
 def handshake(msg, addr):
-    global droneNumber
+    global droneNumber,displayVar
     parts = msg.split("|")
     i = int(parts[1])
    
@@ -297,9 +297,13 @@ def handshake(msg, addr):
         drones.append(drone)
         droneNumber = (droneNumber+1)
         app.my_label.configure(text="DRONE CONNECTED", image=my_image)
+        displayVar = displayVar.replace("\nChecking Que", "")
+        updateDroneNames()
+        for i in range(1,len(drones)):
+            displayVar += ("\nConnected: " + drones[i].name)
+            app.textbox1.configure(text = displayVar)
         for adrone in drones:
             print(adrone)
-            
         #updateList()
         #sendMessage(drone.ipAddress, drone.port, "HSC|" + str(i))
 
@@ -458,8 +462,8 @@ def  addDrone():
     drones.append(Drone(8, "test", "none", 17))
     droneNumber = (droneNumber+1)
     print(str(drones))
-    app.my_label.configure(text="DRONE CONNECTED", image=my_image)
     updateDroneNames()
+    app.my_label.configure(text="DRONE CONNECTED", image=my_image)
 #This function k0..ills the drone by turning on the killswitch
 def kill():
     global killswitch
@@ -513,7 +517,7 @@ def quit():
 
 #This function checks and connects to drones waiting in the connection que
 def checkQueue(q_in):
-    global selDrone
+    global selDrone, displayVar
     global selDroneTK
     #selDroneTK.set(selDrone.ipAddress)
     #lblDroneIP.config(text = selDrone.ipAddress)
@@ -521,6 +525,8 @@ def checkQueue(q_in):
     #print(selDrone.ipAddress)
     if (not q_in.empty()):
         print("checking queue")
+        displayVar += "\nChecking Que"
+        app.textbox1.configure(text=displayVar)
         #grab the item
         #process the info
         #mark it complete
@@ -537,7 +543,7 @@ def checkQueue(q_in):
         if cmd == "HND":
             #HANDSHAKE
             handshake(msg, (addr, port))
-    app.after(1000, checkQueue, q_in)
+    app.after(700, checkQueue, q_in)
 
 
 #--------------------------------------------
@@ -597,21 +603,21 @@ class App(customtkinter.CTk):
         dark_image=Image.open('connecteddrone.jpg'),
         size=(150,150)) # WidthxHeight
         self.my_label = customtkinter.CTkLabel(self, text="")
-        self.my_label.grid(row=1, column=0, padx=2, pady=2)
+        self.my_label.grid(row=1, column=0, padx=5, pady=(25,50))
         
 
 
 
         self.appearance_mode_label = customtkinter.CTkLabel(self.sidebar_frame, text="Appearance Mode:", anchor="w")
-        self.appearance_mode_label.grid(row=5, column=0, padx=20, pady=(10, 0))
+        self.appearance_mode_label.grid(row=6, column=0, padx=20, pady=(0, 0))
         self.appearance_mode_optionemenu = customtkinter.CTkOptionMenu(self.sidebar_frame, values=["Light", "Dark", "System"],
                                                                        command=self.change_appearance_mode_event)
-        self.appearance_mode_optionemenu.grid(row=6, column=0, padx=20, pady=(10, 10))
+        self.appearance_mode_optionemenu.grid(row=7, column=0, padx=20, pady=(10, 10))
         self.scaling_label = customtkinter.CTkLabel(self.sidebar_frame, text="UI Scaling:", anchor="w")
-        self.scaling_label.grid(row=7, column=0, padx=20, pady=(10, 0))
+        self.scaling_label.grid(row=8, column=0, padx=20, pady=(10, 0))
         self.scaling_optionemenu = customtkinter.CTkOptionMenu(self.sidebar_frame, values=["80%", "90%", "100%", "110%", "120%"],
                                                                command=self.change_scaling_event)
-        self.scaling_optionemenu.grid(row=8, column=0, padx=20, pady=(10, 20))
+        self.scaling_optionemenu.grid(row=9, column=0, padx=20, pady=(10, 20))
 
         # create main entry and button
         self.entry = customtkinter.CTkEntry(self, placeholder_text="Manual UDP Console")
