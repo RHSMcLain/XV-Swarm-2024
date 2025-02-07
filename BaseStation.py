@@ -15,7 +15,7 @@ import tkinter.messagebox
 from PIL import Image
 
 #pip3 install "requests>=2.*"
-#pip3 install netifaces (make sure you have c++ build tools for window)
+#pip3 install netifaces (make sure you have c++ build tools for window and the SDK for your version)
 #python3 -m pip install customtkinter
 #python3 -m pip install --upgrade Pillow
 
