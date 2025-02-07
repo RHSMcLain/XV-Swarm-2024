@@ -459,6 +459,7 @@ def  addDrone():
     droneNumber = (droneNumber+1)
     print(str(drones))
     app.my_label.configure(text="DRONE CONNECTED", image=my_image)
+    updateDroneNames()
 #This function k0..ills the drone by turning on the killswitch
 def kill():
     global killswitch
