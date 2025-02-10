@@ -86,19 +86,19 @@ struct BSIPMessage{
   IPAddress BSIP;
 };
 
-void commandMSP(uint8_t cmd, uint16_t data[], uint8_t n_cbytes)
-{
+void commandMSP(uint8_t cmd, uint16_t data[], uint8_t n_cbytes){
 
   uint8_t checksum = 0;
 
   Serial1.write((byte *) "$M<", 3);
   Serial1.write(n_cbytes);
   checksum ^= (n_cbytes);
+
   Serial1.write(cmd);
   checksum ^= cmd;
+
   uint16_t cur_byte = 0;
-  while(cur_byte < (n_cbytes/2))
-  {
+  while(cur_byte < (n_cbytes/2)){
     int8_t byte1 = ((uint16_t)data[cur_byte] >> 0) & 0xFF;
     int8_t byte2 = ((uint16_t)data[cur_byte] >> 8) & 0xFF;
     Serial1.write(byte1);
@@ -108,25 +108,23 @@ void commandMSP(uint8_t cmd, uint16_t data[], uint8_t n_cbytes)
     cur_byte++;
   }
   Serial1.write(checksum);
-  while(Serial1.available())
-  {
+  while(Serial1.available()){
     Serial1.read();
-    //Serial.println("clear");
   }
 }
 
-void sendMSP(uint8_t req, uint8_t *data, uint8_t n_bytes) {
+void sendMSP(uint8_t req, uint8_t *data, uint8_t n_bytes){
 
-    uint8_t checksum = 0;
+  uint8_t checksum = 0;
 
-    Serial1.write((byte *) "$M<", 3);
-    Serial1.write(n_bytes);
-    checksum ^= n_bytes;
+  Serial1.write((byte *) "$M<", 3);
+  Serial1.write(n_bytes);
+  checksum ^= n_bytes;
 
-    Serial1.write(req);
-    checksum ^= req;
+  Serial1.write(req);
+  checksum ^= req;
 
-    Serial1.write(checksum);
+  Serial1.write(checksum);
 }
 
 void readAttitudeData() {
