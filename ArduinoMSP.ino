@@ -49,7 +49,6 @@ bool enabled = false;
 
 uint16_t rc_values[8];
 long start;
-bool light;
 
 struct{
   int16_t roll;       //degrees / 10
@@ -135,7 +134,7 @@ void readAttitudeData(){
   int16_t pitchRec;
   int16_t yawRec;
 
-  while (Serial1.available()) {
+  while (Serial1.available()){
     count += 1;
     byte first;
     byte second;
@@ -624,7 +623,7 @@ ManualControlMessage parseMessage(char buffer[]){
     i++;
     token = strtok(NULL, "|"); 
   }
-return msg;  
+  return msg;  
 //HAS REQUIRED PACKETS FROM LISTEN, CODE FOR MANUAL MODE HERE --------------
 //Currently does not include a break, repeats loop forever
 }  
@@ -646,8 +645,7 @@ BSIPMessage parseBSIP(char buffer[]){
         break;        
       }
     i++;
-    token = strtok(NULL, "|");
-    
+    token = strtok(NULL, "|"); 
   }
   return msg;  
 }  
