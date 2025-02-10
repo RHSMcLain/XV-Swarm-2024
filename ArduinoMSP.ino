@@ -337,13 +337,11 @@ void setup(){
 
 void loop() {
   status = WiFi.status();
-  if(status != WL_CONNECTED)
-  {  
+  if(status != WL_CONNECTED){  
     blinkSpeed = 50;
-    failsafe = 2000;
+    failsafe = 1600;
   }
-  else
-  {
+  else{
     failsafe = 1000;
   }
   //MillisStuff();
@@ -371,8 +369,7 @@ void loop() {
     Udp.endPacket();
     wifiState = 5;
   }
-  if(millis() - updateTime > 5000 && serialUSB)
-  {
+  if(millis() - updateTime > 5000 && serialUSB){
     Serial.println("<--------------------------->\nDrone Data");
     Serial.print("Throttle: "); Serial.println(throttle);
     Serial.print("Pitch: "); Serial.println(pitch);
