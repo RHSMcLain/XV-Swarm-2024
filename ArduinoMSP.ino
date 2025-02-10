@@ -1,5 +1,11 @@
 #include <WiFiNINA.h>                    //https://github.com/arduino-libraries/WiFiNINA/tree/master
-#include <WiFiUDP.h>                     
+#include <WiFiUDP.h>    
+
+#define MSP_ATTITUDE 108
+#define MSP_SET_RAW_RC 200
+#define MSP_RAW_GPS 106
+#define MSP_WP 118
+#define MSP_SET_WP 209                 
 
 char handShake[] = "HND|-1|Betsy";
 
@@ -39,13 +45,6 @@ int blinkSpeed = 10;
 bool lightOn = false;
 bool bootComplete = false;               //Finished Drone Booting sequence
 bool enabled = false;
-//====================================================================================================================================================================
-//=================NEW MSP STUFF===================
-#define MSP_ATTITUDE 108
-#define MSP_SET_RAW_RC 200
-#define MSP_RAW_GPS 106
-#define MSP_WP 118
-#define MSP_SET_WP 209
 
 uint16_t rc_values[8];
 long start;
@@ -66,9 +65,8 @@ struct{
   uint16_t gpsSpeed;  //cm / seconds
   uint16_t gpsCourse; //degrees
 } msp_raw_gps;
-//====================================================================================================================================================================
+//===================================================
 
-//KOOONNNEEER
 IPAddress bsip; //holds the base station ip address
 
 struct ManualControlMessage{
