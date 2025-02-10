@@ -4,6 +4,7 @@ from tkinter import *
 from tkinter import ttk
 import tkinter as tk
 from Drone import Drone
+import _thread
 from threading import Thread
 from queue import Queue
 from pynput.keyboard import Key, Listener
@@ -12,12 +13,49 @@ import customtkinter
 import platform
 import tkinter
 import tkinter.messagebox
-from PIL import Image
-
+from PIL import Image, GifImagePlugin
+GifImagePlugin.LOADING_STRATEGY = GifImagePlugin.LoadingStrategy.RGB_ALWAYS
 #pip3 install "requests>=2.*"
 #pip3 install netifaces (make sure you have c++ build tools for window and the SDK for your version)
 #python3 -m pip install customtkinter
 #python3 -m pip install --upgrade Pillow
+
+
+
+
+
+
+class gifplay:
+     def __init__(self,label,giffile,delay):
+        self.frame=[]
+        i=0
+        while 1:
+            try:
+                image=PhotoImage(file = giffile, format="gif -index "+str(i))
+                self.frame.append(image)
+                i=i+1
+            except:
+                break
+        print(i)
+        self.totalFrames=i-1
+        self.delay=delay
+        self.labelspace=label
+        self.labelspace.image=self.frame[0]
+
+def play(self):
+        """
+        plays the gif
+        """
+        _thread.start_new_thread(self.infinite,())
+
+def infinite(self):
+        i=0
+        while 1:
+            self.labelspace.configure(image=self.frame[i])
+            i=(i+1)%self.totalFrames
+            time.sleep(self.delay)
+
+
 
 
 
@@ -80,7 +118,8 @@ global selDrone
 global selDroneTK
 global droneNumber
 global selectedDrone
-global killswitch
+global killswitch, gif_image
+
     #default values:
 yaw = 0
 droneName0 = "Connecting"
@@ -111,6 +150,7 @@ armVar = 1000
 navHold = 1000
 displayVar = "default Text"
 my_image = customtkinter.CTkImage(light_image=Image.open('connecteddrone.jpg'),size=(215, 70))
+# gif_image = customtkinter.CTkImage(light_image=Image.open('Bjorn-unscreen.gif'), size=(215, 70))
 dark_image=Image.open('connecteddrone.jpg')
 selectedDrone = "None"
 curr_time = round(time.time()*1000)
@@ -463,7 +503,7 @@ def  addDrone():
     droneNumber = (droneNumber+1)
     print(str(drones))
     updateDroneNames()
-    app.my_label.configure(text="DRONE CONNECTED", image=my_image)
+    app.my_label.configure(text="DRONE CONNECTED", image=gifplay(app.my_label,"Bjorn-unscreen.gif",1))
 #This function k0..ills the drone by turning on the killswitch
 def kill():
     global killswitch
