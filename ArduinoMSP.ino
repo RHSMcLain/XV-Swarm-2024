@@ -127,7 +127,7 @@ void sendMSP(uint8_t req, uint8_t *data, uint8_t n_bytes){
   Serial1.write(checksum);
 }
 
-void readAttitudeData() {
+void readAttitudeData(){
   delay(100);
   byte count = 0;
 
@@ -178,10 +178,10 @@ void readAttitudeData() {
   msp_attitude.yaw = yawRec;
 }
 
-void readGPSData()
-{
+void readGPSData(){
   delay(100);
   byte count = 0;
+
   uint8_t gpsFix;
   uint8_t numSat;
   uint32_t lat;
@@ -189,6 +189,7 @@ void readGPSData()
   uint16_t gpsAlt;
   uint16_t gpsSpeed;
   uint16_t gpsCourse;
+
   while (Serial1.available()) {
     count += 1;
     byte first;
@@ -273,7 +274,7 @@ void readGPSData()
   msp_raw_gps.gpsSpeed = gpsSpeed;
   msp_raw_gps.gpsCourse = gpsCourse;
 }
-//This is the end of the MSPFunctions function
+
 void MSPLoop(){
   if((millis()-start) > 1000)
   {
