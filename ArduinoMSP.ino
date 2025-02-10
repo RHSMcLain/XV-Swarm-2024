@@ -1,7 +1,7 @@
 #include <WiFiNINA.h>                    //https://github.com/arduino-libraries/WiFiNINA/tree/master
 #include <WiFiUDP.h>                     
 
-char handShake[] = "HND|-1|DRONE_NAME_HERE";
+char handShake[] = "HND|-1|Betsy";
 
 char ssid[] = "XV_Basestation";          //  network SSID (name)
 int status = WL_IDLE_STATUS;             // the Wi-Fi radio's status
@@ -27,6 +27,7 @@ double roll;
 double yaw;
 double throttle;
 double armVar;
+double navHold;
 int arming = 1500;
 int updateTime = 0;
 int connectTime = 0;
@@ -84,6 +85,7 @@ struct ManualControlMessage{
   double throttle;
   double killswitch;
   double armVar;
+  double navHold;
 };
 
 struct BSIPMessage{
@@ -307,10 +309,11 @@ void MSPLoop(){
   rc_values[1] = roll;
   rc_values[2] = throttle;
   rc_values[3] = yaw;
-  rc_values[4] = 1500;
+  rc_values[4] = navHold;
   rc_values[5] = armVar;
-  rc_values[6] = 1500;
+  rc_values[6] = 1700;
   rc_values[7] = killswitch;
+  rc_values[9] = 1600;
 }
 
 void setup() {
@@ -332,6 +335,7 @@ void setup() {
   yaw = 1500;
   throttle = 885;
   armVar = 1000;
+  navHold = 1000;
   WifiConnection();
 
   //========================NEW MSP STUFF================
@@ -348,6 +352,7 @@ void setup() {
   rc_values[5] = 1000;
   rc_values[6] = 1500;
   rc_values[7] = 1500;
+  rc_values[9] = 1600;
   commandMSP(MSP_SET_RAW_RC, rc_values, 16);
   commandMSP(MSP_SET_RAW_RC, rc_values, 16);
   commandMSP(MSP_SET_RAW_RC, rc_values, 16);
@@ -683,6 +688,9 @@ ManualControlMessage parseMessage(char buffer[]){
       case 7:
         msg.armVar = atoi(token);
         break;
+      case 8:
+        msg.navHold = atoi(token);
+        break;
       }
       roll = msg.roll;
       pitch = msg.pitch;
@@ -690,6 +698,7 @@ ManualControlMessage parseMessage(char buffer[]){
       yaw = msg.yaw;
       killswitch = msg.killswitch;
       armVar = msg.armVar;
+      navHold = msg.navHold;
     i++;
     token = strtok(NULL, "|"); 
   }
