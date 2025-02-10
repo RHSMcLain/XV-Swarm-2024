@@ -276,23 +276,8 @@ void readGPSData(){
 }
 
 void MSPLoop(){
-  if((millis()-start) > 1000)
-  {
-    if(light)
-    {
-      digitalWrite(13, HIGH); 
-      light = false;
-    }
-    else
-    {
-      digitalWrite(13, LOW); 
-      light = true;
-    }
-    start = millis();
-  }
   uint8_t datad = 0;
   uint8_t *data = &datad;
-  commandMSP(MSP_SET_RAW_RC, rc_values, 16);
   // sendMSP(MSP_RAW_GPS, 0, 0);
   // readGPSData();
   // sendMSP(MSP_ATTITUDE, data, 0);
@@ -306,13 +291,13 @@ void MSPLoop(){
   rc_values[6] = 1700;
   rc_values[7] = killswitch;
   rc_values[9] = 1600;
+  commandMSP(MSP_SET_RAW_RC, rc_values, 16);
 }
 
-void setup() {
+void setup(){
   //Initialize serial and wait for port to open:
   Serial.begin(115200);
-  if(Serial)
-  {
+  if(Serial){
     serialUSB = true;
     Serial.println("Setup");
   }
@@ -330,8 +315,6 @@ void setup() {
   navHold = 1000;
   WifiConnection();
 
-  //========================NEW MSP STUFF================
-  pinMode(13, OUTPUT);
   start = millis();
   delay(250);
   Serial1.begin(9600);
@@ -350,7 +333,6 @@ void setup() {
   commandMSP(MSP_SET_RAW_RC, rc_values, 16);
   delay(3000);
   commandMSP(MSP_SET_RAW_RC, rc_values, 16);
-  //========================================================
 }//end setup
 
 void loop() {
