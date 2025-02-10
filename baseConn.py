@@ -4,6 +4,7 @@ from tkinter import *
 from tkinter import ttk
 import tkinter as tk
 from Drone import Drone
+import _thread
 from threading import Thread
 from queue import Queue
 from pynput.keyboard import Key, Listener
@@ -12,12 +13,49 @@ import customtkinter
 import platform
 import tkinter
 import tkinter.messagebox
-from PIL import Image
-
+from PIL import Image, GifImagePlugin
+GifImagePlugin.LOADING_STRATEGY = GifImagePlugin.LoadingStrategy.RGB_ALWAYS
 #pip3 install "requests>=2.*"
-#pip3 install netifaces (make sure you have c++ build tools for window)
+#pip3 install netifaces (make sure you have c++ build tools for window and the SDK for your version)
 #python3 -m pip install customtkinter
 #python3 -m pip install --upgrade Pillow
+
+
+
+
+
+
+class gifplay:
+     def __init__(self,label,giffile,delay):
+        self.frame=[]
+        i=0
+        while 1:
+            try:
+                image=PhotoImage(file = giffile, format="gif -index "+str(i))
+                self.frame.append(image)
+                i=i+1
+            except:
+                break
+        print(i)
+        self.totalFrames=i-1
+        self.delay=delay
+        self.labelspace=label
+        self.labelspace.image=self.frame[0]
+
+def play(self):
+        """
+        plays the gif
+        """
+        _thread.start_new_thread(self.infinite,())
+
+def infinite(self):
+        i=0
+        while 1:
+            self.labelspace.configure(image=self.frame[i])
+            i=(i+1)%self.totalFrames
+            time.sleep(self.delay)
+
+
 
 
 
@@ -80,9 +118,18 @@ global selDrone
 global selDroneTK
 global droneNumber
 global selectedDrone
-global killswitch
+global killswitch, gif_image
+
     #default values:
 yaw = 0
+droneName0 = "Connecting"
+droneName1 = "Connecting"
+droneName2 = "Connecting"
+droneName3 = "Connecting"
+droneName4 = "Connecting"
+droneName5 = "Connecting"
+droneName6 = "Connecting"
+droneName7 = "Connecting"
 keyQ = False
 keyE = False
 roll = 0 
@@ -102,7 +149,8 @@ killswitch = 1000
 armVar = 1000
 navHold = 1000
 displayVar = "default Text"
-my_image = customtkinter.CTkImage(light_image=Image.open('connecteddrone.jpg'),size=(150, 150))
+my_image = customtkinter.CTkImage(light_image=Image.open('connecteddrone.jpg'),size=(215, 70))
+# gif_image = customtkinter.CTkImage(light_image=Image.open('Bjorn-unscreen.gif'), size=(215, 70))
 dark_image=Image.open('connecteddrone.jpg')
 selectedDrone = "None"
 curr_time = round(time.time()*1000)
@@ -110,8 +158,57 @@ curr_time = round(time.time()*1000)
 #We love customTkinter for making application pretty
 customtkinter.set_appearance_mode("dark")
 customtkinter.set_default_color_theme("blue")
-
 #This function clamps drone control signals to acceptable levels
+
+def setDroneName():
+            global droneName0, droneName1, droneName2, droneName3, droneName4, droneName5, droneName6, droneName7, drones, selectedDrone,app
+  
+            try:
+                droneName0 = drones[0].name
+            except:
+                droneName0 = "Drone Connecting..."
+            try:
+                droneName1 = drones[1].name
+            except:
+                droneName1 = "Drone Connecting..."
+            try:
+                droneName2 = drones[2].name
+            except:
+                droneName2 = "Drone Connecting..."
+            try:
+                droneName3 = drones[3].name
+            except:
+                droneName3 = "Drone Connecting..."
+            try:
+                droneName4 = drones[4].name
+            except:
+                droneName4 = "Drone Connecting..."
+            try:
+                droneName5 = drones[5].name
+            except:
+                droneName5 = "Drone Connecting..."
+            try:
+                droneName6 = drones[6].name
+            except:
+                droneName6 = "Drone Connecting..."
+            try:
+                droneName7 = drones[7].name
+            except:
+                droneName7 = "Drone Connecting..."
+            app.optionmenu_1.configure(command=lambda x: updateDroneNames(),values=[droneName0, droneName1, droneName2, droneName3, droneName4, droneName5, droneName6, droneName7])
+def updateDroneNames():
+            global selectedDrone, selDrone,app
+            selectedDrone = app.optionmenu_1.get() #SELECTED DRONE AS A NAME
+            print("-----------------------------------------Drone List Updated-----------------------------------------")
+            print("Drone " + selectedDrone + " now selected.")
+            setDroneName() #updates the list
+
+            for i in range(len(drones)):
+                if (selectedDrone == str(drones[i].name)):
+                    selDrone = drones[i]
+                    print ("Drone " + selDrone.name + " Connected with Port: " + str(selDrone.port) + " and IP: " + str(selDrone.ipAddress))
+            setDroneName()
+            
 def clamp(val):
     lowLimit = 1000
     highLimit = 2000
@@ -227,7 +324,7 @@ def MODEManual():
 
 #This function handles the initial connection when a drone's arduino reaches out to basestation
 def handshake(msg, addr):
-    global droneNumber
+    global droneNumber,displayVar
     parts = msg.split("|")
     i = int(parts[1])
    
@@ -240,9 +337,13 @@ def handshake(msg, addr):
         drones.append(drone)
         droneNumber = (droneNumber+1)
         app.my_label.configure(text="DRONE CONNECTED", image=my_image)
+        displayVar = displayVar.replace("\nChecking Que", "")
+        updateDroneNames()
+        for i in range(1,len(drones)):
+            displayVar += ("\nConnected: " + drones[i].name)
+            app.textbox1.configure(text = displayVar)
         for adrone in drones:
             print(adrone)
-            
         #updateList()
         #sendMessage(drone.ipAddress, drone.port, "HSC|" + str(i))
 
@@ -252,7 +353,6 @@ def handshake(msg, addr):
             drones[i].ipAddress = addr[0]
             drones[i].port = addr[1]
     #droneList.update() 
-    app.setDroneName()  
 
 #This function is used to send the packets of instructions to the drone
 def sendMessage(ipAddress, port, msg):
@@ -402,7 +502,8 @@ def  addDrone():
     drones.append(Drone(8, "test", "none", 17))
     droneNumber = (droneNumber+1)
     print(str(drones))
-    app.my_label.configure(text="DRONE CONNECTED", image=my_image)
+    updateDroneNames()
+    app.my_label.configure(text="DRONE CONNECTED", image=gifplay(app.my_label,"Bjorn-unscreen.gif",1))
 #This function k0..ills the drone by turning on the killswitch
 def kill():
     global killswitch
@@ -456,7 +557,7 @@ def quit():
 
 #This function checks and connects to drones waiting in the connection que
 def checkQueue(q_in):
-    global selDrone
+    global selDrone, displayVar
     global selDroneTK
     #selDroneTK.set(selDrone.ipAddress)
     #lblDroneIP.config(text = selDrone.ipAddress)
@@ -464,6 +565,8 @@ def checkQueue(q_in):
     #print(selDrone.ipAddress)
     if (not q_in.empty()):
         print("checking queue")
+        displayVar += "\nChecking Que"
+        app.textbox1.configure(text=displayVar)
         #grab the item
         #process the info
         #mark it complete
@@ -480,7 +583,7 @@ def checkQueue(q_in):
         if cmd == "HND":
             #HANDSHAKE
             handshake(msg, (addr, port))
-    app.after(1000, checkQueue, q_in)
+    app.after(700, checkQueue, q_in)
 
 
 #--------------------------------------------
@@ -540,21 +643,21 @@ class App(customtkinter.CTk):
         dark_image=Image.open('connecteddrone.jpg'),
         size=(150,150)) # WidthxHeight
         self.my_label = customtkinter.CTkLabel(self, text="")
-        self.my_label.grid(row=1, column=0, padx=2, pady=2)
+        self.my_label.grid(row=1, column=0, padx=5, pady=(25,50))
         
 
 
 
         self.appearance_mode_label = customtkinter.CTkLabel(self.sidebar_frame, text="Appearance Mode:", anchor="w")
-        self.appearance_mode_label.grid(row=5, column=0, padx=20, pady=(10, 0))
+        self.appearance_mode_label.grid(row=6, column=0, padx=20, pady=(0, 0))
         self.appearance_mode_optionemenu = customtkinter.CTkOptionMenu(self.sidebar_frame, values=["Light", "Dark", "System"],
                                                                        command=self.change_appearance_mode_event)
-        self.appearance_mode_optionemenu.grid(row=6, column=0, padx=20, pady=(10, 10))
+        self.appearance_mode_optionemenu.grid(row=7, column=0, padx=20, pady=(10, 10))
         self.scaling_label = customtkinter.CTkLabel(self.sidebar_frame, text="UI Scaling:", anchor="w")
-        self.scaling_label.grid(row=7, column=0, padx=20, pady=(10, 0))
+        self.scaling_label.grid(row=8, column=0, padx=20, pady=(10, 0))
         self.scaling_optionemenu = customtkinter.CTkOptionMenu(self.sidebar_frame, values=["80%", "90%", "100%", "110%", "120%"],
                                                                command=self.change_scaling_event)
-        self.scaling_optionemenu.grid(row=8, column=0, padx=20, pady=(10, 20))
+        self.scaling_optionemenu.grid(row=9, column=0, padx=20, pady=(10, 20))
 
         # create main entry and button
         self.entry = customtkinter.CTkEntry(self, placeholder_text="Manual UDP Console")
@@ -576,62 +679,61 @@ class App(customtkinter.CTk):
         self.tabview.tab("Control").grid_columnconfigure(0, weight=1)  # configure grid of individual tabs
         self.tabview.tab("Info").grid_columnconfigure(0, weight=1)
 
-
-
         self.optionmenu_1 = customtkinter.CTkOptionMenu(self.tabview.tab("Control"), dynamic_resizing=True) #creates the optionmenu
-        selectedDrone = self.optionmenu_1.get()
-        def setDroneName():
-            global droneName0, droneName1, droneName2, droneName3, droneName4, droneName5, droneName6, droneName7, drones, selectedDrone
-  
-            try:
-                droneName0 = drones[0].name
-            except:
-                droneName0 = "Drone Connecting..."
-            try:
-                droneName1 = drones[1].name
-            except:
-                droneName1 = "Drone Connecting..."
-            try:
-                droneName2 = drones[2].name
-            except:
-                droneName2 = "Drone Connecting..."
-            try:
-                droneName3 = drones[3].name
-            except:
-                droneName3 = "Drone Connecting..."
-            try:
-                droneName4 = drones[4].name
-            except:
-                droneName4 = "Drone Connecting..."
-            try:
-                droneName5 = drones[5].name
-            except:
-                droneName5 = "Drone Connecting..."
-            try:
-                droneName6 = drones[6].name
-            except:
-                droneName6 = "Drone Connecting..."
-            try:
-                droneName7 = drones[7].name
-            except:
-                droneName7 = "Drone Connecting..."
-            self.optionmenu_1.configure(command=lambda x: updateDroneNames(),
-                                                        values=[droneName0, droneName1, droneName2, droneName3, droneName4, droneName5, droneName6, droneName7])
-        setDroneName()
-        def updateDroneNames():
-            global selectedDrone, selDrone
-            selectedDrone = self.optionmenu_1.get() #SELECTED DRONE AS A NAME
-            print("-----------------------------------------Drone List Updated-----------------------------------------")
-            print("Drone " + selectedDrone + " now selected.")
-            setDroneName() #updates the list
 
-            for i in range(len(drones)):
-                if (selectedDrone == str(drones[i].name)):
-                    selDrone = drones[i]
-                    print ("Drone " + selDrone.name + " Connected with Port: " + str(selDrone.port) + " and IP: " + str(selDrone.ipAddress))
-            setDroneName()
-        self.optionmenu_1.configure(command=lambda x: updateDroneNames(),
-                                                        values=[droneName0, droneName1, droneName2, droneName3, droneName4, droneName5, droneName6, droneName7])
+        
+        selectedDrone = self.optionmenu_1.get()
+
+        # setDroneName()
+#         def updateDroneNames():
+#             global selectedDrone, selDrone
+#             selectedDrone = app.optionmenu_1.get() #SELECTED DRONE AS A NAME
+#             print("-----------------------------------------Drone List Updated-----------------------------------------")
+#             print("Drone " + selectedDrone + " now selected.")
+#             setDroneName() #updates the list
+
+#             for i in range(len(drones)):
+#                 if (selectedDrone == str(drones[i].name)):
+#                     selDrone = drones[i]
+#                     print ("Drone " + selDrone.name + " Connected with Port: " + str(selDrone.port) + " and IP: " + str(selDrone.ipAddress))
+#             setDroneName()
+# def setDroneName():
+#             global droneName0, droneName1, droneName2, droneName3, droneName4, droneName5, droneName6, droneName7, drones, selectedDrone
+  
+#             try:
+#                 droneName0 = drones[0].name
+#             except:
+#                 droneName0 = "Drone Connecting..."
+#             try:
+#                 droneName1 = drones[1].name
+#             except:
+#                 droneName1 = "Drone Connecting..."
+#             try:
+#                 droneName2 = drones[2].name
+#             except:
+#                 droneName2 = "Drone Connecting..."
+#             try:
+#                 droneName3 = drones[3].name
+#             except:
+#                 droneName3 = "Drone Connecting..."
+#             try:
+#                 droneName4 = drones[4].name
+#             except:
+#                 droneName4 = "Drone Connecting..."
+#             try:
+#                 droneName5 = drones[5].name
+#             except:
+#                 droneName5 = "Drone Connecting..."
+#             try:
+#                 droneName6 = drones[6].name
+#             except:
+#                 droneName6 = "Drone Connecting..."
+#             try:
+#                 droneName7 = drones[7].name
+#             except:
+#                 droneName7 = "Drone Connecting..."
+#             app.optionmenu_1.configure(command=lambda x: updateDroneNames(),values=[droneName0, droneName1, droneName2, droneName3, droneName4, droneName5, droneName6, droneName7])
+        self.optionmenu_1.configure(command=lambda x: updateDroneNames(),values=[droneName0, droneName1, droneName2, droneName3, droneName4, droneName5, droneName6, droneName7])
         
         self.optionmenu_1.grid(row=0, column=0, padx=20, pady=(20, 10))
         self.combobox_1 = customtkinter.CTkComboBox(self.tabview.tab("Control"),
