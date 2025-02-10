@@ -20,7 +20,8 @@ WiFiUDP Udp;
 unsigned int localPort = 2390;
 char  ReplyBuffer[] = "Drone 1";
 int wifiState = 0;                       //Wifi connection state
-bool firstConnectFrame = false;          //First Loop while connected to wifi                
+bool firstConnectFrame = false;          //First Loop while connected to wifi           
+IPAddress bsip; //holds the base station ip address     
 
 bool serialUSB = false;
 double pitch; // pitch is broken?
@@ -65,9 +66,8 @@ struct{
   uint16_t gpsSpeed;  //cm / seconds
   uint16_t gpsCourse; //degrees
 } msp_raw_gps;
-//===================================================
 
-IPAddress bsip; //holds the base station ip address
+
 
 struct ManualControlMessage{
   IPAddress sourceIP;
