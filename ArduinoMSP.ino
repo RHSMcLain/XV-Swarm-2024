@@ -17,11 +17,6 @@ int wifiState = 0;                       //Wifi connection state
 bool firstConnectFrame = false;          //First Loop while connected to wifi                
 
 bool serialUSB = false;
-//KONERRRRRR
-/* SBUS object, writing SBUS */
-// bfs::SbusTx sbus_tx(&Serial1);
-// /* SBUS data */
-// bfs::SbusData data;
 double pitch; // pitch is broken?
 double roll;
 double yaw;
@@ -303,8 +298,8 @@ void MSPLoop(){
   commandMSP(MSP_SET_RAW_RC, rc_values, 16);
   // sendMSP(MSP_RAW_GPS, 0, 0);
   // readGPSData();
-      // sendMSP(MSP_ATTITUDE, data, 0);
-      // readAttitudeData();
+  // sendMSP(MSP_ATTITUDE, data, 0);
+  // readAttitudeData();
   rc_values[0] = pitch;
   rc_values[1] = roll;
   rc_values[2] = throttle;
@@ -570,28 +565,6 @@ void WifiConnection()
   }
 }
 
-// void DataSetSend() //Sends data over sbus
-// {
-//   data.ch[0] = (ChannelMath(roll));
-//   data.ch[1] = (ChannelMath(pitch)); 
-//   data.ch[2] = (ChannelMath(throttle));
-//   data.ch[3] = (ChannelMath(yaw));
-//   data.ch[4] = (ChannelMath(arming));
-//   data.ch[5] = (ChannelMath(1500));
-//   data.ch[6] = (ChannelMath(1500));
-//   data.ch[7] = (ChannelMath(failsafe));
-//   data.ch[8] = (ChannelMath(1500));
-//   data.ch[9] = (ChannelMath(1500));
-//   data.ch[10] = (ChannelMath(2000));
-//   data.ch[11] = (ChannelMath(1500)); //RSSI (Signal Strenght)
-//   data.ch[12] = (ChannelMath(killswitch)); //Killswitch
-//   data.ch[13] = (ChannelMath(1500));
-//   data.ch[14] = (ChannelMath(1500));
-//   data.ch[15] = (ChannelMath(1500));
-//   sbus_tx.data(data);
-//   sbus_tx.Write();
-// }
-
 void SendMessage(char msg[]){
   Udp.begin(localPort);
   // Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
@@ -623,7 +596,6 @@ void printBoardInfo(){
   Serial.println("---------------------------------------");
   Serial.println("You're connected to the network");
   Serial.println("---------------------------------------");
-
 }
 
 void MillisStuff() { //specifies whatever this stuff is for use in the loop, to make the looop easier to read
