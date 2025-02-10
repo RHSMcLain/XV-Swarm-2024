@@ -411,18 +411,13 @@ void DroneSystems(){
       t = millis();
     }
   }
-  else if (droneState == 1) //nothing
-  {
+  else if (droneState == 1){ //nothing
     //Roll Ch 0, pitch Ch 1, Yaw Ch 3, Throttle Ch 2, Arm Ch 4
+  }
+  else if(droneState == 2){
     
   }
-  else if(droneState == 2)
-  {
-    
-    
-  }
-  if(status != WL_CONNECTED) 
-  {
+  if(status != WL_CONNECTED){
     if(millis()- blinkTime >= blinkSpeed){
       LightSRLatch();
       blinkTime = millis();
