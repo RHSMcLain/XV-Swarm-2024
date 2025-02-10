@@ -451,41 +451,32 @@ void Arm(bool armed){
 }
 
 void CheckModeStates(){ //sets booleans of the modes for enabled/disabled
-  if(arming > 1500)
-  {
+  if(arming > 1500){
     isArmed = true;
   }
-  else
-  {
+  else{
     isArmed = false;
   }
-  if(failsafe > 1500)
-  {
+  if(failsafe > 1500){
     isFailsafed = true;
   }
-  else
-  {
+  else{
     isFailsafed = false;
   }
-  if(killswitch > 1500)
-  {
+  if(killswitch > 1500){
     isKilled = true;
   }
-  else
-  {
+  else{
     isKilled = false;
   }
 }
 
-void LightSRLatch()
-{
-  if(lightOn)
-  {
+void LightSRLatch(){
+  if(lightOn){
     digitalWrite(LEDpin, LOW);
     lightOn = false;    
   }
-  else if(!lightOn)
-  {
+  else if(!lightOn){
     digitalWrite(LEDpin, HIGH);
     lightOn = true;    
   }
