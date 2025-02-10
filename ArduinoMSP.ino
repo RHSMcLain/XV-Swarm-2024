@@ -439,8 +439,7 @@ void DroneSystems(){
   // delay(10);  
 }//End Drone Systems
 
-void Arm(bool armed)
-{
+void Arm(bool armed){
   if(armed)
   {
     arming = 2000;
@@ -476,13 +475,6 @@ void CheckModeStates(){ //sets booleans of the modes for enabled/disabled
   {
     isKilled = false;
   }
-}
-
-int ChannelMath(double setpoint) //Math to set the same values as used in inav veiwer, < 0.0001% stray
-{
-  //channel limits assume setpoint between 900 - 2100
-  setpoint = (setpoint - 879.7)/.6251;
-  return round(setpoint);  
 }
 
 void LightSRLatch()
