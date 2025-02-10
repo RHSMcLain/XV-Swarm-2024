@@ -482,12 +482,10 @@ void LightSRLatch(){
   }
 }
 
-void WifiConnection()
-{
+void WifiConnection(){
   // attempt to connect to Wi-Fi network:
   if(status != WL_CONNECTED && ((millis() - connectTime) > 5000)) {
-    if(serialUSB)
-    {
+    if(serialUSB){
       Serial.print("Attempting to connect to network: ");
     }
     Serial.println(ssid);
@@ -497,8 +495,7 @@ void WifiConnection()
     firstConnectFrame = true;
     connectTime = millis();
   }
-  else if(status == WL_CONNECTED && firstConnectFrame)
-  {
+  else if(status == WL_CONNECTED && firstConnectFrame){
     Udp.begin(localPort);
       // Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
     Udp.beginPacket("192.168.4.22", 80);
@@ -510,8 +507,7 @@ void WifiConnection()
     Udp.write(ReplyBuffer);
     Udp.endPacket();
     // you're connected now, so print out the data:
-    if(serialUSB)
-    {
+    if(serialUSB){
       printBoardInfo();
     }
     firstConnectFrame = false;
