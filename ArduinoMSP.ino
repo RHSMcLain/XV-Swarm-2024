@@ -6,7 +6,11 @@
 #define MSP_SET_RAW_RC 200
 #define MSP_RAW_GPS 106
 #define MSP_WP 118
-#define MSP_SET_WP 209                 
+#define MSP_SET_WP 209  
+
+XvMsp msp;
+WiFiUDP Udp;
+IPAddress bsip;
 
 char handShake[] = "HND|-1|Betsy";
 
@@ -17,12 +21,10 @@ unsigned long previousMillisInfo = 0;    //will store last time Wi-Fi informatio
 unsigned long previousMillisLED = 0;     // will store the last time LED was updated
 const int intervalInfo = 5000;           // interval at which to update the board information
 char packetBuffer[256];                  //buffer to hold incoming packet
-WiFiUDP Udp;
 unsigned int localPort = 2390;
 char  ReplyBuffer[] = "Drone 1";
 int wifiState = 0;                       //Wifi connection state
 bool firstConnectFrame = false;          //First Loop while connected to wifi           
-IPAddress bsip; //holds the base station ip address     
 
 bool serialUSB = false;
 double pitch; // pitch is broken?
