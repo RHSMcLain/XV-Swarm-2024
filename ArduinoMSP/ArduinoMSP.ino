@@ -2,72 +2,52 @@
 #include <WiFiUDP.h>    
 #include <XvMsp.h>
 
-#define MSP_ATTITUDE 108
-#define MSP_SET_RAW_RC 200
-#define MSP_RAW_GPS 106
-#define MSP_WP 118
-#define MSP_SET_WP 209  
+#define LEDpin 13;
 
 XvMsp msp;
 WiFiUDP Udp;
 IPAddress bsip;
 
 char handShake[] = "HND|-1|Betsy";
-
 char ssid[] = "XV_Basestation";          //  network SSID (name)
-int status = WL_IDLE_STATUS;             // the Wi-Fi radio's status
-int ledState = LOW;                      //ledState used to set the LED
-unsigned long previousMillisInfo = 0;    //will store last time Wi-Fi information was updated
-unsigned long previousMillisLED = 0;     // will store the last time LED was updated
-const int intervalInfo = 5000;           // interval at which to update the board information
 char packetBuffer[256];                  //buffer to hold incoming packet
-unsigned int localPort = 2390;
-char  ReplyBuffer[] = "Drone 1";
-int wifiState = 0;                       //Wifi connection state
-bool firstConnectFrame = false;          //First Loop while connected to wifi           
+char ReplyBuffer[] = "Drone 1";
 
 bool serialUSB = false;
-double pitch; // pitch is broken?
-double roll;
-double yaw;
-double throttle;
-double armVar;
-double navHold;
-int arming = 1500;
-int updateTime = 0;
-int connectTime = 0;
-long t = 0;
+bool firstConnectFrame = false;          //First Loop while connected to wifi  
 bool isArmed = false;
 bool isFailsafed = false;
 bool isKilled = false;
-long blinkTime = 0;
-int droneState = -1;  
-int killswitch = 1000;
-int failsafe = 1000;
-int LEDpin = 13;
-int blinkSpeed = 10;
 bool lightOn = false;
 bool bootComplete = false;               //Finished Drone Booting sequence
 bool enabled = false;
 
+double pitch = 1500;
+double roll = 1500;
+double yaw = 1500;
+double throttle = 885;
+double armVar = 1000;
+double navHold = 1000;
+
+int status = WL_IDLE_STATUS;             // the Wi-Fi radio's status
+int ledState = LOW;                      //ledState used to set the LED
+int wifiState = 0;                       //Wifi connection state
+int updateTime = 0;
+int connectTime = 0;
+int droneState = -1;  
+int killswitch = 1000;
+int failsafe = 1000;
+int blinkSpeed = 10;
+const int intervalInfo = 5000;           // interval at which to update the board information
+unsigned int localPort = 2390;
+
 uint16_t rc_values[8];
+
+long t = 0;
+long blinkTime = 0;
 long start;
-
-struct{
-  int16_t roll;       //degrees / 10
-  int16_t pitch;      //degrees / 10
-  int16_t yaw;        //degrees
-} msp_attitude;
-
-struct{
-  uint8_t gpsFix;     //0 or 1
-  uint8_t numSat;
-  uint32_t lat;       //degrees / 10,000,000
-  uint32_t lon;       //degrees / 10,000,000
-  uint16_t gpsAlt;    //meters
-  uint16_t gpsSpeed;  //cm / seconds
-  uint16_t gpsCourse; //degrees
-} msp_raw_gps;
+unsigned long previousMillisInfo = 0;    //will store last time Wi-Fi information was updated
+unsigned long previousMillisLED = 0;     // will store the last time LED was updated
 
 struct ManualControlMessage{
   IPAddress sourceIP;
@@ -106,30 +86,18 @@ void MSPLoop(){
 }
 
 void setup(){
-  //Initialize serial and wait for port to open:
-  Serial.begin(115200);
+  //Initialize serial and wait for port to open: 
+  Serial.begin(9600);
+  msp.begin(9600);
   if(Serial){
     serialUSB = true;
     Serial.println("Setup");
   }
   delay(1000);
-  //DataSetSend();
-  delay(1000);
-  // set the LED as output
-  pinMode(LED_BUILTIN, OUTPUT);
-  //sbus_tx.Begin();
-  roll = 1500;
-  pitch = 1500;
-  yaw = 1500;
-  throttle = 885;
-  armVar = 1000;
-  navHold = 1000;
+  pinMode(LEDpin, OUTPUT);
   WifiConnection();
-
   start = millis();
   delay(250);
-  msp.begin(9600);
-  Serial.begin(9600);
   rc_values[0] = 1500;
   rc_values[1] = 1500;
   rc_values[2] = 885;
@@ -139,9 +107,9 @@ void setup(){
   rc_values[6] = 1500;
   rc_values[7] = 1500;
   rc_values[9] = 1600;
-  msp.commandMSP(MSP_SET_RAW_RC, rc_values, 16);
-  msp.commandMSP(MSP_SET_RAW_RC, rc_values, 16);
-  msp.commandMSP(MSP_SET_RAW_RC, rc_values, 16);
+  for(int i = 0; i < 3; i++){
+    msp.commandMSP(MSP_SET_RAW_RC, rc_values, 16);
+  }
   delay(3000);
   msp.commandMSP(MSP_SET_RAW_RC, rc_values, 16);
 }//end setup
@@ -156,7 +124,7 @@ void loop() {
     failsafe = 1000;
   }
   //MillisStuff();
-  WifiConnection();//checks the wi-fi status
+  WifiConnection();
   Listen();
   DroneSystems();
   MSPLoop();
@@ -207,7 +175,6 @@ void DroneSystems(){
     blinkSpeed = 1000;       
     throttle = 885;
     Serial.println("Drone State -1 | Pre-State");
-    Arm(false);     
     if(millis() - t > 1000){
       t = millis();
       droneState = 0;
@@ -215,8 +182,6 @@ void DroneSystems(){
   }
   else if (droneState == 0){//arm drone
     blinkSpeed = 1000;
-    //set arming signals
-    Arm(true);
     if (millis() - t > 500){
       droneState = 1;
       t = millis();
@@ -250,19 +215,8 @@ void DroneSystems(){
   // delay(10);  
 }//End Drone Systems
 
-void Arm(bool armed){
-  if(armed)
-  {
-    arming = 2000;
-  }
-  else if(!armed)
-  {
-    arming = 1000;
-  }
-}
-
 void CheckModeStates(){ //sets booleans of the modes for enabled/disabled
-  if(arming > 1500){
+  if(armVar > 1500){
     isArmed = true;
   }
   else{
@@ -367,9 +321,7 @@ void MillisStuff() { //specifies whatever this stuff is for use in the loop, to 
     previousMillisInfo = currentMillisInfo;
 
   }
-  
   unsigned long currentMillisLED = millis();
-  
   // measure the signal strength and convert it into a time interval
   int intervalLED = WiFi.RSSI() * -10;
  
@@ -385,7 +337,7 @@ void MillisStuff() { //specifies whatever this stuff is for use in the loop, to 
     }
 
     // set the LED with the ledState of the variable:
-    digitalWrite(LED_BUILTIN, ledState);
+    //digitalWrite(LED_BUILTIN, ledState);
   }
 }
 
