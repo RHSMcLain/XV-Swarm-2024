@@ -3,7 +3,7 @@
 #include <WiFiUDP.h>
 #include "XvWifi.h"
 
-ManualControlMessage XvWifi::parseMessage(char buffer[]){
+ManualControlMessage_h XvWifi::parseMessage(char buffer[]){
     ManualControlMessage_h msg;
     char *token;
     token = strtok(buffer, "|");
@@ -47,7 +47,7 @@ ManualControlMessage XvWifi::parseMessage(char buffer[]){
     //Currently does not include a break, repeats loop forever
 }
 
-BSIPMessage XvWifi::parseBSIP(char buffer[]){
+BSIPMessage_h XvWifi::parseBSIP(char buffer[]){
     BSIPMessage_h msg;
     char *token;
     token = strtok(buffer, "|");
@@ -67,6 +67,14 @@ BSIPMessage XvWifi::parseBSIP(char buffer[]){
       token = strtok(NULL, "|"); 
     }
     return msg;  
+}
+
+void XvWifi::SendMessage(char msg[]){
+    Udp.begin(localPort);
+    // Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+    Udp.beginPacket("192.168.4.22", 80);
+    Udp.write(msg);
+    Udp.endPacket();
 }
 
 int XvWifi::WifiConnection(char ReplyBuffer[], int wifiState, int droneState){
@@ -136,6 +144,8 @@ int XvWifi::Listen(int wifiState, char packetBuffer[255]){
           Serial.println("Parsing BSIP Message");
           //read BSID response from AP      
           BSIPMessage = parseBSIP(packetBuffer);
+          BSIPMessage_h msg;
+          msg = BSIPMessage;
           if (msg.cmd == "BSIP"){
             bsip = msg.BSIP;
             Serial.print("Base Station IP: ");

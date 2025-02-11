@@ -3,10 +3,8 @@
 #include <XvMsp.h>
 #include <XvWifi.h>
 
-#define LEDpin 13;
-
 XvMsp msp;
-WiFiUDP Udp;
+XvWifi net;
 
 char packetBuffer[256];                  //buffer to hold incoming packet
 char ReplyBuffer[] = "Drone 1";
@@ -29,7 +27,6 @@ int status = WL_IDLE_STATUS;             // the Wi-Fi radio's status
 int ledState = LOW;                      //ledState used to set the LED
 int wifiState = 0;                       //Wifi connection state
 int updateTime = 0;
-int connectTime = 0;
 int droneState = -1;  
 int killswitch = 1000;
 int failsafe = 1000;
@@ -72,8 +69,8 @@ void setup(){
     Serial.println("Setup");
   }
   delay(1000);
-  pinMode(LEDpin, OUTPUT);
-  WifiConnection();
+  pinMode(LED_BUILTIN, OUTPUT);
+  net.WifiConnection(ReplyBuffer, wifiState, droneState);
   start = millis();
   delay(250);
   rc_values[0] = 1500;
@@ -102,8 +99,8 @@ void loop() {
     failsafe = 1000;
   }
   //MillisStuff();
-  wifiState = XvWifi.WifiConnection(ReplyBuffer, wifiState, droneState);
-  wifiState = XvWifi.Listen(wifiState, packetBuffer);
+  wifiState = net.WifiConnection(ReplyBuffer, wifiState, droneState);
+  wifiState = net.Listen(wifiState, packetBuffer);
   DroneSystems();
   MSPLoop();
   if(millis() - updateTime > 5000 && serialUSB){
@@ -120,13 +117,13 @@ void loop() {
   }
   if(wifiState == 5)
   {
-    roll = ManualControlMessage.roll;
-    pitch = ManualControlMessage.pitch;
-    throttle = ManualControlMessage.throttle;
-    yaw = ManualControlMessage.yaw;
-    killswitch = ManualControlMessage.killswitch;
-    armVar = ManualControlMessage.armVar;
-    navHold = ManualControlMessage.navHold;
+    roll = net.ManualControlMessage.roll;
+    pitch = net.ManualControlMessage.pitch;
+    throttle = net.ManualControlMessage.throttle;
+    yaw = net.ManualControlMessage.yaw;
+    killswitch = net.ManualControlMessage.killswitch;
+    armVar = net.ManualControlMessage.armVar;
+    navHold = net.ManualControlMessage.navHold;
   }
   // else if (state == 5) {
   //   //call parsemanualcontrolmessage and process the results
@@ -174,10 +171,10 @@ void DroneSystems(){
     }
   }
   else if(killswitch == 1700){
-    digitalWrite(LEDpin,LOW);
+    digitalWrite(LED_BUILTIN,LOW);
   }
   else{
-    digitalWrite(LEDpin,HIGH);
+    digitalWrite(LED_BUILTIN,HIGH);
   }
   CheckModeStates();
   // delay(10);  
@@ -206,24 +203,13 @@ void CheckModeStates(){ //sets booleans of the modes for enabled/disabled
 
 void LightSRLatch(){
   if(lightOn){
-    digitalWrite(LEDpin, LOW);
+    digitalWrite(LED_BUILTIN, LOW);
     lightOn = false;    
   }
   else if(!lightOn){
-    digitalWrite(LEDpin, HIGH);
+    digitalWrite(LED_BUILTIN, HIGH);
     lightOn = true;    
   }
-}
-
-void SendMessage(char msg[]){
-  Udp.begin(localPort);
-  // Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-  Udp.beginPacket("192.168.4.22", 80);
-  Udp.write(msg);
-  Udp.endPacket();
-  Serial.println("Sent");
-  Serial.println(msg);
-  Serial.println("**********");
 }
 
 void printBoardInfo(){
