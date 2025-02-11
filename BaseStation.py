@@ -20,45 +20,31 @@ GifImagePlugin.LOADING_STRATEGY = GifImagePlugin.LoadingStrategy.RGB_ALWAYS
 #python3 -m pip install customtkinter
 #python3 -m pip install --upgrade Pillow
 
+file = "Bjorn-unscreen.gif"
+info = Image.open(file)
+
+frames = info.n_frames  # number of frames
+
+photoimage_objects = []
+for i in range(frames):
+    obj = tk.PhotoImage(file=file, format=f"gif -index {i}")
+    photoimage_objects.append(obj)
+
+def animation(current_frame=0):
+    global loop
+    image = photoimage_objects[current_frame]
+
+    my_label.configure(image=image)
+    current_frame = current_frame + 1
+
+    if current_frame == frames:
+        current_frame = 0
+
+    loop = root.after(50, lambda: animation(current_frame))
 
 
-
-
-
-class gifplay:
-     def __init__(self,label,giffile,delay):
-        self.frame=[]
-        i=0
-        while 1:
-            try:
-                image=PhotoImage(file = giffile, format="gif -index "+str(i))
-                self.frame.append(image)
-                i=i+1
-            except:
-                break
-        print(i)
-        self.totalFrames=i-1
-        self.delay=delay
-        self.labelspace=label
-        self.labelspace.image=self.frame[0]
-
-def play(self):
-        """
-        plays the gif
-        """
-        _thread.start_new_thread(self.infinite,())
-
-def infinite(self):
-        i=0
-        while 1:
-            self.labelspace.configure(image=self.frame[i])
-            i=(i+1)%self.totalFrames
-            time.sleep(self.delay)
-
-
-
-
-
+def stop_animation():
+    root.after_cancel(loop)
 #This section resets the IP assignment so that baseStation doesnt get confused about which computer it is
 global UDP_IP, ip, ipv4_address
 ip = 0
@@ -118,7 +104,7 @@ global selDrone
 global selDroneTK
 global droneNumber
 global selectedDrone
-global killswitch, gif_image
+global killswitch
 
     #default values:
 yaw = 0
@@ -150,7 +136,6 @@ armVar = 1000
 navHold = 1000
 displayVar = "default Text"
 my_image = customtkinter.CTkImage(light_image=Image.open('connecteddrone.jpg'),size=(215, 70))
-# gif_image = customtkinter.CTkImage(light_image=Image.open('Bjorn-unscreen.gif'), size=(215, 70))
 dark_image=Image.open('connecteddrone.jpg')
 selectedDrone = "None"
 curr_time = round(time.time()*1000)
@@ -503,6 +488,7 @@ def  addDrone():
     droneNumber = (droneNumber+1)
     print(str(drones))
     updateDroneNames()
+    animaion()
     app.my_label.configure(text="DRONE CONNECTED", image=gifplay(app.my_label,"Bjorn-unscreen.gif",1))
 #This function k0..ills the drone by turning on the killswitch
 def kill():
