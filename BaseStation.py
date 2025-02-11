@@ -20,31 +20,22 @@ GifImagePlugin.LOADING_STRATEGY = GifImagePlugin.LoadingStrategy.RGB_ALWAYS
 #python3 -m pip install customtkinter
 #python3 -m pip install --upgrade Pillow
 
-file = "Bjorn-unscreen.gif"
-info = Image.open(file)
-
-frames = info.n_frames  # number of frames
-
-photoimage_objects = []
-for i in range(frames):
-    obj = tk.PhotoImage(file=file, format=f"gif -index {i}")
-    photoimage_objects.append(obj)
-
 def animation(current_frame=0):
     global loop
     image = photoimage_objects[current_frame]
 
-    my_label.configure(image=image)
+    app.my_label.configure(image=image)
     current_frame = current_frame + 1
 
     if current_frame == frames:
         current_frame = 0
 
-    loop = root.after(50, lambda: animation(current_frame))
+    loop = app.after(50, lambda: animation(current_frame))
 
 
 def stop_animation():
-    root.after_cancel(loop)
+    app.after_cancel(loop)
+
 #This section resets the IP assignment so that baseStation doesnt get confused about which computer it is
 global UDP_IP, ip, ipv4_address
 ip = 0
@@ -488,8 +479,8 @@ def  addDrone():
     droneNumber = (droneNumber+1)
     print(str(drones))
     updateDroneNames()
-    animaion()
-    app.my_label.configure(text="DRONE CONNECTED", image=gifplay(app.my_label,"Bjorn-unscreen.gif",1))
+    animation(current_frame=0)
+    # app.my_label.configure(text="DRONE CONNECTED", image=gifplay(app.my_label,"Bjorn-unscreen.gif",1))
 #This function k0..ills the drone by turning on the killswitch
 def kill():
     global killswitch
@@ -882,9 +873,23 @@ m.start()
 #root.mainloop()
 app = App()
 app.after(1000, checkQueue, qFromComms)
+
+file = "Bjorn-unscreen.gif"
+info = Image.open(file)
+
+frames = info.n_frames  # number of frames
+
+photoimage_objects = []
+for i in range(frames):
+    obj = tk.PhotoImage(file=file, format=f"gif -index {i}")
+    photoimage_objects.append(obj)
+
+
 app.mainloop()
 qToComms.put("TERMINATE") #tell the subloop on the backup thread to quit.
 t = qFromComms.get(timeout=3.0)
 #give it a chance to quit
 print("all done")
+
 exit(0)
+
