@@ -24,7 +24,7 @@ struct msp_raw_gps_h{
 
 class XvMsp{
     public:
-        void begin();
+        void begin(int speed);
 
         void commandMSP(uint8_t cmd, uint16_t data[], uint8_t n_cbytes);
 

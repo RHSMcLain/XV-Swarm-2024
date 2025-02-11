@@ -1,8 +1,8 @@
 #include <Arduino.h>
 #include "XvMsp.h"
 
-void XvMsp::begin(){
-    Serial1.begin(9600);
+void XvMsp::begin(int speed){
+    Serial1.begin(speed);
 }
 
 void XvMsp::commandMSP(uint8_t cmd, uint16_t data[], uint8_t n_cbytes){
