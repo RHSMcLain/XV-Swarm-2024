@@ -1,5 +1,6 @@
 #include <WiFiNINA.h>                    //https://github.com/arduino-libraries/WiFiNINA/tree/master
 #include <WiFiUDP.h>    
+#include <XvMsp.h>
 
 #define MSP_ATTITUDE 108
 #define MSP_SET_RAW_RC 200
@@ -65,8 +66,6 @@ struct{
   uint16_t gpsSpeed;  //cm / seconds
   uint16_t gpsCourse; //degrees
 } msp_raw_gps;
-
-
 
 struct ManualControlMessage{
   IPAddress sourceIP;
