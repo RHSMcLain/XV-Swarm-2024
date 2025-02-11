@@ -13,7 +13,7 @@ import customtkinter
 import platform
 import tkinter
 import tkinter.messagebox
-from PIL import Image, GifImagePlugin
+from PIL import Image, GifImagePlugin, ImageTk
 GifImagePlugin.LOADING_STRATEGY = GifImagePlugin.LoadingStrategy.RGB_ALWAYS
 #pip3 install "requests>=2.*"
 #pip3 install netifaces (make sure you have c++ build tools for window and the SDK for your version)
@@ -312,7 +312,8 @@ def handshake(msg, addr):
         drone =  Drone(i, parts[2], addr[0], addr[1])
         drones.append(drone)
         droneNumber = (droneNumber+1)
-        app.my_label.configure(text="DRONE CONNECTED", image=my_image)
+        # app.my_label.configure(text="DRONE CONNECTED", image=my_image)
+        animation(current_frame=0)
         displayVar = displayVar.replace("\nChecking Que", "")
         updateDroneNames()
         for i in range(1,len(drones)):
@@ -473,13 +474,16 @@ def listen(q_out, q_in):#happens on a separate thread
 
 #This function adds a drone object to the list
 def  addDrone():
-    global droneNumber, app, drones, my_image
+    global droneNumber, app, drones, my_image,displayVar
     #this is just to test if tkinter will add them to the listbox on a button press.
     drones.append(Drone(8, "test", "none", 17))
     droneNumber = (droneNumber+1)
     print(str(drones))
     updateDroneNames()
     animation(current_frame=0)
+    for i in range(1,len(drones)):
+            displayVar += ("\nConnected: " + drones[i].name)
+            app.textbox1.configure(text = displayVar)
     # app.my_label.configure(text="DRONE CONNECTED", image=gifplay(app.my_label,"Bjorn-unscreen.gif",1))
 #This function k0..ills the drone by turning on the killswitch
 def kill():
@@ -619,7 +623,7 @@ class App(customtkinter.CTk):
         my_image = customtkinter.CTkImage(light_image=Image.open('connecteddrone.jpg'),
         dark_image=Image.open('connecteddrone.jpg'),
         size=(150,150)) # WidthxHeight
-        self.my_label = customtkinter.CTkLabel(self, text="")
+        self.my_label = customtkinter.CTkLabel(self, text="", height= 70, width = 210)
         self.my_label.grid(row=1, column=0, padx=5, pady=(25,50))
         
 
@@ -882,6 +886,7 @@ frames = info.n_frames  # number of frames
 photoimage_objects = []
 for i in range(frames):
     obj = tk.PhotoImage(file=file, format=f"gif -index {i}")
+    # obj2 = customtkinter.CTkImage(dark_image = obj)
     photoimage_objects.append(obj)
 
 
