@@ -473,17 +473,19 @@ def listen(q_out, q_in):#happens on a separate thread
         #     #HANDSHAKE
         #     handshake(parts, addr)
     print("goodbye")
-
+def rainbor():
+    colors =  ['ff624b','ffaf0e','fde838','16d511','0995e5','651bc8']
+    
+    for n in range(len(colors)-1):
+        app.optionmenu_1.configure(fg_color=colors[n])
+        time.sleep(0.1)
+    colors = colors.reverse()
+    app.optionmenu_1.configure(fg_color="light blue")
+    
 #This function adds a drone object to the list
 def  addDrone():
     global droneNumber, app, drones, my_image,displayVar
 
-    colors =  ['#aa88aa', '#aa99aa', '#aaaaaa', '#aabbaa', '#aaccaa', '#aaddaa', '#aaeeaa', '#aaffaa']
-        #deque to use as an offset
-    for n in range(len(colors)-1):
-        app.optionmenu_1.configure(fg_color=colors[n])
-        time.sleep(0.1)
-    app.optionmenu_1.configure(fg_color="light blue")
         
 
 
