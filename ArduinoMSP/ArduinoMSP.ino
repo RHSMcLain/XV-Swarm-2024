@@ -1,25 +1,21 @@
 #include <WiFiNINA.h>                    //https://github.com/arduino-libraries/WiFiNINA/tree/master
 #include <WiFiUDP.h>    
 #include <XvMsp.h>
+#include <XvWifi.h>
 
 #define LEDpin 13;
 
 XvMsp msp;
 WiFiUDP Udp;
-IPAddress bsip;
 
-char handShake[] = "HND|-1|Betsy";
-char ssid[] = "XV_Basestation";          //  network SSID (name)
 char packetBuffer[256];                  //buffer to hold incoming packet
 char ReplyBuffer[] = "Drone 1";
 
 bool serialUSB = false;
-bool firstConnectFrame = false;          //First Loop while connected to wifi  
 bool isArmed = false;
 bool isFailsafed = false;
 bool isKilled = false;
 bool lightOn = false;
-bool bootComplete = false;               //Finished Drone Booting sequence
 bool enabled = false;
 
 double pitch = 1500;
@@ -39,7 +35,6 @@ int killswitch = 1000;
 int failsafe = 1000;
 int blinkSpeed = 10;
 const int intervalInfo = 5000;           // interval at which to update the board information
-unsigned int localPort = 2390;
 
 uint16_t rc_values[8];
 
@@ -48,23 +43,6 @@ long blinkTime = 0;
 long start;
 unsigned long previousMillisInfo = 0;    //will store last time Wi-Fi information was updated
 unsigned long previousMillisLED = 0;     // will store the last time LED was updated
-
-struct ManualControlMessage{
-  IPAddress sourceIP;
-  String cmd;
-  double yaw;
-  double pitch;
-  double roll;
-  double throttle;
-  double killswitch;
-  double armVar;
-  double navHold;
-};
-
-struct BSIPMessage{
-  String cmd;
-  IPAddress BSIP;
-};
 
 void MSPLoop(){
   uint8_t datad = 0;
@@ -124,30 +102,10 @@ void loop() {
     failsafe = 1000;
   }
   //MillisStuff();
-  WifiConnection();
-  Listen();
+  wifiState = XvWifi.WifiConnection(ReplyBuffer, wifiState, droneState);
+  wifiState = XvWifi.Listen(wifiState, packetBuffer);
   DroneSystems();
   MSPLoop();
-  
-  if (wifiState == 1 && droneState == 1 && status == WL_CONNECTED){
-    Serial.println("BEGINNING PACKET");
-    Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-    Udp.write("State: 1 -> 2");
-    Udp.endPacket();
-    wifiState = 2;
-  }
-  else if (wifiState == 2){ 
-    Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-    Udp.write("AmDrone");
-    Udp.endPacket();
-    wifiState = 3;
-  }
-  else if (wifiState == 4) {
-    Udp.beginPacket(bsip, 5005);
-    Udp.write(handShake);
-    Udp.endPacket();
-    wifiState = 5;
-  }
   if(millis() - updateTime > 5000 && serialUSB){
     Serial.println("<--------------------------->\nDrone Data");
     Serial.print("Throttle: "); Serial.println(throttle);
@@ -159,6 +117,16 @@ void loop() {
     Serial.print("Killswitch: "); Serial.println(isKilled);
     Serial.println("<--------------------------->");
     updateTime = millis();
+  }
+  if(wifiState == 5)
+  {
+    roll = ManualControlMessage.roll;
+    pitch = ManualControlMessage.pitch;
+    throttle = ManualControlMessage.throttle;
+    yaw = ManualControlMessage.yaw;
+    killswitch = ManualControlMessage.killswitch;
+    armVar = ManualControlMessage.armVar;
+    navHold = ManualControlMessage.navHold;
   }
   // else if (state == 5) {
   //   //call parsemanualcontrolmessage and process the results
@@ -247,39 +215,6 @@ void LightSRLatch(){
   }
 }
 
-void WifiConnection(){
-  // attempt to connect to Wi-Fi network:
-  if(status != WL_CONNECTED && ((millis() - connectTime) > 5000)) {
-    if(serialUSB){
-      Serial.print("Attempting to connect to network: ");
-    }
-    Serial.println(ssid);
-    // Connect to WPA/WPA2 network:
-    status = WiFi.begin(ssid);
-    //Retry every 5 seconds
-    firstConnectFrame = true;
-    connectTime = millis();
-  }
-  else if(status == WL_CONNECTED && firstConnectFrame){
-    Udp.begin(localPort);
-      // Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-    Udp.beginPacket("192.168.4.22", 80);
-    Udp.write("State: 0 -> 1 |Connected|");
-    Udp.endPacket();
-    wifiState = 1;
-    
-    Udp.beginPacket("192.168.4.22", 80);
-    Udp.write(ReplyBuffer);
-    Udp.endPacket();
-    // you're connected now, so print out the data:
-    if(serialUSB){
-      printBoardInfo();
-    }
-    firstConnectFrame = false;
-    bootComplete = true;
-  }
-}
-
 void SendMessage(char msg[]){
   Udp.begin(localPort);
   // Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
@@ -311,151 +246,4 @@ void printBoardInfo(){
   Serial.println("---------------------------------------");
   Serial.println("You're connected to the network");
   Serial.println("---------------------------------------");
-}
-
-void MillisStuff() { //specifies whatever this stuff is for use in the loop, to make the looop easier to read
-  unsigned long currentMillisInfo = millis();
-
-  // check if the time after the last update is bigger the interval
-  if (currentMillisInfo - previousMillisInfo >= intervalInfo) {
-    previousMillisInfo = currentMillisInfo;
-
-  }
-  unsigned long currentMillisLED = millis();
-  // measure the signal strength and convert it into a time interval
-  int intervalLED = WiFi.RSSI() * -10;
- 
-  // check if the time after the last blink is bigger the interval 
-  if (currentMillisLED - previousMillisLED >= intervalLED) {
-    previousMillisLED = currentMillisLED;
-
-    // if the LED is off turn it on and vice-versa:
-    if (ledState == LOW) {
-      ledState = HIGH;
-    } else {
-      ledState = LOW;
-    }
-
-    // set the LED with the ledState of the variable:
-    //digitalWrite(LED_BUILTIN, ledState);
-  }
-}
-
-ManualControlMessage parseMessage(char buffer[]){
-  ManualControlMessage msg;
-  char *token;
-  token = strtok(buffer, "|");
-  int i = 0;
-  while(token != 0){
-    //Serial.println(token);
-    switch(i){
-      case 0:
-        msg.cmd = token;
-        break;
-      case 1:
-        msg.sourceIP = token;
-        break;
-      case 2:
-        msg.yaw = atoi(token);       
-        break;
-      case 3:
-        msg.pitch = atoi(token);  //pitch
-        break;
-      case 4: 
-        msg.roll = atoi(token);
-        break;
-      case 5:
-        msg.throttle = atoi(token);
-        break;
-      case 6:
-        msg.killswitch = atoi(token);
-        break;
-      case 7:
-        msg.armVar = atoi(token);
-        break;
-      case 8:
-        msg.navHold = atoi(token);
-        break;
-      }
-      roll = msg.roll;
-      pitch = msg.pitch;
-      throttle = msg.throttle;
-      yaw = msg.yaw;
-      killswitch = msg.killswitch;
-      armVar = msg.armVar;
-      navHold = msg.navHold;
-    i++;
-    token = strtok(NULL, "|"); 
-  }
-  return msg;  
-//HAS REQUIRED PACKETS FROM LISTEN, CODE FOR MANUAL MODE HERE --------------
-//Currently does not include a break, repeats loop forever
-}  
-
-BSIPMessage parseBSIP(char buffer[]){
-  BSIPMessage msg;
-  char *token;
-  token = strtok(buffer, "|");
-  int i = 0;
-  Serial.println("In parseBSIP");
-  while(token != 0){
-    Serial.println(token);
-    switch(i){
-      case 0:
-        msg.cmd = token;
-        break;
-      case 1:
-        msg.BSIP = token;
-        break;        
-      }
-    i++;
-    token = strtok(NULL, "|"); 
-  }
-  return msg;  
-}  
-
-void Listen(){
-  int packetSize = Udp.parsePacket();
-  if(packetSize){
-    //Serial.print("Received packet of size ");
-    //Serial.println(packetSize);
-    //Serial.print("From ");
-    IPAddress remoteIp = Udp.remoteIP();
-    //Serial.print(remoteIp);
-    //Serial.print(", port ");
-    //Serial.println(Udp.remotePort());
-    // read the packet into packetBufffer
-    int len = Udp.read(packetBuffer, 255);
-    //Serial.println(packetBuffer);
-    if (len > 0) {
-      packetBuffer[len] = 0;
-      if (wifiState == 3){
-        Serial.println("Parsing BSIP Message");
-        //read BSID response from AP      
-        BSIPMessage msg = parseBSIP(packetBuffer);
-        if (msg.cmd == "BSIP"){
-          bsip = msg.BSIP;
-          Serial.print("Base Station IP: ");
-          Serial.println(bsip);
-          wifiState = 4;
-        }
-      }
-      else if (wifiState == 5){
-        ManualControlMessage msg = parseMessage(packetBuffer);
-        if(serialUSB)
-        {
-          Serial.print("packet: ");
-          Serial.print(msg.throttle);
-          Serial.print(" recived at: ");
-          Serial.print(millis());
-        }
-        if (msg.cmd == "MAN"){
-          roll = msg.roll;
-          pitch = msg.pitch;
-          throttle = msg.throttle;
-          yaw = msg.yaw;
-        }
-      }
-    }    
-  }
 }
