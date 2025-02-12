@@ -1,6 +1,4 @@
 #include <Arduino.h>
-#include <WiFiNINA.h>                    //https://github.com/arduino-libraries/WiFiNINA/tree/master
-#include <WiFiUDP.h>
 #include "XvWifi.h"
 
 ManualControlMessage_h XvWifi::parseMessage(char buffer[]){

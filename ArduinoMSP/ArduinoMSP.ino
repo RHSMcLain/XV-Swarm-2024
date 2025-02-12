@@ -1,5 +1,3 @@
-#include <WiFiNINA.h>                    //https://github.com/arduino-libraries/WiFiNINA/tree/master
-#include <WiFiUDP.h>    
 #include <XvMsp.h>
 #include <XvWifi.h>
 
@@ -33,32 +31,12 @@ int failsafe = 1000;
 int blinkSpeed = 10;
 const int intervalInfo = 5000;           // interval at which to update the board information
 
-uint16_t rc_values[8];
+uint16_t rc_values[10] = {1500, 1500, 885, 1500, 1500, 1000, 1500, 1500, 1500, 1600};
 
 long t = 0;
 long blinkTime = 0;
-long start;
 unsigned long previousMillisInfo = 0;    //will store last time Wi-Fi information was updated
 unsigned long previousMillisLED = 0;     // will store the last time LED was updated
-
-void MSPLoop(){
-  uint8_t datad = 0;
-  uint8_t *data = &datad;
-  // msp.sendMSP(MSP_RAW_GPS, 0, 0);
-  // msp.readGPSData();
-  // msp.sendMSP(MSP_ATTITUDE, data, 0);
-  // msp.readAttitudeData();
-  rc_values[0] = pitch;
-  rc_values[1] = roll;
-  rc_values[2] = throttle;
-  rc_values[3] = yaw;
-  rc_values[4] = navHold;
-  rc_values[5] = armVar;
-  rc_values[6] = 1700;
-  rc_values[7] = killswitch;
-  rc_values[9] = 1600;
-  msp.commandMSP(MSP_SET_RAW_RC, rc_values, 16);
-}
 
 void setup(){
   //Initialize serial and wait for port to open: 
@@ -71,7 +49,6 @@ void setup(){
   delay(1000);
   pinMode(LED_BUILTIN, OUTPUT);
   net.WifiConnection(ReplyBuffer, wifiState, droneState);
-  start = millis();
   delay(250);
   rc_values[0] = 1500;
   rc_values[1] = 1500;
@@ -179,6 +156,25 @@ void DroneSystems(){
   CheckModeStates();
   // delay(10);  
 }//End Drone Systems
+
+void MSPLoop(){
+  uint8_t datad = 0;
+  uint8_t *data = &datad;
+  // msp.sendMSP(MSP_RAW_GPS, 0, 0);
+  // msp.readGPSData();
+  // msp.sendMSP(MSP_ATTITUDE, data, 0);
+  // msp.readAttitudeData();
+  rc_values[0] = pitch;
+  rc_values[1] = roll;
+  rc_values[2] = throttle;
+  rc_values[3] = yaw;
+  rc_values[4] = navHold;
+  rc_values[5] = armVar;
+  rc_values[6] = 1700;
+  rc_values[7] = killswitch;
+  rc_values[9] = 1600;
+  msp.commandMSP(MSP_SET_RAW_RC, rc_values, 16);
+}
 
 void CheckModeStates(){ //sets booleans of the modes for enabled/disabled
   if(armVar > 1500){

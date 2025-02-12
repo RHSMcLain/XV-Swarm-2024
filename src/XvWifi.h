@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <WiFiNINA.h>                    //https://github.com/arduino-libraries/WiFiNINA/tree/master
+#include <WiFiUDP.h>
 
 #define localPort 2390
 #define handShake "HND|-1|Betsy"
