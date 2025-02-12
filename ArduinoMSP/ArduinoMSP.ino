@@ -67,6 +67,7 @@ void setup(){
 }//end setup
 
 void loop() {
+  Serial.println(wifiState);
   status = WiFi.status();
   if(status != WL_CONNECTED){  
     blinkSpeed = 50;
@@ -124,6 +125,7 @@ void DroneSystems(){
   }
   else if (droneState == 0){//arm drone
     blinkSpeed = 1000;
+    Serial.println("Drone State 0 | Drone State");
     if (millis() - t > 500){
       droneState = 1;
       t = millis();
@@ -131,6 +133,7 @@ void DroneSystems(){
   }
   else if (droneState == 1){ //nothing
     //Roll Ch 0, pitch Ch 1, Yaw Ch 3, Throttle Ch 2, Arm Ch 4
+    Serial.println("Drone State 1 | Fly State");
   }
   else if(droneState == 2){
     

@@ -6,6 +6,7 @@
 IPAddress bsip;
 int connectTime = 0;
 WiFiUDP Udp;
+bool firstconnectframe = false;
 
 ManualControlMessage_h XvWifi::parseMessage(char buffer[]){
     ManualControlMessage_h msg;
@@ -88,22 +89,24 @@ int XvWifi::WifiConnection(char ReplyBuffer[], int wifiState, int droneState){
       WiFi.begin(ssid);
       //Retry every 5 seconds
       connectTime = millis();
+      firstconnectframe = true;
       while((millis() - connectTime) > 2000){
         // you're connected now, so print out the data:
-        if(WiFi.status() == WL_CONNECTED){
-          Udp.begin(localPort);
-          // Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-          Udp.beginPacket("192.168.4.22", 80);
-          Udp.write("State: 0 -> 1 |Connected|");
-          Udp.endPacket();
-          wifiState = 1;
-          Udp.beginPacket("192.168.4.22", 80);
-          Udp.write(ReplyBuffer);
-          Udp.endPacket();
-          return 1;
-        }
+        
       }
       return 0;
+    }
+    else if(WiFi.status() == WL_CONNECTED && firstconnectframe){
+      Udp.begin(localPort);
+      // Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+      Udp.beginPacket("192.168.4.22", 80);
+      Udp.write("State: 0 -> 1 |Connected|");
+      Udp.endPacket();
+      wifiState = 1;
+      Udp.beginPacket("192.168.4.22", 80);
+      Udp.write(ReplyBuffer);
+      Udp.endPacket();
+      return 1;
     }
     if(wifiState == 1 && droneState == 1 && WiFi.status() == WL_CONNECTED){
       Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
