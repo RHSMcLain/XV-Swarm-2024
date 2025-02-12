@@ -52,9 +52,9 @@ BSIPMessage_h XvWifi::parseBSIP(char buffer[]){
     char *token;
     token = strtok(buffer, "|");
     int i = 0;
-    Serial.println("In parseBSIP");
+    // Serial.println("In parseBSIP");
     while(token != 0){
-      Serial.println(token);
+      // Serial.println(token);
       switch(i){
         case 0:
           msg.cmd = token;
@@ -141,15 +141,15 @@ int XvWifi::Listen(int wifiState, char packetBuffer[255]){
       if (len > 0) {
         packetBuffer[len] = 0;
         if (wifiState == 3){
-          Serial.println("Parsing BSIP Message");
+          // Serial.println("Parsing BSIP Message");
           //read BSID response from AP      
           BSIPMessage = parseBSIP(packetBuffer);
           BSIPMessage_h msg;
           msg = BSIPMessage;
           if (msg.cmd == "BSIP"){
             bsip = msg.BSIP;
-            Serial.print("Base Station IP: ");
-            Serial.println(bsip);
+            // Serial.print("Base Station IP: ");
+            // Serial.println(bsip);
             return 4;
           }
         }
