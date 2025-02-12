@@ -4,6 +4,7 @@ from tkinter import *
 from tkinter import ttk
 import tkinter as tk
 from Drone import Drone
+import random as r
 import _thread
 from threading import Thread
 from queue import Queue
@@ -98,8 +99,9 @@ global selDroneTK
 global droneNumber
 global selectedDrone
 global killswitch
-global going
-    #default values:
+global going, colors
+    #default values:\
+colors =  ['#ff624b','#ffaf0e','#fde838','#16d511','#0995e5','#651bc8']
 yaw = 0
 droneName0 = "Connecting"
 droneName1 = "Connecting"
@@ -111,7 +113,7 @@ droneName6 = "Connecting"
 droneName7 = "Connecting"
 keyQ = False
 keyE = False
-going = True
+going = False
 roll = 0 
 keyA = False
 keyD = False
@@ -178,6 +180,10 @@ def setDroneName():
 def updateDroneNames():
             global selectedDrone, selDrone,app, going 
             going = False
+            try:
+                app.optionmenu_1.configure(fg_color = "dark-blue")
+            except:
+                excepted = True
             selectedDrone = app.optionmenu_1.get() #SELECTED DRONE AS A NAME
             print("-----------------------------------------Drone List Updated-----------------------------------------")
             print("Drone " + selectedDrone + " now selected.")
@@ -307,7 +313,6 @@ def handshake(msg, addr):
     global droneNumber,displayVar, going
     parts = msg.split("|")
     i = int(parts[1])
-    
     if (i == -1):
         i = len(drones)
         print(i)
@@ -321,14 +326,11 @@ def handshake(msg, addr):
         displayVar = displayVar.replace("\nChecking Que", "")
         updateDroneNames()
         going = True
-        rainbor()
         for i in range(1,len(drones)):
             displayVar += ("\nConnected: " + drones[i].name)
             app.textbox1.configure(text = displayVar)
         for adrone in drones:
             print(adrone)
-        #updateList()
-        #sendMessage(drone.ipAddress, drone.port, "HSC|" + str(i))
 
     else:
         if drones[i].name == parts[2]:
@@ -336,7 +338,14 @@ def handshake(msg, addr):
             drones[i].ipAddress = addr[0]
             drones[i].port = addr[1]
     #droneList.update() 
-
+def color():
+    try:
+        if going:
+            app.optionmenu_1.configure(fg_color=colors[r.randint(0,5)])
+            time.sleep(.002)
+    except:
+        excepted = True
+        
 #This function is used to send the packets of instructions to the drone
 def sendMessage(ipAddress, port, msg):
     global sock, displayVar
@@ -351,27 +360,14 @@ def sendMessage(ipAddress, port, msg):
     #print("sent message")
     time.sleep(0.002)
 
+
 #This function is where all of the manual contol is handled
 def manualControl():
-    global yaw, displayVar, roll, pitch, throttle, keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, shouldQuit, manualyes, killswitch, armVar, navHold, app, keyR
+    global yaw, displayVar, roll, pitch, throttle, keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, shouldQuit, manualyes, killswitch, armVar, navHold, app, keyR, sock
     global selDrone
-    global selDroneTK
     listener =  Listener(on_press = show, on_release = release)   
     listener.start()
-    
-    # yaw = 0
-    # keyQ = False
-    # keyE = False
-    # roll = 0 
-    # keyA = False
-    # keyD = False
-    # pitch = 0
-    # keyW = False
-    # keyS = False
-    # throttle = 0
-    # keyAU = False
-    # keyAD = False
-    # shouldQuit = False
+
     while True:
         if keyQ:
             yaw -= 1
@@ -437,7 +433,8 @@ def manualControl():
             sendMessage(selDrone.ipAddress, selDrone.port, "MAN" + "|" + ip + "|" + str(yaw) + "|" + str(pitch) + "|" + str(roll) + "|" + str(throttle) + "|" + str(killswitch) + "|" + str(armVar) + "|" + str(navHold) + "|")
             if(killswitch == 1700):
                 print("======================================KILL SWITCH ACTIVATED=======================================")
-    
+        else:
+            color()
         #sendMessage(selDrone.ipAddress, selDrone.port, yaw + str(i))
         
         time.sleep(0.01)
@@ -477,15 +474,7 @@ def listen(q_out, q_in):#happens on a separate thread
         #     #HANDSHAKE
         #     handshake(parts, addr)
     print("goodbye")
-def rainbor():
-    global going
-    colors =  ['#ff624b','#ffaf0e','#fde838','#16d511','#0995e5','#651bc8']
-    while (going):
-        for n in range(0,6,1):
-            # print(n)
-            # print("Going is " + str(going))
-            app.optionmenu_1.configure(fg_color=colors[n])
-            # time.sleep(0.1)
+
         # colors = colors.reverse()
     # app.optionmenu_1.configure(fg_color="light blue")
     
@@ -499,7 +488,7 @@ def  addDrone():
     print(str(drones))
     updateDroneNames()
     going = True
-    rainbor()
+    # rainbor(app)
     animation(current_frame=0)
     for i in range(1,len(drones)):
             displayVar += ("\nConnected: " + drones[i].name)
@@ -534,6 +523,10 @@ def arm():
         print(app.checkbox_2.get())
         print("UNarmed!!!!!!!!!")
 
+# def rainbor(appin):
+#     global going
+    
+
 #This function tells the drone to hold in place
 def navHoldFunc():
     global navHold
@@ -559,7 +552,7 @@ def quit():
 #This function checks and connects to drones waiting in the connection que
 def checkQueue(q_in):
     global selDrone, displayVar
-    global selDroneTK
+    global going
     #selDroneTK.set(selDrone.ipAddress)
     #lblDroneIP.config(text = selDrone.ipAddress)
     #root.update_idletasks()
@@ -610,9 +603,11 @@ selDrone = drones[0]
 
 #THIS PART IS ALL OF THE APPLICATION COMPONENTS. DONT TOUCH
 class App(customtkinter.CTk):
+    
     def __init__(self):
         super().__init__()
-
+        # r = Thread(target=rainbor, args=(self))
+        # r.start()
         # configure window
         self.title("Controlling Module")
         self.geometry(f"{1100}x{580}")
@@ -829,13 +824,16 @@ print("Ready3")
 #-----------  WHAT WAS ALREADY HERE IS BELOW
 t = Thread(target=listen, args=(qFromComms, qToComms))
 t.start()
+
 m = Thread(target=manualControl, args=())
 m.start()
+
+app = App()
+app.after(1000, checkQueue, qFromComms)
 #root.after(1000, checkQueue, qFromComms)
 # root.bind("<<updateevent>>", updateDronesList)
 #root.mainloop()
-app = App()
-app.after(1000, checkQueue, qFromComms)
+
 
 file = "Bjorn-unscreen.gif"
 info = Image.open(file)
@@ -854,6 +852,9 @@ qToComms.put("TERMINATE") #tell the subloop on the backup thread to quit.
 t = qFromComms.get(timeout=3.0)
 #give it a chance to quit
 print("all done")
+# t.exit()
+# r.exit()
+# m.exit()
 
 exit(0)
 
