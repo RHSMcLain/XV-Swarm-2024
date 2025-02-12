@@ -6,8 +6,6 @@
 #define handShake "HND|-1|Betsy"
 #define ssid "XV_Basestation"
 
-WiFiUDP Udp;
-
 struct ManualControlMessage_h{
     IPAddress sourceIP;
     String cmd;
@@ -24,10 +22,6 @@ struct BSIPMessage_h{
     String cmd;
     IPAddress BSIP;
 };
-
-IPAddress bsip;
-
-int connectTime = 0;
 
 class XvWifi{
     public:

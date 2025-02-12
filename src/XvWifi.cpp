@@ -1,5 +1,11 @@
 #include <Arduino.h>
+#include <WiFiNINA.h>                    //https://github.com/arduino-libraries/WiFiNINA/tree/master
+#include <WiFiUDP.h>
 #include "XvWifi.h"
+
+IPAddress bsip;
+int connectTime = 0;
+WiFiUDP Udp;
 
 ManualControlMessage_h XvWifi::parseMessage(char buffer[]){
     ManualControlMessage_h msg;
