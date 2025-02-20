@@ -348,7 +348,7 @@ def color():
         
 #This function is used to send the packets of instructions to the drone
 def sendMessage(ipAddress, port, msg):
-    global sock, displayVar
+    global sock, displayVar, throttle
     print("sendMessage")
     print(ipAddress)
     print(port)
@@ -356,6 +356,7 @@ def sendMessage(ipAddress, port, msg):
     print("----------------------------")    
     bMsg = msg.encode("ascii")
     sock.sendto(bMsg, (ipAddress, int(port)))
+    throttle = int(app.slider_2.get())
     app.textbox1.configure(text = displayVar)
     #print("sent message")
     time.sleep(0.002)
@@ -411,7 +412,7 @@ def manualControl():
         #     # throttle -= 1
         # elif throttle < 1000 and keyAU == False and keyAD == False:
         #     throttle += 1
-
+        
         yaw = clamp(yaw)
         roll = clamp(roll)
         pitch = clamp(pitch)
@@ -430,6 +431,7 @@ def manualControl():
        
         #print(selDrone.ipAddress)Fa
         if (manualyes == True):
+            
             sendMessage(selDrone.ipAddress, selDrone.port, "MAN" + "|" + ip + "|" + str(yaw) + "|" + str(pitch) + "|" + str(roll) + "|" + str(throttle) + "|" + str(killswitch) + "|" + str(armVar) + "|" + str(navHold) + "|")
             if(killswitch == 1700):
                 print("======================================KILL SWITCH ACTIVATED=======================================")
@@ -700,8 +702,9 @@ class App(customtkinter.CTk):
         self.progressbar_2.grid(row=2, column=0, padx=(20, 10), pady=(10, 10), sticky="ew")
         self.slider_1 = customtkinter.CTkSlider(self.slider_progressbar_frame, from_=0, to=1, number_of_steps=4)
         self.slider_1.grid(row=3, column=0, padx=(20, 10), pady=(10, 10), sticky="ew")
-        self.slider_2 = customtkinter.CTkSlider(self.slider_progressbar_frame, orientation="vertical")
+        self.slider_2 = customtkinter.CTkSlider(self.slider_progressbar_frame, orientation="vertical", from_=1000, to=2000)
         self.slider_2.grid(row=0, column=1, rowspan=5, padx=(10, 10), pady=(10, 10), sticky="ns")
+        self.slider_2.set(1000)
         self.progressbar_3 = customtkinter.CTkProgressBar(self.slider_progressbar_frame, orientation="vertical")
         self.progressbar_3.grid(row=0, column=2, rowspan=5, padx=(10, 20), pady=(10, 10), sticky="ns")
 
