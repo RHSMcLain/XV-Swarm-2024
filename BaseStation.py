@@ -498,14 +498,8 @@ def  addDrone():
 def kill():
     global killswitch
     killswitch = 1700
-    print("======================================KILL SWITCH ACTIVATED=======================================")
-    print("======================================KILL SWITCH ACTIVATED=======================================")
-    print("======================================KILL SWITCH ACTIVATED=======================================")
-    print("======================================KILL SWITCH ACTIVATED=======================================")
-    print("======================================KILL SWITCH ACTIVATED=======================================")
-    print("======================================KILL SWITCH ACTIVATED=======================================")
-    print("======================================KILL SWITCH ACTIVATED=======================================")
-    print("======================================KILL SWITCH ACTIVATED=======================================")
+    for n in range(0,10):
+        print("======================================KILL SWITCH ACTIVATED=======================================")
     app.sidebar_button_1.configure(fg_color="Black", text="=KILLED=")
     app.radio_button_1.configure(fg_color="Red", text="Drone Killed", text_color="Red")
     app.radio_button_2.configure(fg_color="Red", text="Drone Killed", text_color="Red")
