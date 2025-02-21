@@ -17,12 +17,91 @@ import tkinter.messagebox
 from PIL import Image, GifImagePlugin, ImageTk
 from collections import deque
 GifImagePlugin.LOADING_STRATEGY = GifImagePlugin.LoadingStrategy.RGB_ALWAYS
+
 #pip3 install "requests>=2.*"
 #pip3 install netifaces (make sure you have c++ build tools for window and the SDK for your version)
 #python3 -m pip install customtkinter
 #python3 -m pip install --upgrade Pillow
+#pip3 install pynput
 
-            
+
+#Variable decloration for most functions of the drone including keyboard and modes
+#Global ensures that functions dont create copys of variables and actually edit the right ones
+
+global selectedDrone
+global ipv4_address
+global droneNumber
+global selDroneTK
+global killswitch
+global shouldQuit
+global manualyes
+global selDrone
+global throttle
+global my_image
+global navHold
+global UDP_IP
+global colors
+global going 
+global pitch
+global keyAU
+global keyAD
+global roll
+global keyQ
+global keyE
+global keyA
+global keyD
+global keyW
+global keyS
+global yaw
+global ip
+
+my_image = customtkinter.CTkImage(light_image=Image.open('connecteddrone.jpg'),size=(215, 70))
+
+colors =  ['#ff624b','#ffaf0e','#fde838','#16d511','#0995e5','#651bc8']
+photoimage_objects = []
+
+file = "Bjorn-unscreen.gif"
+displayVar = "default Text"
+droneName0 = "Connecting"
+droneName1 = "Connecting"
+droneName2 = "Connecting"
+droneName3 = "Connecting"
+droneName4 = "Connecting"
+droneName5 = "Connecting"
+droneName6 = "Connecting"
+droneName7 = "Connecting"
+selectedDrone = "None"
+
+shouldQuit = False
+manualyes = False
+going = False
+keyAU = False
+keyAD = False
+keyQ = False
+keyE = False
+keyA = False
+keyD = False
+keyW = False
+keyS = False
+keyR = False
+
+killswitch = 1000
+navHold = 1000
+armVar = 1000
+
+droneNumber = 0
+throttle = 0
+UDP_IP = 0
+pitch = 0
+roll = 0 
+yaw = 0
+ip = 0
+
+dark_image=Image.open('connecteddrone.jpg')
+
+curr_time = round(time.time()*1000)
+
+#This function loops through the frames of a gif used to indicate connection    
 def animation(current_frame=0):
     global loop
     image = photoimage_objects[current_frame]
@@ -35,16 +114,13 @@ def animation(current_frame=0):
 
     loop = app.after(50, lambda: animation(current_frame))
 
-
+#This simply stops the gif
 def stop_animation():
     app.after_cancel(loop)
 
-#This section resets the IP assignment so that baseStation doesnt get confused about which computer it is
-global UDP_IP, ip, ipv4_address
-ip = 0
-UDP_IP = 0
-
  #This function detects the local operating system and grabs the IP in slightly different ways depending
+
+#This function detects the operating system and grabs the computers IP for networking between the AP and drones
 def getMyIP():
     try:
         global ipv4_address, ip, UDP_IP, UDP_PORT
@@ -77,70 +153,7 @@ def getMyIP():
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
 
-getMyIP()
-
-#error protection
-if UDP_IP == 0:
-    print('\033[31m=========================================================\033[0m')
-    print('\033[31mFATAL ERROR: IP IS 0, IP GRABBING CODE FAILED\033[0m')
-    print('\033[31m=========================================================\033[0m')
-if UDP_PORT == 0:
-    print('\033[31m=========================================================\033[0m')
-    print('\033[31mFATAL ERROR: PORT IS 0, PORT GRABBING CODE FAILED\033[0m')
-    print('\033[31m=========================================================\033[0m')
-print("UDP IP is " + str(UDP_IP))
-
-#Variable decloration for most functions of the drone including keyboard and modes
-    #Global ensures that functions dont create copys of variables and actually edit the right ones
-global yaw, roll, pitch, throttle, keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, shouldQuit, navHold, my_image
-global manualyes
-global selDrone
-global selDroneTK
-global droneNumber
-global selectedDrone
-global killswitch
-global going, colors
-    #default values:\
-colors =  ['#ff624b','#ffaf0e','#fde838','#16d511','#0995e5','#651bc8']
-yaw = 0
-droneName0 = "Connecting"
-droneName1 = "Connecting"
-droneName2 = "Connecting"
-droneName3 = "Connecting"
-droneName4 = "Connecting"
-droneName5 = "Connecting"
-droneName6 = "Connecting"
-droneName7 = "Connecting"
-keyQ = False
-keyE = False
-going = False
-roll = 0 
-keyA = False
-keyD = False
-pitch = 0
-keyW = False
-keyS = False
-throttle = 0
-keyAU = False
-keyAD = False
-keyR = False
-shouldQuit = False
-droneNumber = 0
-manualyes = False
-killswitch = 1000
-armVar = 1000
-navHold = 1000
-displayVar = "default Text"
-my_image = customtkinter.CTkImage(light_image=Image.open('connecteddrone.jpg'),size=(215, 70))
-dark_image=Image.open('connecteddrone.jpg')
-selectedDrone = "None"
-curr_time = round(time.time()*1000)
-
-#We love customTkinter for making application pretty
-customtkinter.set_appearance_mode("dark")
-customtkinter.set_default_color_theme("blue")
-#This function clamps drone control signals to acceptable levels
-
+#This function is used by handshake to add drones with their correct names which is defined in the arduino program
 def setDroneName():
             global droneName0, droneName1, droneName2, droneName3, droneName4, droneName5, droneName6, droneName7, drones, selectedDrone,app
   
@@ -178,6 +191,7 @@ def setDroneName():
                 droneName7 = "Drone Connecting..."
             app.optionmenu_1.configure(command=lambda x: updateDroneNames(),values=[droneName0, droneName1, droneName2, droneName3, droneName4, droneName5, droneName6, droneName7])
 
+#This function updates the list of drones held by the controller app and the option menu for selecting them
 def updateDroneNames():
             global selectedDrone, selDrone,app, going 
             going = False
@@ -195,7 +209,8 @@ def updateDroneNames():
                     selDrone = drones[i]
                     print ("Drone " + selDrone.name + " Connected with Port: " + str(selDrone.port) + " and IP: " + str(selDrone.ipAddress))
             setDroneName()
-            
+      
+#This function is used to ensure that values for control inputs are kept in acceptable values
 def clamp(val):
     lowLimit = 1000
     highLimit = 2000
@@ -268,6 +283,8 @@ def show(key):
             keyR = True
     except:
         pass
+
+#See above comment
 def release(key):
     global keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, throttle, keyR
     try:
@@ -306,9 +323,6 @@ def MODEManual():
     manualyes = True
     print("|||  MANUAL ENABLED   |||")
 
-# Collect all event until released
-#BRENDAN CODE _____________________________________________________________________________________________________
-
 #This function handles the initial connection when a drone's arduino reaches out to basestation
 def handshake(msg, addr):
     global droneNumber,displayVar, going
@@ -339,6 +353,8 @@ def handshake(msg, addr):
             drones[i].ipAddress = addr[0]
             drones[i].port = addr[1]
     #droneList.update() 
+
+#This function is used to flash colors to indicate connectivity
 def color():
     try:
         if going:
@@ -361,7 +377,6 @@ def sendMessage(ipAddress, port, msg):
     app.textbox1.configure(text = displayVar)
     #print("sent message")
     time.sleep(0.002)
-
 
 #This function is where all of the manual contol is handled
 def manualControl():
@@ -459,7 +474,6 @@ def listen(q_out, q_in):#happens on a separate thread
         # the message is pipe (|) delimited. The ip, port, and message are * delimited
         q_out.put(strData) #this sends the message to the main thread
     print("goodbye")
-
     
 #This function adds a drone object to the list
 def  addDrone():
@@ -498,11 +512,7 @@ def arm():
     else:
         armVar = 1000
         print(app.checkbox_2.get())
-        print("UNarmed!!!!!!!!!")
-
-# def rainbor(appin):
-#     global going
-    
+        print("UNarmed!!!!!!!!!")  
 
 #This function tells the drone to hold in place
 def navHoldFunc():
@@ -553,9 +563,27 @@ def checkQueue(q_in):
             handshake(msg, (addr, port))
     app.after(700, checkQueue, q_in)
 
+getMyIP()
+
+#error protection
+if UDP_IP == 0:
+    print('\033[31m=========================================================\033[0m')
+    print('\033[31mFATAL ERROR: IP IS 0, IP GRABBING CODE FAILED\033[0m')
+    print('\033[31m=========================================================\033[0m')
+if UDP_PORT == 0:
+    print('\033[31m=========================================================\033[0m')
+    print('\033[31mFATAL ERROR: PORT IS 0, PORT GRABBING CODE FAILED\033[0m')
+    print('\033[31m=========================================================\033[0m')
+print("UDP IP is " + str(UDP_IP))
+
+
+#We love customTkinter for making application pretty
+customtkinter.set_appearance_mode("dark")
+customtkinter.set_default_color_theme("blue")
+#This function clamps drone control signals to acceptable levels
 
 #--------------------------------------------
-#------------    Main Code ------------------
+#--------------- Main Code ------------------
 
 qFromComms = Queue() #gets information from the comms thread
 qToComms = Queue() #sends information to the comms thread
@@ -569,20 +597,14 @@ drones.append(Drone(0, "HelloWorldDrone", "10.20.18.23", 85))
 droneNumber = (droneNumber+1)
 selDrone = drones[0]
 
-#-------------------------------------------------------------------------------------------------
-#------------------------------------CUSTOM TKINTER GUI----------------------------
+#-----------------------------------------------------------------------------
+#------------------------------------CUSTOM TKINTER GUI-----------------------
 #-----------------------------------------------------------------------------
 
-#run loop
-
 #THIS PART IS ALL OF THE APPLICATION COMPONENTS. DONT TOUCH
-class App(customtkinter.CTk):
-    
+class App(customtkinter.CTk):  
     def __init__(self):
         super().__init__()
-        # r = Thread(target=rainbor, args=(self))
-        # r.start()
-        # configure window
         self.title("Controlling Module")
         self.geometry(f"{1100}x{580}")
 
@@ -756,57 +778,63 @@ class App(customtkinter.CTk):
         my_progressbar.lift()
         my_progressbar.set(0)
         my_progressbar.start()
-
-
-
-#image testing-----------------
+        
+        
+        
+        #The following four functions are used for changing how images are displayed
     def open_input_dialog_event(self):
         dialog = customtkinter.CTkInputDialog(text="Enter a Direct UDP Drone Command:", title="Direct Command")
         print("CTkInputDialog:", dialog.get_input())
 
+    #See above comment
     def change_appearance_mode_event(self, new_appearance_mode: str):
         customtkinter.set_appearance_mode(new_appearance_mode)
 
+    #See above comment
     def change_scaling_event(self, new_scaling: str):
         new_scaling_float = int(new_scaling.replace("%", "")) / 100
         customtkinter.set_widget_scaling(new_scaling_float)
 
+    #See above comment
     def sidebar_button_event(self):
         print("sidebar_button click")
 
+#-----------------------------------------------------------------------------
+#----------------------------- END OF FIRST GRAB -----------------------------
+#-----------------------------------------------------------------------------
 
-#-----------------------------------------------------------------------------
-#-----------------------------------------------------------------------------
-#--------- END OF FIRST GRAB ----------
-#unsure
+#This function does socket assignment for networking stuff
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
 sock.setblocking(0)
+
 sock.bind((UDP_IP, UDP_PORT))
 
 print("Ready3")
 #----- END OF SECOND GRAB
-
 #-----------  WHAT WAS ALREADY HERE IS BELOW
+
+
+#Starting a thread for listening
 t = Thread(target=listen, args=(qFromComms, qToComms))
 t.start()
 
+#Starting the Thread for manual control
 m = Thread(target=manualControl, args=())
 m.start()
 
+#Creating the App
 app = App()
 app.after(1000, checkQueue, qFromComms)
 
-file = "Bjorn-unscreen.gif"
 info = Image.open(file)
-
 frames = info.n_frames  # number of frames
 
-photoimage_objects = []
+
 for i in range(frames):
     obj = tk.PhotoImage(file=file, format=f"gif -index {i}")
     # obj2 = customtkinter.CTkImage(dark_image = obj)
     photoimage_objects.append(obj)
-
 
 app.mainloop()
 qToComms.put("TERMINATE") #tell the subloop on the backup thread to quit.
