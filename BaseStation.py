@@ -177,6 +177,7 @@ def setDroneName():
             except:
                 droneName7 = "Drone Connecting..."
             app.optionmenu_1.configure(command=lambda x: updateDroneNames(),values=[droneName0, droneName1, droneName2, droneName3, droneName4, droneName5, droneName6, droneName7])
+
 def updateDroneNames():
             global selectedDrone, selDrone,app, going 
             going = False
