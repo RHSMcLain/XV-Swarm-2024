@@ -389,8 +389,6 @@ def manualControl():
         if keyR:
             kill()
         if shouldQuit:
-            #listener.stop()
-            #break
             pass
 
 
@@ -421,15 +419,7 @@ def manualControl():
         roll = round(roll, 2)
         pitch = round(pitch, 2)
         throttle = round(throttle, 2)
-        # print(yaw, " -- yaw")
-        # print(roll, " -- roll")
-        # print(pitch, " -- pitch")
-        # print(throttle, " -- throttle")
-        # for i in droneList.curselection():
-        #     selDrone = drones[i]
-            #print(selDrone)
-       
-        #print(selDrone.ipAddress)Fa
+
         if (manualyes == True):
             
             sendMessage(selDrone.ipAddress, selDrone.port, "MAN" + "|" + ip + "|" + str(yaw) + "|" + str(pitch) + "|" + str(roll) + "|" + str(throttle) + "|" + str(killswitch) + "|" + str(armVar) + "|" + str(navHold) + "|")
@@ -437,7 +427,6 @@ def manualControl():
                 print("======================================KILL SWITCH ACTIVATED=======================================")
         else:
             color()
-        #sendMessage(selDrone.ipAddress, selDrone.port, yaw + str(i))
         
         time.sleep(0.01)
 
@@ -468,17 +457,8 @@ def listen(q_out, q_in):#happens on a separate thread
         strData = addr[0] + "*" + str(addr[1]) + "*" + strData#the ip, the port, the message
         # the message is pipe (|) delimited. The ip, port, and message are * delimited
         q_out.put(strData) #this sends the message to the main thread
-        # parts = strData.split("|")
-        # print(parts)
-        # cmd = parts[0]
-
-        # if cmd == "HND":
-        #     #HANDSHAKE
-        #     handshake(parts, addr)
     print("goodbye")
 
-        # colors = colors.reverse()
-    # app.optionmenu_1.configure(fg_color="light blue")
     
 #This function adds a drone object to the list
 def  addDrone():
@@ -542,17 +522,14 @@ def quit():
     #give it a chance to quit
     print("all done")
     app.destroy()
-    App.destroy()
+    # App.destroy()
+    # sys.exit()
     exit()
 
 #This function checks and connects to drones waiting in the connection que
 def checkQueue(q_in):
     global selDrone, displayVar
     global going
-    #selDroneTK.set(selDrone.ipAddress)
-    #lblDroneIP.config(text = selDrone.ipAddress)
-    #root.update_idletasks()
-    #print(selDrone.ipAddress)
     if (not q_in.empty()):
         print("checking queue")
         displayVar += "\nChecking Que"
@@ -782,16 +759,6 @@ class App(customtkinter.CTk):
 
 
 #image testing-----------------
-
-    #     global my_image
-    #     self.iconbitmap('images/codemy.ico')
-    #     my_image = customtkinter.CTkImage(light_image=Image.open("C:\Users\Conno\Downloads\Screenshot 2024-03-28 124033.png"),
-	#         dark_image=Image.open("C:\Users\Conno\Downloads\Screenshot 2024-03-28 124033.png"),
-	#         size=(180,250)) # WidthxHeight
-
-    # my_label = customtkinter.CTkLabel(root, text="", image=my_image)
-    # my_label.pack(pady=10)
-
     def open_input_dialog_event(self):
         dialog = customtkinter.CTkInputDialog(text="Enter a Direct UDP Drone Command:", title="Direct Command")
         print("CTkInputDialog:", dialog.get_input())
@@ -827,10 +794,6 @@ m.start()
 
 app = App()
 app.after(1000, checkQueue, qFromComms)
-#root.after(1000, checkQueue, qFromComms)
-# root.bind("<<updateevent>>", updateDronesList)
-#root.mainloop()
-
 
 file = "Bjorn-unscreen.gif"
 info = Image.open(file)
@@ -849,9 +812,5 @@ qToComms.put("TERMINATE") #tell the subloop on the backup thread to quit.
 t = qFromComms.get(timeout=3.0)
 #give it a chance to quit
 print("all done")
-# t.exit()
-# r.exit()
-# m.exit()
-
-exit(0)
+exit()
 
