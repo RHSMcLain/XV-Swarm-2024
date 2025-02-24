@@ -31,16 +31,13 @@ GifImagePlugin.LOADING_STRATEGY = GifImagePlugin.LoadingStrategy.RGB_ALWAYS
 global selectedDrone
 global ipv4_address
 global droneNumber
-global selDroneTK
 global killswitch
 global shouldQuit
 global manualyes
 global selDrone
 global throttle
-global my_image
 global navHold
 global UDP_IP
-global colors
 global going 
 global pitch
 global keyAU
@@ -52,6 +49,7 @@ global keyA
 global keyD
 global keyW
 global keyS
+global keyT
 global yaw
 global ip
 
@@ -84,6 +82,7 @@ keyD = False
 keyW = False
 keyS = False
 keyR = False
+keyT = False
 
 killswitch = 1000
 navHold = 1000
@@ -256,7 +255,7 @@ def introToAP():
 
 #The follwing two functions are used to capture keyboard inputs
 def show(key):
-    global yaw, roll, pitch, throttle, keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, shouldQuit, keyR
+    global yaw, roll, pitch, throttle, keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, shouldQuit, keyR, keyT
     try:
         if key == Key.up:
             #print("Up")
@@ -281,12 +280,14 @@ def show(key):
             shouldQuit = True
         if key.char == 'r':
             keyR = True
+        if key.char == 't':
+            keyT = True
     except:
         pass
 
 #See above comment
 def release(key):
-    global keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, throttle, keyR
+    global keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, throttle, keyR, keyT
     try:
         if key == Key.up:
             keyAU = False
@@ -308,6 +309,8 @@ def release(key):
             keyS = False
         if key.char == 'r':
             keyR = False
+        if key.char == 't':
+            keyT = False
     except:
         pass
 
@@ -404,6 +407,12 @@ def manualControl():
             throttle -= 1
         if keyR:
             kill()
+        if keyT:
+            try:
+                app.checkbox_3.toggle()
+                time.sleep(0.2)
+            except:
+                pass
         if shouldQuit:
             pass
 
