@@ -50,6 +50,7 @@ global keyD
 global keyW
 global keyS
 global keyT
+global keyY
 global yaw
 global ip
 
@@ -83,6 +84,7 @@ keyW = False
 keyS = False
 keyR = False
 keyT = False
+keyY = False
 
 killswitch = 1000
 navHold = 1000
@@ -255,7 +257,7 @@ def introToAP():
 
 #The follwing two functions are used to capture keyboard inputs
 def show(key):
-    global yaw, roll, pitch, throttle, keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, shouldQuit, keyR, keyT
+    global yaw, roll, pitch, throttle, keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, shouldQuit, keyR, keyT, keyY
     try:
         if key == Key.up:
             #print("Up")
@@ -282,12 +284,14 @@ def show(key):
             keyR = True
         if key.char == 't':
             keyT = True
+        if key.char == 'y':
+            keyY = True
     except:
         pass
 
 #See above comment
 def release(key):
-    global keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, throttle, keyR, keyT
+    global keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, throttle, keyR, keyT, keyY
     try:
         if key == Key.up:
             keyAU = False
@@ -311,6 +315,8 @@ def release(key):
             keyR = False
         if key.char == 't':
             keyT = False
+        if key.char == 'y':
+            keyY = False
     except:
         pass
 
@@ -383,7 +389,7 @@ def sendMessage(ipAddress, port, msg):
 
 #This function is where all of the manual contol is handled
 def manualControl():
-    global yaw, displayVar, roll, pitch, throttle, keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, shouldQuit, manualyes, killswitch, armVar, navHold, app, keyR, sock
+    global yaw, displayVar, roll, pitch, throttle, keyQ, keyE, keyA, keyD, keyW, keyS, keyAU, keyAD, shouldQuit, manualyes, killswitch, armVar, navHold, app, keyR, sock, keyT, keyY
     global selDrone
     listener =  Listener(on_press = show, on_release = release)   
     listener.start()
@@ -410,6 +416,12 @@ def manualControl():
         if keyT:
             try:
                 app.checkbox_3.toggle()
+                time.sleep(0.2)
+            except:
+                pass
+        if keyY:
+            try:
+                app.checkbox_2.toggle()
                 time.sleep(0.2)
             except:
                 pass
