@@ -17,6 +17,7 @@ import tkinter.messagebox
 from PIL import Image, GifImagePlugin, ImageTk
 from collections import deque
 GifImagePlugin.LOADING_STRATEGY = GifImagePlugin.LoadingStrategy.RGB_ALWAYS
+import hid, FlightStickCode.FlightStick
 
 #pip3 install "requests>=2.*"
 #pip3 install netifaces (make sure you have c++ build tools for window and the SDK for your version)
