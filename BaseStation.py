@@ -17,7 +17,7 @@ import tkinter.messagebox
 from PIL import Image, GifImagePlugin, ImageTk
 from collections import deque
 GifImagePlugin.LOADING_STRATEGY = GifImagePlugin.LoadingStrategy.RGB_ALWAYS
-import hid, FlightStickCode.FlightStick
+from FlightStickCode.FlightStick import FlightStick
 
 #pip3 install "requests>=2.*"
 #pip3 install netifaces (make sure you have c++ build tools for window and the SDK for your version)
@@ -100,6 +100,9 @@ yaw = 0
 ip = 0
 
 dark_image=Image.open('connecteddrone.jpg')
+
+fs = FlightStick
+fs.__init__(fs)
 
 curr_time = round(time.time()*1000)
 
@@ -383,7 +386,7 @@ def sendMessage(ipAddress, port, msg):
     print("----------------------------")    
     bMsg = msg.encode("ascii")
     sock.sendto(bMsg, (ipAddress, int(port)))
-    throttle = int(app.slider_2.get())
+    # throttle = int(app.slider_2.get())
     app.textbox1.configure(text = displayVar)
     #print("sent message")
     time.sleep(0.002)
@@ -396,22 +399,22 @@ def manualControl():
     listener.start()
 
     while True:
-        if keyQ:
-            yaw -= 1
-        elif keyE:
-            yaw += 1
-        if keyA:
-            roll -= 1
-        elif keyD:
-            roll += 1
-        if keyW:
-            pitch += 1
-        elif keyS:
-            pitch -= 1
-        if keyAU:
-            throttle += 1
-        elif keyAD:
-            throttle -= 1
+        # if keyQ:
+        #     yaw -= 1
+        # elif keyE:
+        #     yaw += 1
+        # if keyA:
+        #     roll -= 1
+        # elif keyD:
+        #     roll += 1
+        # if keyW:
+        #     pitch += 1
+        # elif keyS:
+        #     pitch -= 1
+        # if keyAU:
+        #     throttle += 1
+        # elif keyAD:
+        #     throttle -= 1
         if keyR:
             kill()
         if keyT:
@@ -432,32 +435,31 @@ def manualControl():
 
         displayVar = "Throttle: " + str(throttle) + "\n Pitch: " + str(pitch) + "\n Yaw: " + str(yaw) + "\n Roll: " + str(roll) + "\nArmVar: " + str(armVar) + "\nNavHold: " + str(navHold)
         # App.textbox1.configure(text = displayVar)
-        if yaw > 1500 and keyQ == False and keyE == False:
-            yaw -= 1
-        elif yaw < 1500 and keyQ == False and keyE == False:
-            yaw += 1
-        if roll > 1500 and keyA == False and keyD == False:
-            roll -= 1
-        elif roll < 1500 and keyA == False and keyD == False:
-            roll += 1
-        if pitch > 1500 and keyW == False and keyS == False:
-            pitch -= 1
-        elif pitch < 1500 and keyW == False and keyS == False:
-            pitch += 1
+        
+        # if yaw > 1500 and keyQ == False and keyE == False:
+        #     yaw -= 1
+        # elif yaw < 1500 and keyQ == False and keyE == False:
+        #     yaw += 1
+        # if roll > 1500 and keyA == False and keyD == False:
+        #     roll -= 1
+        # elif roll < 1500 and keyA == False and keyD == False:
+        #     roll += 1
+        # if pitch > 1500 and keyW == False and keyS == False:
+        #     pitch -= 1
+        # elif pitch < 1500 and keyW == False and keyS == False:
+        #     pitch += 1
         # if throttle > 1000 and keyAU == False and keyAD == False:
         #     # throttle -= 1
         # elif throttle < 1000 and keyAU == False and keyAD == False:
         #     throttle += 1
         
-        yaw = clamp(yaw)
-        roll = clamp(roll)
-        pitch = clamp(pitch)
-        throttle = clamp(throttle)
-        yaw = round(yaw, 2)
-        roll = round(roll, 2)
-        pitch = round(pitch, 2)
-        throttle = round(throttle, 2)
-
+        fs.readFlightStick(fs)
+    
+        yaw = clamp(round(fs.yaw, 2))
+        roll = clamp(round(fs.roll, 2))
+        pitch = clamp(round(fs.pitch, 2))
+        throttle = clamp(round(fs.throttle, 2))
+        
         if (manualyes == True):
             
             sendMessage(selDrone.ipAddress, selDrone.port, "MAN" + "|" + ip + "|" + str(yaw) + "|" + str(pitch) + "|" + str(roll) + "|" + str(throttle) + "|" + str(killswitch) + "|" + str(armVar) + "|" + str(navHold) + "|")
@@ -586,6 +588,7 @@ def checkQueue(q_in):
     app.after(700, checkQueue, q_in)
 
 getMyIP()
+
 
 #error protection
 if UDP_IP == 0:

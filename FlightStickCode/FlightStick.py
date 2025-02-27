@@ -11,7 +11,7 @@ class FlightStick:
 
     def __init__(self):
         for device in hid.enumerate():
-            print(f"0x{device['vendor_id']:04x}:0x{device['product_id']:04x} {device['product_string']}") 
+            # print(f"0x{device['vendor_id']:04x}:0x{device['product_id']:04x} {device['product_string']}") 
             self.gamepad = hid.device()
             self.gamepad.open(0x044F, 0xB10A)
             self.gamepad.set_nonblocking(True)
@@ -23,11 +23,11 @@ class FlightStick:
         if report:
     
             #convert for our drones
-            print(report)
-            self.roll =  report[3] 
-            self.pitch = report[5]
-            self.yaw = report[7]
-            self.throttle = report[8]
+            # print(report)
+            self.roll =  ((report[4]*1000)/64) + 1000
+            self.pitch = ((report[6]*1000)/64) + 1000
+            self.yaw = (report[7]*1000)/256 + 1000 
+            self.throttle = (report[8]*1000)/256 + 1000
             
 
 
