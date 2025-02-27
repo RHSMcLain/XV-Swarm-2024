@@ -24,8 +24,8 @@ class FlightStick:
     
             #convert for our drones
             # print(report)
-            self.roll =  ((report[4]*1000)/64) + 1000
-            self.pitch = ((report[6]*1000)/64) + 1000
+            self.roll =  2000 - ((report[6]*1000)/64) 
+            self.pitch = ((report[4]*1000)/64) + 1000
             self.yaw = (report[7]*1000)/256 + 1000 
             self.throttle = (report[8]*1000)/256 + 1000
             
