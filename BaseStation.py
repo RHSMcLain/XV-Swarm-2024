@@ -441,22 +441,7 @@ def manualControl():
         displayVar = "Throttle: " + str(throttle) + "\n Pitch: " + str(roll) + "\n Yaw: " + str(yaw) + "\n Roll: " + str(pitch) + "\nArmVar: " + str(armVar) + "\nNavHold: " + str(navHold)
         # App.textbox1.configure(text = displayVar)
         
-        # if yaw > 1500 and keyQ == False and keyE == False:
-        #     yaw -= 1
-        # elif yaw < 1500 and keyQ == False and keyE == False:
-        #     yaw += 1
-        # if roll > 1500 and keyA == False and keyD == False:
-        #     roll -= 1
-        # elif roll < 1500 and keyA == False and keyD == False:
-        #     roll += 1
-        # if pitch > 1500 and keyW == False and keyS == False:
-        #     pitch -= 1
-        # elif pitch < 1500 and keyW == False and keyS == False:
-        #     pitch += 1
-        # if throttle > 1000 and keyAU == False and keyAD == False:
-        #     # throttle -= 1
-        # elif throttle < 1000 and keyAU == False and keyAD == False:
-        #     throttle += 1
+       
         
         fs.readFlightStick(fs)
         if controller:
@@ -465,6 +450,22 @@ def manualControl():
             pitch = clamp(round(fs.pitch, 2))
             throttle = clamp(round(fs.throttle, 2))
         else:
+             if yaw > 1500 and keyQ == False and keyE == False:
+            yaw -= 1
+            elif yaw < 1500 and keyQ == False and keyE == False:
+                yaw += 1
+            if roll > 1500 and keyA == False and keyD == False:
+                roll -= 1
+            elif roll < 1500 and keyA == False and keyD == False:
+                roll += 1
+            if pitch > 1500 and keyW == False and keyS == False:
+                pitch -= 1
+            elif pitch < 1500 and keyW == False and keyS == False:
+                pitch += 1
+            if throttle > 1000 and keyAU == False and keyAD == False:
+                # throttle -= 1
+            elif throttle < 1000 and keyAU == False and keyAD == False:
+                throttle += 1
             try:
                 throttle = int(app.slider_2.get())
             except:
