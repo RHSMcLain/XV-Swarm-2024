@@ -97,11 +97,7 @@ roll = 1500
 yaw = 1500
 
 droneNumber = 0
-throttle = 0
 UDP_IP = 0
-pitch = 0
-roll = 0 
-yaw = 0
 ip = 0
 
 dark_image=Image.open('connecteddrone.jpg')
@@ -447,31 +443,22 @@ def manualControl():
         
        
         
-        fs.readFlightStick(fs)
+       
         if controller:
+            fs.readFlightStick(fs)
             yaw = clamp(round(fs.yaw, 2))
             roll = clamp(round(fs.roll, 2))
             pitch = clamp(round(fs.pitch, 2))
             throttle = clamp(round(fs.throttle, 2))
         else:
-            if yaw > 1500 and keyQ == False and keyE == False:
-                yaw -= 1
-            elif yaw < 1500 and keyQ == False and keyE == False:
-                yaw += 1
-            if roll > 1500 and keyA == False and keyD == False:
-                roll -= 1
-            elif roll < 1500 and keyA == False and keyD == False:
-                roll += 1
-            if pitch > 1500 and keyW == False and keyS == False:
-                pitch -= 1
-            elif pitch < 1500 and keyW == False and keyS == False:
-                pitch += 1
-            if throttle < 1000 and keyAU == False and keyAD == False:
-                throttle += 1
+            print('\033[31m===========================================================================\033[0m')
+            print('\033[31m- - - - NO FLIGHTSTICK CONNECTED  |  CONNECT CONTROLLER AND RESTART - - - -\033[0m')
+            print('\033[31m===========================================================================\033[0m')
+            displayVar = "NO FLIGHTSTICK CONNECTED | FATAL ERROR"
             try:
                 throttle = int(app.slider_2.get())
             except:
-                print("e")
+                # print("e")
                 pass
         
         if (manualyes == True):
