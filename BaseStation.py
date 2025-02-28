@@ -74,6 +74,7 @@ selectedDrone = "None"
 
 shouldQuit = False
 manualyes = False
+contoller = True
 going = False
 keyAU = False
 keyAD = False
@@ -102,7 +103,12 @@ ip = 0
 dark_image=Image.open('connecteddrone.jpg')
 
 fs = FlightStick
-fs.__init__(fs)
+try:
+    fs.__init__(fs)
+except:
+    controller = False
+    pass
+
 
 curr_time = round(time.time()*1000)
 
@@ -386,7 +392,6 @@ def sendMessage(ipAddress, port, msg):
     print("----------------------------")    
     bMsg = msg.encode("ascii")
     sock.sendto(bMsg, (ipAddress, int(port)))
-    # throttle = int(app.slider_2.get())
     app.textbox1.configure(text = displayVar)
     #print("sent message")
     time.sleep(0.002)
@@ -454,11 +459,17 @@ def manualControl():
         #     throttle += 1
         
         fs.readFlightStick(fs)
-    
-        yaw = clamp(round(fs.yaw, 2))
-        roll = clamp(round(fs.roll, 2))
-        pitch = clamp(round(fs.pitch, 2))
-        throttle = clamp(round(fs.throttle, 2))
+        if controller:
+            yaw = clamp(round(fs.yaw, 2))
+            roll = clamp(round(fs.roll, 2))
+            pitch = clamp(round(fs.pitch, 2))
+            throttle = clamp(round(fs.throttle, 2))
+        else:
+            try:
+                throttle = int(app.slider_2.get())
+            except:
+                print("e")
+                pass
         
         if (manualyes == True):
             
