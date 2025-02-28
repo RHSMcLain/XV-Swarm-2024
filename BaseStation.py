@@ -74,7 +74,7 @@ selectedDrone = "None"
 
 shouldQuit = False
 manualyes = False
-contoller = True
+controller = True
 going = False
 keyAU = False
 keyAD = False
@@ -89,8 +89,12 @@ keyT = False
 keyY = False
 
 killswitch = 1000
+throttle = 1000
 navHold = 1000
 armVar = 1000
+pitch = 1500
+roll = 1500
+yaw = 1500
 
 droneNumber = 0
 throttle = 0
@@ -450,8 +454,8 @@ def manualControl():
             pitch = clamp(round(fs.pitch, 2))
             throttle = clamp(round(fs.throttle, 2))
         else:
-             if yaw > 1500 and keyQ == False and keyE == False:
-            yaw -= 1
+            if yaw > 1500 and keyQ == False and keyE == False:
+                yaw -= 1
             elif yaw < 1500 and keyQ == False and keyE == False:
                 yaw += 1
             if roll > 1500 and keyA == False and keyD == False:
@@ -462,9 +466,7 @@ def manualControl():
                 pitch -= 1
             elif pitch < 1500 and keyW == False and keyS == False:
                 pitch += 1
-            if throttle > 1000 and keyAU == False and keyAD == False:
-                # throttle -= 1
-            elif throttle < 1000 and keyAU == False and keyAD == False:
+            if throttle < 1000 and keyAU == False and keyAD == False:
                 throttle += 1
             try:
                 throttle = int(app.slider_2.get())
