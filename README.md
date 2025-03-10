@@ -5,7 +5,7 @@
     <summary>
         <b>Description of XV: Swarm</b>
     </summary>
-    <p>The objective of this class was to create and program swarm drones ourselves. For the first few weeks of class, we worked on building the drones using a parts kit put together through research. To legally fly the drone, we needed approval for multiple FAA and school district waivers, some of which had to be revised. We also created the code from scratch, including the keyboard and flight stick controls, the communications from the Arduino to the flight controller, the access point, and the base station.</p>
+    <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The objective of this class was to create and program swarm drones ourselves. For the first few weeks of class, we worked on building the drones using a parts kit put together through research. To legally fly the drone, we needed approval for multiple FAA and school district waivers, some of which had to be revised. We also created the code from scratch, including the keyboard and flight stick controls, the communications from the Arduino to the flight controller, the access point, and the base station.</p>
 </details>
 
 <details>
@@ -43,7 +43,7 @@
     <summary>
         <b>Summary of Flightstick Code</b>
     </summary>
-    <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Code for flight stick that outputs value for  pitch, roll, yaw, and throttle for the drone. </p>
+    <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Code for flight stick that outputs value for  pitch, roll, yaw, and throttle for the drone. </p>
 
 </details>
 
@@ -71,13 +71,13 @@
         <summary>
             <b>Frame Construction</b>
         </summary>
-        <a href="https://github.com/RHSMcLain/XV-Swarm-2024/blob/main/Instructions/FrameConstruction.md">Frame Instructions</a>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/RHSMcLain/XV-Swarm-2024/blob/main/Instructions/FrameConstruction.md">Frame Instructions</a>
     </details>
     <details>
         <summary>
             <b>Wiring!</b>
         </summary>
-        <a href="https://github.com/RHSMcLain/XV-Swarm-2024/blob/main/Instructions/Wiring.md">Wiring Instructions</a>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/RHSMcLain/XV-Swarm-2024/blob/main/Instructions/Wiring.md">Wiring Instructions</a>
     </details>
     <details>
         <summary>
@@ -87,13 +87,13 @@
                 <summary>
                        Code
                 </summary>
-             <a href="https://github.com/RHSMcLain/XV-Swarm-2024/blob/main/Instructions/CodeInstall.md">Code Installation Instructions</a>
+             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/RHSMcLain/XV-Swarm-2024/blob/main/Instructions/CodeInstall.md">Code Installation Instructions</a>
             </details>
             <details>
                 <summary>
                     Configuration
                 </summary>
-                <a href="https://github.com/RHSMcLain/XV-Swarm-2024/blob/main/Instructions/Configuration.md">Configuration Instructions</a>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/RHSMcLain/XV-Swarm-2024/blob/main/Instructions/Configuration.md">Configuration Instructions</a>
             </details>
     </details>
     <details>
