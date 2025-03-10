@@ -11,7 +11,7 @@
 <details>
     <summary> <b>Setup for programming<br></b> </summary>
         <setup>
-            <b>What you need to install:<br></b>
+            <b><br>What you need to install:<br></b>
             <details>
                 <summary> <b>Python Libraries</b> </summary>
                 <p>
