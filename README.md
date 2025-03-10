@@ -14,6 +14,13 @@
             <b> What you need to install:</b>
             <details>
                 <summary> <b>Python Libraries</b> </summary>
+                <p>
+                    pip3 install "requests>=2.*"
+                    pip3 install netifaces <i>(make sure you have C++ build tools and the SDK for your version if you are on windows)</i>
+                    python3 -m pip install customtkinter
+                    python3 -m pip install --upgrade Pillow
+                    pip3 install pynput
+                </p>
             </details>
         </setup>
 </details>
