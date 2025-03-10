@@ -12,7 +12,7 @@
     <summary> <b>Setup for programming<br></b> </summary>
         <setup>
             <b><br>What you need to install:</b>
-            <details>
+            <br><details>
                 <summary> <b>Python Libraries</b> </summary>
                 <p>
                     pip3 install "requests>=2.*" <br>
