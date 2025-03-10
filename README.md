@@ -11,9 +11,9 @@
 <details>
     <summary> <b>Setup for programming<br></b> </summary>
         <setup>
-            <b><br>What you need to install:</b>
-            <br><details>
-                <summary> <b>Python Libraries</b> </summary>
+            What you need to install:
+            <details>
+                <summary>Python Libraries</summary>
                 <p>
                     pip3 install "requests>=2.*" <br>
                     pip3 install netifaces <i>(make sure you have C++ build tools and the SDK for your version if you are on windows)</i> <br>
