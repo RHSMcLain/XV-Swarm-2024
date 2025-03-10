@@ -22,7 +22,7 @@ from FlightStickCode.FlightStick import FlightStick
 # python3 -m install --upgrade pip
 # python3 -m pip install customtkinter
 # python3 -m pip install --upgrade Pillow
-# pip3 install netifaces
+# pip3 install netifaces (for windows, make sure you have c++ build tools installed and SDK for your version)
 # pip3 install pynput
 # pip3 install PIL
 # pip3 install hidapi
