@@ -9,11 +9,11 @@
 </details>
 
 <details>
-    <summary> <b>Setup for programming</b> </summary>
+    <summary> <b><br>Setup for programming</b> </summary>
         <setup>
-            <b> What you need to install:</b>
+            <b> <br>What you need to install:</b>
             <details>
-                <summary> <b>Python Libraries</b> </summary>
+                <summary> <b><br>Python Libraries</b> </summary>
                 <p>
                     pip3 install "requests>=2.*" <br>
                     pip3 install netifaces <i>(make sure you have C++ build tools and the SDK for your version if you are on windows)</i> <br>
