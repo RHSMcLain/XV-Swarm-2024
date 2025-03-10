@@ -9,9 +9,12 @@
 </details>
 
 <details>
-    <summary> Setup for programming </summary>
+    <summary> <b>Setup for programming</b> </summary>
         <setup>
-            <p> What you need to install:</p>
+            <b> What you need to install:</b>
+            <details>
+                <summary> <b>Python Libraries</b> </summary>
+            </details>
         </setup>
 </details>
 
