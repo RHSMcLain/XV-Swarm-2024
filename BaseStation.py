@@ -19,11 +19,13 @@ from collections import deque
 GifImagePlugin.LOADING_STRATEGY = GifImagePlugin.LoadingStrategy.RGB_ALWAYS
 from FlightStickCode.FlightStick import FlightStick
 
-#pip3 install "requests>=2.*"
-#pip3 install netifaces (make sure you have c++ build tools for window and the SDK for your version)
-#python3 -m pip install customtkinter
-#python3 -m pip install --upgrade Pillow
-#pip3 install pynput
+# python3 -m install --upgrade pip
+# python3 -m pip install customtkinter
+# python3 -m pip install --upgrade Pillow
+# pip3 install netifaces
+# pip3 install pynput
+# pip3 install PIL
+# pip3 install hidapi
 
 
 #Variable decloration for most functions of the drone including keyboard and modes
