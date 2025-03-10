@@ -51,7 +51,7 @@
     <summary>
         <b>Summary of Base Station Code</b>
     </summary>
-    <p> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Code for the base station and keyboard controls for pitch, roll, yaw, and throttle. The base station is responsible for transmitting and receiving signals to and from the drone's coverage area.</p>
+    <p> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Code for the base station and keyboard controls for pitch, roll, yaw, and throttle. The base station is responsible for transmitting and &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; receiving signals to and from the drone's coverage area.</p>
 
 </details>
 
@@ -59,7 +59,7 @@
     <summary>
         <b>Summary of Access Point Code</b>
     </summary>
-    <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The access point provides WIFI, collects based station IP, and shares the base station IP with the drone. This code makes all of these possible. </p>
+    <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The access point provides WIFI, collects based station IP, and shares the base station IP with the drone. This code makes all of these &nbsp;&nbsp;&nbsp;&nbsp;&nbsp ;possible. </p>
 
 </details>
 
