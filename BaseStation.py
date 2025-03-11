@@ -1,3 +1,41 @@
+# *---------------------------------------------------------*
+
+# 38: libraries and imports
+# 60: stuffs to install
+# 73: globals
+# 101: variables
+# 160: def animation(current_frame
+# 173: def stop_animation
+# 179: def getMyIP
+# 212: def setDroneName
+# 250: def updateDroneNames
+# 269: def clamp(val
+# 279: def introToAP
+# 313: def show(key
+# 347: def release(key
+# 378: def MODESwarm
+# 384: def MODEManual
+# 390: def handshake(msg, addr
+# 421: def color
+# 430: def sendMessage(ipAddress, port, msg
+# 444: def manualControl
+# 519: def listDrones
+# 525: def listen(q_out, q_in):#happens on a separate thread
+# 548: def  addDrone
+# 564: def kill
+# 575: def arm
+# 587: def navHoldFunc
+# 599: def quit
+# 610: def checkQueue(q_in
+# 637: Real code starts here
+# 676: class App(customtkinter.CTk
+# 854: image functions
+# 876: sockets
+# 888: threads
+# 904: gifs and mainloop
+
+# *---------------------------------------------------------*
+#libraries and imports
 import socket
 import netifaces as ni
 from tkinter import *
@@ -19,6 +57,7 @@ from collections import deque
 GifImagePlugin.LOADING_STRATEGY = GifImagePlugin.LoadingStrategy.RGB_ALWAYS
 from FlightStickCode.FlightStick import FlightStick
 
+#stuffs to install
 # python3 -m install --upgrade pip
 # python3 -m pip install customtkinter
 # python3 -m pip install --upgrade Pillow
@@ -28,9 +67,10 @@ from FlightStickCode.FlightStick import FlightStick
 # pip3 install hidapi
 
 
+
 #Variable decloration for most functions of the drone including keyboard and modes
 #Global ensures that functions dont create copys of variables and actually edit the right ones
-
+#globals
 global selectedDrone
 global ipv4_address
 global droneNumber
@@ -57,6 +97,8 @@ global keyY
 global yaw
 global ip
 
+
+#variables
 my_image = customtkinter.CTkImage(light_image=Image.open('connecteddrone.jpg'),size=(215, 70))
 
 colors =  ['#ff624b','#ffaf0e','#fde838','#16d511','#0995e5','#651bc8']
@@ -104,13 +146,13 @@ ip = 0
 
 dark_image=Image.open('connecteddrone.jpg')
 
+#needed flight stick startup code
 fs = FlightStick
 try:
     fs.__init__(fs)
 except:
     controller = False
     pass
-
 
 curr_time = round(time.time()*1000)
 
@@ -592,6 +634,7 @@ def checkQueue(q_in):
 
 getMyIP()
 
+#Real code starts here
 
 #error protection
 if UDP_IP == 0:
@@ -808,7 +851,7 @@ class App(customtkinter.CTk):
         my_progressbar.start()
         
         
-        
+        #image functions
         #The following four functions are used for changing how images are displayed
     def open_input_dialog_event(self):
         dialog = customtkinter.CTkInputDialog(text="Enter a Direct UDP Drone Command:", title="Direct Command")
@@ -830,7 +873,7 @@ class App(customtkinter.CTk):
 #-----------------------------------------------------------------------------
 #----------------------------- END OF FIRST GRAB -----------------------------
 #-----------------------------------------------------------------------------
-
+#sockets
 #This function does socket assignment for networking stuff
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -842,7 +885,7 @@ print("Ready3")
 #----- END OF SECOND GRAB
 #-----------  WHAT WAS ALREADY HERE IS BELOW
 
-
+#threads
 #Starting a thread for listening
 t = Thread(target=listen, args=(qFromComms, qToComms))
 t.start()
@@ -858,7 +901,7 @@ app.after(1000, checkQueue, qFromComms)
 info = Image.open(file)
 frames = info.n_frames  # number of frames
 
-
+#gifs and mainloop
 for i in range(frames):
     obj = tk.PhotoImage(file=file, format=f"gif -index {i}")
     # obj2 = customtkinter.CTkImage(dark_image = obj)
