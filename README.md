@@ -12,14 +12,14 @@
     <summary> <b>Setup for programming<br></b> </summary>
         <setup>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;What you need to install:
-            <details>
+                 <details>
                 <summary>Python Libraries</summary>
                 <p>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;         pip3 install "requests>=2.*" <br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pip3 install netifaces <i>(make sure you have C++ build tools and the SDK for your version if you are on windows)</i> <br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;python3 -m pip install customtkinter <br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;python3 -m pip install --upgrade Pillow <br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pip3 install pynput <br>
+                            pip3 install "requests>=2.*" <br>
+                            pip3 install netifaces <i>(make sure you have C++ build tools and the SDK for your version if you are on windows)</i> <br>
+                            python3 -m pip install customtkinter <br>
+                            python3 -m pip install --upgrade Pillow <br>
+                            pip3 install pynput <br>
                 </p>
             </details>
         </setup>
