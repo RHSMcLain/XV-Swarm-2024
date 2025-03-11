@@ -1,5 +1,11 @@
 #include <WiFiNINA.h>                    //https://github.com/arduino-libraries/WiFiNINA/tree/master
-#include <WiFiUDP.h>                     
+#include <WiFiUDP.h>    
+
+#define MSP_ATTITUDE 108
+#define MSP_SET_RAW_RC 200
+#define MSP_RAW_GPS 106
+#define MSP_WP 118
+#define MSP_SET_WP 209                 
 
 char handShake[] = "HND|-1|Betsy";
 
@@ -14,19 +20,16 @@ WiFiUDP Udp;
 unsigned int localPort = 2390;
 char  ReplyBuffer[] = "Drone 1";
 int wifiState = 0;                       //Wifi connection state
-bool firstConnectFrame = false;          //First Loop while connected to wifi                
+bool firstConnectFrame = false;          //First Loop while connected to wifi           
+IPAddress bsip; //holds the base station ip address     
 
 bool serialUSB = false;
-//KONERRRRRR
-/* SBUS object, writing SBUS */
-// bfs::SbusTx sbus_tx(&Serial1);
-// /* SBUS data */
-// bfs::SbusData data;
 double pitch; // pitch is broken?
 double roll;
 double yaw;
 double throttle;
 double armVar;
+double navHold;
 int arming = 1500;
 int updateTime = 0;
 int connectTime = 0;
@@ -43,17 +46,9 @@ int blinkSpeed = 10;
 bool lightOn = false;
 bool bootComplete = false;               //Finished Drone Booting sequence
 bool enabled = false;
-//====================================================================================================================================================================
-//=================NEW MSP STUFF===================
-#define MSP_ATTITUDE 108
-#define MSP_SET_RAW_RC 200
-#define MSP_RAW_GPS 106
-#define MSP_WP 118
-#define MSP_SET_WP 209
 
 uint16_t rc_values[8];
 long start;
-bool light;
 
 struct{
   int16_t roll;       //degrees / 10
@@ -70,10 +65,8 @@ struct{
   uint16_t gpsSpeed;  //cm / seconds
   uint16_t gpsCourse; //degrees
 } msp_raw_gps;
-//====================================================================================================================================================================
 
-//KOOONNNEEER
-IPAddress bsip; //holds the base station ip address
+
 
 struct ManualControlMessage{
   IPAddress sourceIP;
@@ -84,6 +77,7 @@ struct ManualControlMessage{
   double throttle;
   double killswitch;
   double armVar;
+  double navHold;
 };
 
 struct BSIPMessage{
@@ -91,19 +85,19 @@ struct BSIPMessage{
   IPAddress BSIP;
 };
 
-void commandMSP(uint8_t cmd, uint16_t data[], uint8_t n_cbytes)
-{
+void commandMSP(uint8_t cmd, uint16_t data[], uint8_t n_cbytes){
 
   uint8_t checksum = 0;
 
   Serial1.write((byte *) "$M<", 3);
   Serial1.write(n_cbytes);
   checksum ^= (n_cbytes);
+
   Serial1.write(cmd);
   checksum ^= cmd;
+
   uint16_t cur_byte = 0;
-  while(cur_byte < (n_cbytes/2))
-  {
+  while(cur_byte < (n_cbytes/2)){
     int8_t byte1 = ((uint16_t)data[cur_byte] >> 0) & 0xFF;
     int8_t byte2 = ((uint16_t)data[cur_byte] >> 8) & 0xFF;
     Serial1.write(byte1);
@@ -113,28 +107,26 @@ void commandMSP(uint8_t cmd, uint16_t data[], uint8_t n_cbytes)
     cur_byte++;
   }
   Serial1.write(checksum);
-  while(Serial1.available())
-  {
+  while(Serial1.available()){
     Serial1.read();
-    //Serial.println("clear");
   }
 }
 
-void sendMSP(uint8_t req, uint8_t *data, uint8_t n_bytes) {
+void sendMSP(uint8_t req, uint8_t *data, uint8_t n_bytes){
 
-    uint8_t checksum = 0;
+  uint8_t checksum = 0;
 
-    Serial1.write((byte *) "$M<", 3);
-    Serial1.write(n_bytes);
-    checksum ^= n_bytes;
+  Serial1.write((byte *) "$M<", 3);
+  Serial1.write(n_bytes);
+  checksum ^= n_bytes;
 
-    Serial1.write(req);
-    checksum ^= req;
+  Serial1.write(req);
+  checksum ^= req;
 
-    Serial1.write(checksum);
+  Serial1.write(checksum);
 }
 
-void readAttitudeData() {
+void readAttitudeData(){
   delay(100);
   byte count = 0;
 
@@ -142,7 +134,7 @@ void readAttitudeData() {
   int16_t pitchRec;
   int16_t yawRec;
 
-  while (Serial1.available()) {
+  while (Serial1.available()){
     count += 1;
     byte first;
     byte second;
@@ -185,10 +177,10 @@ void readAttitudeData() {
   msp_attitude.yaw = yawRec;
 }
 
-void readGPSData()
-{
+void readGPSData(){
   delay(100);
   byte count = 0;
+
   uint8_t gpsFix;
   uint8_t numSat;
   uint32_t lat;
@@ -196,6 +188,7 @@ void readGPSData()
   uint16_t gpsAlt;
   uint16_t gpsSpeed;
   uint16_t gpsCourse;
+
   while (Serial1.available()) {
     count += 1;
     byte first;
@@ -280,51 +273,35 @@ void readGPSData()
   msp_raw_gps.gpsSpeed = gpsSpeed;
   msp_raw_gps.gpsCourse = gpsCourse;
 }
-//This is the end of the MSPFunctions function
+
 void MSPLoop(){
-  if((millis()-start) > 1000)
-  {
-    if(light)
-    {
-      digitalWrite(13, HIGH); 
-      light = false;
-    }
-    else
-    {
-      digitalWrite(13, LOW); 
-      light = true;
-    }
-    start = millis();
-  }
   uint8_t datad = 0;
   uint8_t *data = &datad;
-  commandMSP(MSP_SET_RAW_RC, rc_values, 16);
   // sendMSP(MSP_RAW_GPS, 0, 0);
   // readGPSData();
-      // sendMSP(MSP_ATTITUDE, data, 0);
-      // readAttitudeData();
+  // sendMSP(MSP_ATTITUDE, data, 0);
+  // readAttitudeData();
   rc_values[0] = pitch;
   rc_values[1] = roll;
   rc_values[2] = throttle;
   rc_values[3] = yaw;
-  rc_values[4] = 1500;
+  rc_values[4] = navHold;
   rc_values[5] = armVar;
   rc_values[6] = 1700;
   rc_values[7] = killswitch;
   rc_values[9] = 1600;
+  commandMSP(MSP_SET_RAW_RC, rc_values, 16);
 }
 
-void setup() {
+void setup(){
   //Initialize serial and wait for port to open:
   Serial.begin(115200);
-  if(Serial)
-  {
+  if(Serial){
     serialUSB = true;
     Serial.println("Setup");
   }
-  delay(1000);
+  delay(200);
   //DataSetSend();
-  delay(1000);
   // set the LED as output
   pinMode(LED_BUILTIN, OUTPUT);
   //sbus_tx.Begin();
@@ -333,10 +310,9 @@ void setup() {
   yaw = 1500;
   throttle = 885;
   armVar = 1000;
+  navHold = 1000;
   WifiConnection();
 
-  //========================NEW MSP STUFF================
-  pinMode(13, OUTPUT);
   start = millis();
   delay(250);
   Serial1.begin(9600);
@@ -353,20 +329,17 @@ void setup() {
   commandMSP(MSP_SET_RAW_RC, rc_values, 16);
   commandMSP(MSP_SET_RAW_RC, rc_values, 16);
   commandMSP(MSP_SET_RAW_RC, rc_values, 16);
-  delay(3000);
+  delay(500);
   commandMSP(MSP_SET_RAW_RC, rc_values, 16);
-  //========================================================
 }//end setup
 
 void loop() {
   status = WiFi.status();
-  if(status != WL_CONNECTED)
-  {  
+  if(status != WL_CONNECTED){  
     blinkSpeed = 50;
-    failsafe = 2000;
+    failsafe = 1600;
   }
-  else
-  {
+  else{
     failsafe = 1000;
   }
   //MillisStuff();
@@ -394,8 +367,7 @@ void loop() {
     Udp.endPacket();
     wifiState = 5;
   }
-  if(millis() - updateTime > 5000 && serialUSB)
-  {
+  if(millis() - updateTime > 5000 && serialUSB){
     Serial.println("<--------------------------->\nDrone Data");
     Serial.print("Throttle: "); Serial.println(throttle);
     Serial.print("Pitch: "); Serial.println(pitch);
@@ -437,18 +409,13 @@ void DroneSystems(){
       t = millis();
     }
   }
-  else if (droneState == 1) //nothing
-  {
+  else if (droneState == 1){ //nothing
     //Roll Ch 0, pitch Ch 1, Yaw Ch 3, Throttle Ch 2, Arm Ch 4
+  }
+  else if(droneState == 2){
     
   }
-  else if(droneState == 2)
-  {
-    
-    
-  }
-  if(status != WL_CONNECTED) 
-  {
+  if(status != WL_CONNECTED){
     if(millis()- blinkTime >= blinkSpeed){
       LightSRLatch();
       blinkTime = millis();
@@ -470,8 +437,7 @@ void DroneSystems(){
   // delay(10);  
 }//End Drone Systems
 
-void Arm(bool armed)
-{
+void Arm(bool armed){
   if(armed)
   {
     arming = 2000;
@@ -483,59 +449,41 @@ void Arm(bool armed)
 }
 
 void CheckModeStates(){ //sets booleans of the modes for enabled/disabled
-  if(arming > 1500)
-  {
+  if(arming > 1500){
     isArmed = true;
   }
-  else
-  {
+  else{
     isArmed = false;
   }
-  if(failsafe > 1500)
-  {
+  if(failsafe > 1500){
     isFailsafed = true;
   }
-  else
-  {
+  else{
     isFailsafed = false;
   }
-  if(killswitch > 1500)
-  {
+  if(killswitch > 1500){
     isKilled = true;
   }
-  else
-  {
+  else{
     isKilled = false;
   }
 }
 
-int ChannelMath(double setpoint) //Math to set the same values as used in inav veiwer, < 0.0001% stray
-{
-  //channel limits assume setpoint between 900 - 2100
-  setpoint = (setpoint - 879.7)/.6251;
-  return round(setpoint);  
-}
-
-void LightSRLatch()
-{
-  if(lightOn)
-  {
+void LightSRLatch(){
+  if(lightOn){
     digitalWrite(LEDpin, LOW);
     lightOn = false;    
   }
-  else if(!lightOn)
-  {
+  else if(!lightOn){
     digitalWrite(LEDpin, HIGH);
     lightOn = true;    
   }
 }
 
-void WifiConnection()
-{
+void WifiConnection(){
   // attempt to connect to Wi-Fi network:
-  if(status != WL_CONNECTED && ((millis() - connectTime) > 5000)) {
-    if(serialUSB)
-    {
+  if(status != WL_CONNECTED && ((millis() - connectTime) > 500)) {
+    if(serialUSB){
       Serial.print("Attempting to connect to network: ");
     }
     Serial.println(ssid);
@@ -545,8 +493,7 @@ void WifiConnection()
     firstConnectFrame = true;
     connectTime = millis();
   }
-  else if(status == WL_CONNECTED && firstConnectFrame)
-  {
+  else if(status == WL_CONNECTED && firstConnectFrame){
     Udp.begin(localPort);
       // Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
     Udp.beginPacket("192.168.4.22", 80);
@@ -558,36 +505,13 @@ void WifiConnection()
     Udp.write(ReplyBuffer);
     Udp.endPacket();
     // you're connected now, so print out the data:
-    if(serialUSB)
-    {
+    if(serialUSB){
       printBoardInfo();
     }
     firstConnectFrame = false;
     bootComplete = true;
   }
 }
-
-// void DataSetSend() //Sends data over sbus
-// {
-//   data.ch[0] = (ChannelMath(roll));
-//   data.ch[1] = (ChannelMath(pitch)); 
-//   data.ch[2] = (ChannelMath(throttle));
-//   data.ch[3] = (ChannelMath(yaw));
-//   data.ch[4] = (ChannelMath(arming));
-//   data.ch[5] = (ChannelMath(1500));
-//   data.ch[6] = (ChannelMath(1500));
-//   data.ch[7] = (ChannelMath(failsafe));
-//   data.ch[8] = (ChannelMath(1500));
-//   data.ch[9] = (ChannelMath(1500));
-//   data.ch[10] = (ChannelMath(2000));
-//   data.ch[11] = (ChannelMath(1500)); //RSSI (Signal Strenght)
-//   data.ch[12] = (ChannelMath(killswitch)); //Killswitch
-//   data.ch[13] = (ChannelMath(1500));
-//   data.ch[14] = (ChannelMath(1500));
-//   data.ch[15] = (ChannelMath(1500));
-//   sbus_tx.data(data);
-//   sbus_tx.Write();
-// }
 
 void SendMessage(char msg[]){
   Udp.begin(localPort);
@@ -620,7 +544,6 @@ void printBoardInfo(){
   Serial.println("---------------------------------------");
   Serial.println("You're connected to the network");
   Serial.println("---------------------------------------");
-
 }
 
 void MillisStuff() { //specifies whatever this stuff is for use in the loop, to make the looop easier to read
@@ -685,6 +608,9 @@ ManualControlMessage parseMessage(char buffer[]){
       case 7:
         msg.armVar = atoi(token);
         break;
+      case 8:
+        msg.navHold = atoi(token);
+        break;
       }
       roll = msg.roll;
       pitch = msg.pitch;
@@ -692,10 +618,11 @@ ManualControlMessage parseMessage(char buffer[]){
       yaw = msg.yaw;
       killswitch = msg.killswitch;
       armVar = msg.armVar;
+      navHold = msg.navHold;
     i++;
     token = strtok(NULL, "|"); 
   }
-return msg;  
+  return msg;  
 //HAS REQUIRED PACKETS FROM LISTEN, CODE FOR MANUAL MODE HERE --------------
 //Currently does not include a break, repeats loop forever
 }  
@@ -717,8 +644,7 @@ BSIPMessage parseBSIP(char buffer[]){
         break;        
       }
     i++;
-    token = strtok(NULL, "|");
-    
+    token = strtok(NULL, "|"); 
   }
   return msg;  
 }  
