@@ -11,6 +11,7 @@
 # 60: stuffs to install
 # 73: globals
 # 101: variables
+# 149: needed flight stick startup code
 # 160: def animation(current_frame
 # 173: def stop_animation
 # 179: def getMyIP
@@ -35,11 +36,12 @@
 # 599: def quit
 # 610: def checkQueue(q_in
 # 637: Real code starts here
+# 657: Main Code
 # 676: class App(customtkinter.CTk
-# 854: image functions
 # 876: sockets
 # 888: threads
 # 904: gifs and mainloop
+# 913: give it a chance to quit
 
 # *---------------------------------------------------------*
 #libraries and imports
