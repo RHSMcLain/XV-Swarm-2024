@@ -1,3 +1,42 @@
+# *---------------------------------------------------------*
+
+# 40: libraries and imports
+# 62: stuffs to install
+# 73: globals
+# 101: variables
+# 149: needed flight stick startup code
+# 160: def animation(current_frame
+# 173: def stop_animation
+# 179: def getMyIP
+# 212: def setDroneName
+# 250: def updateDroneNames
+# 269: def clamp(val
+# 279: def introToAP
+# 313: def show(key
+# 347: def release(key
+# 378: def MODESwarm
+# 384: def MODEManual
+# 390: def handshake(msg, addr
+# 421: def color
+# 430: def sendMessage(ipAddress, port, msg
+# 444: def manualControl
+# 519: def listDrones
+# 525: def listen(q_out, q_in):#happens on a separate thread
+# 548: def  addDrone
+# 564: def kill
+# 575: def arm
+# 587: def navHoldFunc
+# 599: def quit
+# 610: def checkQueue(q_in
+# 637: Real code starts here
+# 657: Main Code
+# 676: class App(customtkinter.CTk
+# 876: sockets
+# 888: threads
+# 904: gifs and mainloop
+# 913: give it a chance to quit
+
+# *---------------------------------------------------------*
 #libraries and imports
 import socket
 import netifaces as ni
