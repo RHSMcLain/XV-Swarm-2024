@@ -15,7 +15,7 @@
             <details>
                 <summary>Python Libraries</summary>
                 <p>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pip3 install "requests>=2.*" <br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;         pip3 install "requests>=2.*" <br>
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pip3 install netifaces <i>(make sure you have C++ build tools and the SDK for your version if you are on windows)</i> <br>
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;python3 -m pip install customtkinter <br>
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;python3 -m pip install --upgrade Pillow <br>
