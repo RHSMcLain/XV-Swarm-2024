@@ -59,7 +59,7 @@
     <summary>
         <b>Summary of Access Point Code</b>
     </summary>
-    <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The access point provides WIFI, collects based station IP, and shares the base station IP with the drone. This &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;code makes all of these possible. </p>
+    <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The access point provides WIFI, collects based station IP, and shares the base station IP with the drone. This code makes all of these possible. </p>
 
 </details>
 
