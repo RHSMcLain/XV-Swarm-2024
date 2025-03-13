@@ -5,7 +5,7 @@
     <summary>
         <b>Description of XV: Swarm</b>
     </summary>
-    <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The objective of this class was to create and program swarm drones ourselves. For the first few weeks of class, we worked on building the drones using a parts kit put together through research. To legally fly the drone, we needed approval for multiple FAA and school district waivers, some of which had to be revised. We also created the code from scratch, including the keyboard and flight stick controls, the communications from the Arduino to the flight controller, the access point, and the base station.</p>
+    <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The objective of this class was to create and program swarm drones ourselves. For the first few weeks of class, we worked on building &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;the drones using a parts kit put together through research. To legally fly the drone, we needed approval for multiple FAA and school district waivers, some of which had to be revised. We also created the code from scratch, including the keyboard and flight stick controls, the communications from the Arduino to the flight controller, the access point, and the base station.</p>
 </details>
 
 <details>
