@@ -11,6 +11,7 @@ from Drone import Drone
 import random as r
 import _thread
 from threading import Thread
+import os
 from queue import Queue
 from pynput.keyboard import Key, Listener
 import time
@@ -142,6 +143,19 @@ def stop_animation():
     app.after_cancel(loop)
 
  #This function detects the local operating system and grabs the IP in slightly different ways depending
+
+
+def bypassController():
+    global controller, displayVar
+    controller = True
+    if platform.system() == ("Darwin"):
+        os.system('clear')
+    else:
+        os.system('cls')      
+    print("Contoller bypassed, console cleared")
+    displayVar = "Contoller bypassed, console cleared"
+    app.textbox1.configure(text = displayVar)
+
 
 #This function detects the operating system and grabs the computers IP for networking between the AP and drones
 def getMyIP():
@@ -457,11 +471,14 @@ def manualControl():
         
        
         if controller:
-            fs.readFlightStick(fs)
-            yaw = clamp(round(fs.yaw, 2))
-            roll = clamp(round(fs.roll, 2))
-            pitch = clamp(round(fs.pitch, 2))
-            throttle = clamp(round(fs.throttle, 2))
+            try:
+                fs.readFlightStick(fs)
+                yaw = clamp(round(fs.yaw, 2))
+                roll = clamp(round(fs.roll, 2))
+                pitch = clamp(round(fs.pitch, 2))
+                throttle = clamp(round(fs.throttle, 2))
+            except:
+                pass
         else:
             print('\033[31m===========================================================================\033[0m')
             print('\033[31m- - - - NO FLIGHTSTICK CONNECTED  |  CONNECT CONTROLLER AND RESTART - - - -\033[0m')
@@ -664,9 +681,11 @@ class App(customtkinter.CTk):
         self.sidebar_button_2 = customtkinter.CTkButton(self.sidebar_frame, command=lambda: introToAP(), text="Connect To AP")
         self.sidebar_button_2.grid(row=2, column=0, padx=20, pady=10)
         self.sidebar_button_3 = customtkinter.CTkButton(self.sidebar_frame, command=self.sidebar_button_event, text="Test")
+        self.sidebar_button_5 = customtkinter.CTkButton(self.sidebar_frame, command=lambda: bypassController(), text="Bypass Controller", width=1)
         self.sidebar_button_3.grid(row=3, column=0, padx=20, pady=10)
-        self.sidebar_button_4 = customtkinter.CTkButton(self.sidebar_frame, command=self.sidebar_button_event, text="Quit")
-        self.sidebar_button_4.grid(row=4, column=0, padx=20, pady=10)
+        self.sidebar_button_5.grid(row=4, column=0, padx=0, pady=0)
+        self.sidebar_button_4 = customtkinter.CTkButton(self.sidebar_frame, command=self.sidebar_button_event, text="Quit", width=1)
+        self.sidebar_button_4.grid(row=4, column=1, padx=0, pady=0)
 
         self.my_label = customtkinter.CTkLabel(self, text="", height= 70, width = 210)
         self.my_label.grid(row=1, column=0, padx=5, pady=(25,50))
@@ -780,7 +799,7 @@ class App(customtkinter.CTk):
         selDroneTK = tk.StringVar()
 
         # set default values
-        self.sidebar_button_3.configure(command=lambda: addDrone(), text="Connect to Swarm")
+        self.sidebar_button_3.configure(command=lambda: addDrone(), text="Add Test Drone")
         self.sidebar_button_4.configure(command=lambda: quit(), hover_color='Red', fg_color='Black', text_color = 'Red4')
       
         self.checkbox_1.select()
@@ -799,7 +818,7 @@ class App(customtkinter.CTk):
         self.progressbar_1.configure(mode="indeterminnate")
         self.progressbar_1.start()
         self.textbox1.configure(text = displayVar)
-        self.seg_button_1.configure(values=["Sensitivity", "Throttle", "Max Range"])
+        self.seg_button_1.configure(values=["Sense", "Throttle", "Range"])
         self.seg_button_1.set("Value 2")
 
 
