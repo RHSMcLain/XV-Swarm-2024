@@ -300,9 +300,8 @@ void setup(){
     serialUSB = true;
     Serial.println("Setup");
   }
-  delay(1000);
+  delay(200);
   //DataSetSend();
-  delay(1000);
   // set the LED as output
   pinMode(LED_BUILTIN, OUTPUT);
   //sbus_tx.Begin();
@@ -330,7 +329,7 @@ void setup(){
   commandMSP(MSP_SET_RAW_RC, rc_values, 16);
   commandMSP(MSP_SET_RAW_RC, rc_values, 16);
   commandMSP(MSP_SET_RAW_RC, rc_values, 16);
-  delay(3000);
+  delay(500);
   commandMSP(MSP_SET_RAW_RC, rc_values, 16);
 }//end setup
 
@@ -483,7 +482,7 @@ void LightSRLatch(){
 
 void WifiConnection(){
   // attempt to connect to Wi-Fi network:
-  if(status != WL_CONNECTED && ((millis() - connectTime) > 5000)) {
+  if(status != WL_CONNECTED && ((millis() - connectTime) > 500)) {
     if(serialUSB){
       Serial.print("Attempting to connect to network: ");
     }
