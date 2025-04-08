@@ -30,9 +30,7 @@ int killswitch = 1000;
 int failsafe = 1000;
 int blinkSpeed = 10;
 const int intervalInfo = 5000;           // interval at which to update the board information
-
-uint16_t rc_values[10] = {1500, 1500, 885, 1500, 1500, 1000, 1500, 1500, 1500, 1600};
-
+unsigned short rc_values[10] = {1500, 1500, 885, 1500, 1500, 1000, 1500, 1500, 1500, 1600};
 long t = 0;
 long blinkTime = 0;
 unsigned long previousMillisInfo = 0;    //will store last time Wi-Fi information was updated
