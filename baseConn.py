@@ -27,7 +27,7 @@ from FlightStickCode.FlightStick import FlightStick
 #stuffs to install
 # python3 -m install --upgrade pip
 # python3 -m pip install customtkinter
-# python3 -m pip install --upgrade Pillow
+# `python3 -m pip install --upgrade Pillow`
 # pip3 install netifaces (for windows, make sure you have c++ build tools installed and SDK for your version)
 # pip3 install pynput
 # pip3 install PIL
@@ -476,7 +476,10 @@ def manualControl():
                 yaw = clamp(round(fs.yaw, 2))
                 roll = clamp(round(fs.roll, 2))
                 pitch = clamp(round(fs.pitch, 2))
-                throttle = clamp(round(fs.throttle, 2))
+                if(clamp(round(fs.throttle, 2)) <1150):
+                    throttle = 1000
+                else:
+                    throttle = clamp(round(fs.throttle, 2))
             except:
                 pass
         else:
