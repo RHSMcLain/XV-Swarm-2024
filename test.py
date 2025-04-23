@@ -1,41 +1,22 @@
-import platform
-import subprocess
-import re
+import customtkinter as ctk
 
-def get_wifi_signal_strength():
-    system = platform.system()
+def open_popup():
+    popup = ctk.CTkToplevel()
+    popup.title("Popup Window")
     
-    if system == "Linux":
-        try:
-            result = subprocess.run(["iwconfig"], capture_output=True, text=True)
-            match = re.search(r"Signal level=(-?\d+) dBm", result.stdout)
-            if match:
-                return f"WiFi Signal Strength: {match.group(1)} dBm"
-        except Exception as e:
-            return f"Error: {e}"
+    label = ctk.CTkLabel(popup, text="This is a popup message.")
+    label.pack(padx=20, pady=10)
     
-    elif system == "Darwin":  # macOS
-        try:
-            result = subprocess.run(["/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport", "-I"], capture_output=True, text=True)
-            match = re.search(r"agrCtlRSSI: (-?\d+)", result.stdout)
-            if match:
-                return f"WiFi Signal Strength: {match.group(1)} dBm"
-        except Exception as e:
-            return f"Error: {e}"
+    button = ctk.CTkButton(popup, text="Close", command=popup.destroy)
+    button.pack(pady=10)
     
-    elif system == "Windows":
-        try:
-            result = subprocess.run(["netsh", "wlan", "show", "interfaces"], capture_output=True, text=True)
-            match = re.search(r"Signal\s*: (\d+)", result.stdout)
-            if match:
-                signal_percent = int(match.group(1))
-                return f"WiFi Signal Strength: {signal_percent}%"
-        except Exception as e:
-            return f"Error: {e}"
-    
-    else:
-        return "Unsupported OS"
-while True:
-    if __name__ == "__main__":
-        print(get_wifi_signal_strength())
-     
+    popup.grab_set()  # Make the popup modal
+    root.wait_window(popup) # Wait for the popup to close
+
+root = ctk.CTk()
+root.title("Main Window")
+
+open_popup_button = ctk.CTkButton(root, text="Open Popup", command=open_popup)
+open_popup_button.pack(padx=20, pady=20)
+
+root.mainloop()
