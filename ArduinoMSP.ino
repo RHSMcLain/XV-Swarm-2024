@@ -30,6 +30,7 @@ double yaw;
 double throttle;
 double armVar;
 double navHold;
+int countDis = 0;
 int arming = 1500;
 int updateTime = 0;
 int connectTime = 0;
@@ -652,14 +653,10 @@ BSIPMessage parseBSIP(char buffer[]){
 void Listen(){
   int packetSize = Udp.parsePacket();
   if(packetSize){
-    //Serial.print("Received packet of size ");
-    //Serial.println(packetSize);
-    //Serial.print("From ");
+    countDis = millis();    
+    //Serial.print("Received packet of size ");//Serial.println(packetSize);//Serial.print("From ");
     IPAddress remoteIp = Udp.remoteIP();
-    //Serial.print(remoteIp);
-    //Serial.print(", port ");
-    //Serial.println(Udp.remotePort());
-    // read the packet into packetBufffer
+    //Serial.print(remoteIp);//Serial.print(", port ");//Serial.println(Udp.remotePort());// read the packet into packetBufffer
     int len = Udp.read(packetBuffer, 255);
     //Serial.println(packetBuffer);
     if (len > 0) {
@@ -692,5 +689,8 @@ void Listen(){
         }
       }
     }    
+  }  
+  else if(armVar == 1575 && (millis() - countDis) > 1000){
+    armVar = 1000;
   }
 }
