@@ -430,22 +430,6 @@ def manualControl():
     listener.start()
 
     while True:
-        # if keyQ:
-        #     yaw -= 1
-        # elif keyE:
-        #     yaw += 1
-        # if keyA:
-        #     roll -= 1
-        # elif keyD:
-        #     roll += 1
-        # if keyW:
-        #     pitch += 1
-        # elif keyS:
-        #     pitch -= 1
-        # if keyAU:
-        #     throttle += 1
-        # elif keyAD:
-        #     throttle -= 1
         if keyR:
             kill()
         if keyT:
@@ -562,7 +546,6 @@ def killAllDrones():
         for drone in drones:
             if(drone.name != "Connecting"):
                 sendMessage(drone.ipAddress, drone.port, "MAN|1500|1500|1500|1500|1000|1700|1500|1500|") #send kill message
-                #print(str(drone.ipAddress) + "," + str(drone.port) + ", MAN|1500|1500|1500|1500|1000|1700|1500|1500|")
             else: print("Drone is connecting")
 
 #This funcion sends the drone arming values
@@ -658,7 +641,7 @@ terminate = False
 maxDrones = 3
 drones = []
 #these next two lines are for testing only. Remove them
-drones.append(Drone(0, "HelloWorldDrone", "10.20.18.23", 85))
+drones.append(Drone(0, "HelloWorldDrone", "10.20.18.23", 85, "inactive"))
 droneNumber = (droneNumber+1)
 selDrone = drones[0]
 

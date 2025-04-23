@@ -33,6 +33,8 @@ global yaw
 global throttle
 global navHold
 global killswitch
+global activeDrone
+global droneCount
 
 killswitch = 1000
 throttle = 1000
@@ -47,9 +49,13 @@ controller = True
 appThrottle = 0
 usingAppThrottle = False
 killThreads = False
+activeDrone = -1
+droneCount = 0
 
 UDP_IP = 0
 ip = 0
+drones = []
+drones.append(Drone(0, "HelloWorldDrone", "10.20.18.23", 85, "inactive"))
 
 #armvar is armed at 1575, disarmed at 1500
 #fail safes: out of wifi range
@@ -159,16 +165,20 @@ class tkSwitch():
     def grid(self, **kwargs):self.container.grid(**kwargs)
 
 class dronActiveButton():
-    def __init__(self, master):
-
+    def __init__(self, master, droneId):
+        self.droneId = droneId
         self.state = "inactive" #inactive, active, manual
-        self.inactiveColor = "Red"
-        self.activeColor = "Green"
-        self.manualColor = "Yellow"
+        self.inactiveColor = '#FF0000'
+        self.activeColor = '#00FF00'
+        self.manualColor = '#DDDD00'
+        self.inactiveHoverColor = '#880000'
+        self.activeHoverColor = '#008800'
+        self.manualHoverColor = '#777700'
+        self.currentColor = self.inactiveColor
+        self.currentHoverColor = self.inactiveHoverColor
+        self.assigned = False
 
-        self.currentColor = "Red"
-
-        self.droneButton = customtkinter.CTkButton(master, width=120, height=120, command=self.onClick, hover_color=self.currentColor)
+        self.droneButton = customtkinter.CTkButton(master, width=120, height=120, command=self.onClick, hover_color=self.currentHoverColor, text="Null Drone")
 
         self.setColor()
 
@@ -176,17 +186,22 @@ class dronActiveButton():
         match self.state:
             case "inactive":
                 self.currentColor = self.inactiveColor
+                self.currentHoverColor = self.inactiveHoverColor
             case "active":
                self.currentColor = self.activeColor
+               self.currentHoverColor = self.activeHoverColor
             case "manual":
                 self.currentColor = self.manualColor
-        self.droneButton.configure(fg_color=self.currentColor, hover_color=self.currentColor)
+                self.currentHoverColor = self.manualHoverColor
+        self.droneButton.configure(fg_color=self.currentColor, hover_color=self.currentHoverColor)
 
     def onClick(self):
-        if (self.state == "inactive"):
+        if (self.state == "inactive" and not manualYes and self.assigned):
             self.state = "active"
-        elif (self.state == "active"):
-            self.state = "manual"
+        elif (self.state != "manual" and manualYes and self.assigned):
+            global activeDrone
+            activeDrone = self.droneId
+            buttonRefresh()
         else:
             self.state = "inactive"
         
@@ -194,6 +209,20 @@ class dronActiveButton():
 
     def grid(self, **kwargs):
         self.droneButton.grid(**kwargs)
+    
+    def manualUpdate(self):
+        global activeDrone
+        if (activeDrone == self.droneId and manualYes and self.assigned):
+            self.state = "manual"
+        else:
+            self.state = "inactive"
+
+        self.setColor()
+    
+    def changeText(self, newText):
+        self.newText = newText
+        self.droneButton.configure(text=self.newText)
+
 
 class App(customtkinter.CTk):
     def __init__(self):
@@ -213,7 +242,7 @@ class App(customtkinter.CTk):
         #Buttons in left button bar
         self.killswitchbutton =       Button(self.leftButtonBar, text="Kill Drones",       command=lambda:self.killswitch(), fg_color="red", hover_color="darkred")
         self.bypassControllerButton = Button(self.leftButtonBar, text="Bypass Controller", command=lambda:bypassController(self))
-        self.addTestDroneButton =     Button(self.leftButtonBar, text="Add Test Drone",    command=lambda:addDrone())
+        self.addTestDroneButton =     Button(self.leftButtonBar, text="Add Test Drone",    command=lambda:addDrone("HelloWorldDrone", "10.20.18.23", 85))
         self.connectToAPButton =      Button(self.leftButtonBar, text="Connect To AP",     command=lambda:introToAP())
         
         self.manualControlSwitch = tkSwitch(self.leftButtonBar, MODEManual, MODESwarm, leftText="Manual", rightText="Swarm") #switch for Manual and Swarm modes in left button bar
@@ -230,24 +259,24 @@ class App(customtkinter.CTk):
 
 
         self.activeDroneBar = customtkinter.CTkFrame(self, width=600)
+        self.droneButton = [None]*8
+        self.droneButton[0] = dronActiveButton(self.activeDroneBar, 0)
+        self.droneButton[1] = dronActiveButton(self.activeDroneBar, 1)
+        self.droneButton[2] = dronActiveButton(self.activeDroneBar, 2)
+        self.droneButton[3] = dronActiveButton(self.activeDroneBar, 3)
+        self.droneButton[4] = dronActiveButton(self.activeDroneBar, 4)
+        self.droneButton[5] = dronActiveButton(self.activeDroneBar, 5)
+        self.droneButton[6] = dronActiveButton(self.activeDroneBar, 6)
+        self.droneButton[7] = dronActiveButton(self.activeDroneBar, 7)
 
-        self.drone0Button = dronActiveButton(self.activeDroneBar)
-        self.drone1Button = dronActiveButton(self.activeDroneBar)
-        self.drone2Button = dronActiveButton(self.activeDroneBar)
-        self.drone3Button = dronActiveButton(self.activeDroneBar)
-        self.drone4Button = dronActiveButton(self.activeDroneBar)
-        self.drone5Button = dronActiveButton(self.activeDroneBar)
-        self.drone6Button = dronActiveButton(self.activeDroneBar)
-        self.drone7Button = dronActiveButton(self.activeDroneBar)
-
-        self.drone1Button.grid(row=0, column=1, padx=15, pady=15)
-        self.drone2Button.grid(row=0, column=2, padx=15, pady=15)
-        self.drone3Button.grid(row=0, column=3, padx=15, pady=15)
-        self.drone0Button.grid(row=0, column=0, padx=15, pady=15)
-        self.drone4Button.grid(row=1, column=0, padx=15, pady=15)
-        self.drone5Button.grid(row=1, column=1, padx=15, pady=15)
-        self.drone6Button.grid(row=1, column=2, padx=15, pady=15)
-        self.drone7Button.grid(row=1, column=3, padx=15, pady=15)
+        self.droneButton[1].grid(row=0, column=1, padx=15, pady=15)
+        self.droneButton[2].grid(row=0, column=2, padx=15, pady=15)
+        self.droneButton[3].grid(row=0, column=3, padx=15, pady=15)
+        self.droneButton[0].grid(row=0, column=0, padx=15, pady=15)
+        self.droneButton[4].grid(row=1, column=0, padx=15, pady=15)
+        self.droneButton[5].grid(row=1, column=1, padx=15, pady=15)
+        self.droneButton[6].grid(row=1, column=2, padx=15, pady=15)
+        self.droneButton[7].grid(row=1, column=3, padx=15, pady=15)
 
 
         # Aligning all parts of the UI
@@ -309,7 +338,7 @@ class App(customtkinter.CTk):
         self.console.error("!!!  TERMINATING APP  !!!")
         killThreads = True
 
-        self.after(3000, self.destroy)
+        self.after(500, self.destroy)
 
     def updateThrottleDisplay(a, b, self): #Dont touch the aurguments, very finicky
         global appThrottle, usingAppThrottle
@@ -349,12 +378,12 @@ class App(customtkinter.CTk):
         self.droneDisplay.tag_config("center", justify="center")
         self.droneDisplay.delete(0.0, customtkinter.END)
         self.droneDisplay.insert(0.0, 
-        "Throttle: " + str(throttle) + 
-        "\nPitch:    " + str(roll) + 
-        "\nYaw:      " + str(yaw) + 
-        "\nRoll:     " + str(pitch) + 
-        "\nArmVar:   " + str(armVar) + 
-        "\nNavHold:  " + str(navHold))
+        "Throttle: " + str(round(throttle)) + 
+        "\nPitch:    " + str(round(roll)) + 
+        "\nYaw:      " + str(round(yaw)) + 
+        "\nRoll:     " + str(round(pitch)) + 
+        "\nArmVar:   " + str(round(armVar)) + 
+        "\nNavHold:  " + str(round(navHold)))
         self.droneDisplay.tag_add("center", 0.0, customtkinter.END)
         self.droneDisplay.configure(state="disabled")
 
@@ -410,13 +439,17 @@ def sendMessage(ipAddress, port, msg):
 #Switches from Manual to Swarm
 def MODESwarm():
     global manualYes
+    global activeDrone
     manualYes = False
+    activeDrone = -1
+    buttonRefresh()
     tkprint("|||  MANUAL STOPPED  |||")
 
 #Switches from Swarm to Manual
 def MODEManual():
     global manualYes
     manualYes = True
+    buttonRefresh()
     tkprint("|||  MANUAL ENABLED  |||")
 
 #This function is used to ensure that values for control inputs are kept in acceptable values
@@ -456,15 +489,65 @@ def manualControl():
 
             if(usingAppThrottle):
                 throttle = appThrottle * 10 + 1000
+            sendMessage(drones[activeDrone].ipAddress, drones[activeDrone].port, "MAN" + "|" + ip + "|" + str(yaw) + "|" + str(pitch) + "|" + str(roll) + "|" + str(throttle) + "|" + str(killswitch) + "|" + str(armVar) + "|" + str(navHold) + "|")
         else:
             appThrottle = 0
-
-        time.sleep(0.1)
+        time.sleep(0.002)
     tkprint("Manual Control Thread terminated")
 
+def handshake(msg, addr):
+    global displayVar, going
+    parts = msg.split("|")
+    i = int(parts[1])
+    if (i == -1):
+        i = len(drones)
+        print(i)
+        print(addr)
+        print(addr[1])
+        addDrone(parts[2], addr[0], addr[1])
+        # app.my_label.configure(text="DRONE CONNECTED", image=my_image)
+        displayVar = displayVar.replace("\nChecking Que", "")
+        going = True
+        for i in range(1,len(drones)):
+            displayVar += ("\nConnected: " + drones[i].name)
+            app.textbox1.configure(text = displayVar)
+        for adrone in drones:
+            print(adrone)
+
+    else:
+        if drones[i].name == parts[2]:
+            #we could update here
+            drones[i].ipAddress = addr[0]
+            drones[i].port = addr[1]
+    #droneList.update() 
+
+
+def sendMessage(ipAddress, port, msg):
+    global sock, throttle
+    print("sendMessage")
+    print(ipAddress)
+    print(port)
+    print(msg)
+    print("----------------------------")    
+    bMsg = msg.encode("ascii")
+    sock.sendto(bMsg, (ipAddress, int(port)))
+    #print("sent message")
+    time.sleep(0.002)
+
 #place holder functions
-def addDrone():tkprint("Trust me I added a drone.")
-def introToAP():tkprint("Trust me I'm connecting to AP.")
+def addDrone(name, ipAdr, port):
+    global droneCount
+    global app
+    drones.append(Drone(droneCount, name, ipAdr, port, "inactive"))
+    app.droneButton[droneCount].changeText(drones[droneCount].name)
+    app.droneButton[droneCount].assigned = True
+    tkprint("Drone \"" +name +"\" added")
+    droneCount += 1
+
+def buttonRefresh():
+    global app
+    for i in range(0,8):
+        app.droneButton[i].manualUpdate()
 
 def runAfterAppLaunch():
     global UDP_IP, UDP_PORT, sock, manualControlThread
@@ -484,9 +567,90 @@ def runAfterAppLaunch():
     tkprint("UDP IP is " + str(UDP_IP))
 
 
+
     #Starting the Thread for manual control
     manualControlThread = Thread(target=manualControl, args=())
     manualControlThread.start()
+
+def introToAP():
+    global sock
+    #tell the AP that we are the base station. 
+    #AP needs to save that IP address to tell it to drones (so they can connect to the base station)
+    sendMessage("192.168.4.22", 80, "BaseStationIP")
+    print ("sent message to AP")
+    print("Listening for Response from AP.........")
+    #listen 
+    #TODO: PUT IN A RESEND EVERY FEW SECONDS
+    #CODE FOR THAT INCLUDES: curr_time = round(time.time()*1000)
+    startTime = time.time()
+    introCount = 1
+    while True:
+    #check if we need to stop--grab from q_in  
+        data = b""    #the b prefix makes it byte dat
+        try:
+            data, addr = sock.recvfrom(1024)
+            print(data)
+            print("Decoding Data...")
+            strData = data.decode("utf-8")
+            print("Received message %s" % data)
+            
+            break
+        except:#crdrd
+            if (time.time() - startTime >= 3):
+                introCount += 1
+                sendMessage("192.168.4.22", 80, "BaseStationIP")
+                print("sent message to AP: ", introCount)
+                startTime = time.time()
+            continue
+        #test the input to see if it is the confirmation code
+        #if it is, we can break
+
+def checkQueue(q_in):
+    global selDrone, displayVar
+    global going
+    if (not q_in.empty()):
+        print("checking queue")
+        displayVar += "\nChecking Que"
+        app.textbox1.configure(text=displayVar)
+        #grab the item
+        #process the info
+        #mark it complete
+        data = q_in.get()
+        parts = data.split("*")
+        addr = parts[0]
+        port = int(parts[1])
+        msg = parts[2]
+        # print(parts)
+        msgParts = msg.split("|")
+
+        cmd = msgParts[0]
+
+        if cmd == "HND":
+            #HANDSHAKE
+            handshake(msg, (addr, port))
+    app.after(700, checkQueue, q_in)
+
+def listen(q_out, q_in):#happens on a separate thread
+    print("Listener Thread began")
+    while True:
+        #check if we need to stop--grab from q_in  
+        data = b""    #the b prefix makes it byte data
+        if (not q_in.empty()):
+            qIn = q_in.get()
+            if (qIn == "TERMINATE"):
+                q_out.put("STOPPING")
+                break
+        try:
+            data, addr = sock.recvfrom(1024)
+        except:
+            continue
+        strData = data.decode("utf-8")
+        print("Received message %s" % data)
+        # strData = strData + "|" + addr[0] + "|" + str(addr[1])#the message, the ip, the port
+        strData = addr[0] + "*" + str(addr[1]) + "*" + strData#the ip, the port, the message
+        # the message is pipe (|) delimited. The ip, port, and message are * delimited
+        q_out.put(strData) #this sends the message to the main thread
+    print("goodbye")
 
 app = App()
 
