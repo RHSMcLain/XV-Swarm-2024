@@ -9,7 +9,8 @@ from pynput.keyboard import Key, Listener
 import time
 import customtkinter
 import platform
-from FlightStickCode.FlightStick import FlightStick
+from Resources.FlightStickCode.FlightStick import FlightStick
+from Resources.Statics import colorPalette
 
 global manualYes
 global appThrottle
@@ -78,16 +79,16 @@ class tkConsole():
                     border_color="grey",
                     activate_scrollbars=False,
                     border_width=7,
-                    fg_color="black",
+                    fg_color=colorPalette.console,
                     text_color="white"
+                    
                     )
 
-        self.textbox = customtkinter.CTkTextbox(**config)
+        self.textbox = customtkinter.CTkTextbox(**config, font=('Monaco', 13))
         self.textbox.grid(row=row, column=column)
 
         self.textbox.tag_config("red", foreground="red")
-        
-        self.textbox.insert("0.0", " "*50 +"- - - - - - - CONSOLE - - - - - - -" + " "*50 + "\n")
+        self.textbox.insert("0.0", " "*17 +"- - - - - - - CONSOLE - - - - - - -" +"\n")
 
         self.disable()
     
@@ -101,19 +102,19 @@ class tkConsole():
         self.textbox.tag_add("red", "2.0", "2.100")
         self.disable()
     def stick_not_connected(self):
-        self.error('==================================================================')
-        self.error('- - - - NO FLIGHTSTICK CONNECTED  |  CONNECT CONTROLLER AND RESTART - - - -')
-        self.error('==================================================================')
+        self.error('=========================================================================')
+        self.error('- - - - NO FLIGHTSTICK CONNECTED | CONNECT CONTROLLER AND RESTART - - - -')
+        self.error('=========================================================================')
     def killswitch(self):
-        self.error("========================KILL SWITCH ACTIVATED=======================")
+        self.error('==========================KILL SWITCH ACTIVATED==========================')
     def IP_is_zero(self):
-        self.error('=================================================================')
-        self.error('- - - - - - - - - - - FATAL ERROR: IP IS 0, IP GRABBING CODE FAILED - - - - - - - - - - -')
-        self.error('=================================================================')
+        self.error('=========================================================================')
+        self.error('- - - - - - - FATAL ERROR: IP IS 0, IP GRABBING CODE FAILED - - - - - - -')
+        self.error('=========================================================================')
     def port_is_zero(self):
-        self.error('=================================================================')
-        self.error('- - - - - - - - - FATAL ERROR: PORT IS 0, PORT GRABBING CODE FAILED - - - - - - - - -')
-        self.error('=================================================================')
+        self.error('=========================================================================')
+        self.error('- - - - - - FATAL ERROR: PORT IS 0, PORT GRABBING CODE FAILED - - - - - -')
+        self.error('=========================================================================')
     def grid(self,**kwargs):self.textbox.grid(**kwargs)
     def configure(self,**kwargs):self.configure(**kwargs)
     def enable(self):self.textbox.configure(state="normal")
@@ -121,12 +122,21 @@ class tkConsole():
     def clear(self):
         self.enable()
         self.textbox.delete(1.0, customtkinter.END)
-        app.console.textbox.insert("0.0", " "*50 +"- - - - - - - CONSOLE - - - - - - -" + " "*50 + "\n")
+        app.console.textbox.insert("0.0", " "*17 +"- - - - - - - CONSOLE - - - - - - -" +"\n")
         self.disable()
 
 class Button():
     def __init__(self, app, **kwargs):
-        self.button = customtkinter.CTkButton(app, width=300, height=56, corner_radius=10, border_width=4, border_color="black", font=("Arial", 25, "bold"), fg_color="#63a5c5")
+        self.button = customtkinter.CTkButton(app, 
+            width=300, 
+            height=56, 
+            corner_radius=10, 
+            border_width=4, 
+            border_color="black", 
+            font=("Arial", 25, "bold"), 
+            fg_color=colorPalette.buttonBlue, 
+            hover_color=colorPalette.buttonBlueHover)
+        
         self.button.configure(**kwargs)
     def grid(self,padx=10,pady=10,**kwargs):self.button.grid(padx=padx,pady=pady,**kwargs)
     def configure(self,**kwargs):self.button.configure(**kwargs)
@@ -136,8 +146,8 @@ class tkSwitch():
         self.leftFunction = leftFunction
         self.rightFunction = rightFunction
         
-        self.baseColor = "#36719F"
-        self.highLightColor = "#63a5c5"
+        self.baseColor = colorPalette.switchBack
+        self.highLightColor = colorPalette.buttonBlue
         self.deselectedTextColor = "#B7B7B7"
         self.selectedTextColor="white"
 
@@ -168,17 +178,23 @@ class dronActiveButton():
     def __init__(self, master, droneId):
         self.droneId = droneId
         self.state = "inactive" #inactive, active, manual
-        self.inactiveColor = '#FF0000'
-        self.activeColor = '#00FF00'
-        self.manualColor = '#DDDD00'
-        self.inactiveHoverColor = '#880000'
-        self.activeHoverColor = '#008800'
-        self.manualHoverColor = '#777700'
+        self.inactiveColor = colorPalette.droneInactive
+        self.activeColor = colorPalette.droneActive
+        self.manualColor = colorPalette.droneManual
+        self.inactiveHoverColor = colorPalette.droneInactiveHover
+        self.activeHoverColor = colorPalette.droneActiveHover
+        self.manualHoverColor = colorPalette.droneManualHover
         self.currentColor = self.inactiveColor
         self.currentHoverColor = self.inactiveHoverColor
         self.assigned = False
 
-        self.droneButton = customtkinter.CTkButton(master, width=120, height=120, command=self.onClick, hover_color=self.currentHoverColor, text="Null Drone")
+        self.droneButton = customtkinter.CTkButton(
+            master, 
+            width=120, 
+            height=120, 
+            command=self.onClick, 
+            hover_color=self.currentHoverColor, 
+            text="Null Drone")
 
         self.setColor()
 
@@ -229,6 +245,7 @@ class App(customtkinter.CTk):
         super().__init__()
         self.title("Controlling Module")
         self.geometry(f"{1500}x{800}")
+        self.configure(fg_color=colorPalette.backgroundDark)
 
         #killswitch, connect to ap, add test drone, bypass controller, Manual UDP Console and Send USP Message, Mode and Stage Control
         #textbox with Throttle, Pitch, Yaw, Roll, ArmVar, and Navhold
@@ -240,7 +257,7 @@ class App(customtkinter.CTk):
         self.droneDisplay = customtkinter.CTkTextbox(self, activate_scrollbars=False, font=("Monaco", 20), width=305, spacing3=17, spacing1=19, fg_color="#fac771") #Orange bar left of console that displays drone throttle, pitch, yaw, etc.
 
         #Buttons in left button bar
-        self.killswitchbutton =       Button(self.leftButtonBar, text="Kill Drones",       command=lambda:self.killswitch(), fg_color="red", hover_color="darkred")
+        self.killswitchbutton =       Button(self.leftButtonBar, text="Kill Drones",       command=lambda:self.killswitch(), fg_color=colorPalette.buttonRed, hover_color=colorPalette.buttonRedHover)
         self.bypassControllerButton = Button(self.leftButtonBar, text="Bypass Controller", command=lambda:bypassController(self))
         self.addTestDroneButton =     Button(self.leftButtonBar, text="Add Test Drone",    command=lambda:addDrone("HelloWorldDrone", "10.20.18.23", 85))
         self.connectToAPButton =      Button(self.leftButtonBar, text="Connect To AP",     command=lambda:introToAP())
@@ -255,7 +272,7 @@ class App(customtkinter.CTk):
 
 
         #quit button
-        self.quitButton = Button(self, text="TERMINATE", command=lambda: self.attemptTerinteApp(), fg_color="red", hover_color="darkred")
+        self.quitButton = Button(self, text="TERMINATE", command=lambda: self.attemptTerinteApp(), fg_color=colorPalette.buttonRed, hover_color=colorPalette.buttonRedHover)
 
 
         self.activeDroneBar = customtkinter.CTkFrame(self, width=600)
@@ -328,7 +345,7 @@ class App(customtkinter.CTk):
         popup = customtkinter.CTkToplevel()
         popup.title("confirm terminate")
 
-        confirmButton = Button(popup, text="confirm", command=self.terminateApp, width=150, fg_color="red", hover_color="darkred")
+        confirmButton = Button(popup, text="confirm", command=self.terminateApp, width=150, fg_color=colorPalette.buttonRed, hover_color=colorPalette.buttonRedHover)
         cancelButton = Button(popup, text="cancel", command=popup.destroy, width=150)
         confirmButton.grid(row=0, column=0)
         cancelButton.grid(row=0, column=1)
@@ -584,7 +601,7 @@ def introToAP():
     #CODE FOR THAT INCLUDES: curr_time = round(time.time()*1000)
     startTime = time.time()
     introCount = 1
-    while True:
+    while introCount < 3:
     #check if we need to stop--grab from q_in  
         data = b""    #the b prefix makes it byte dat
         try:
@@ -596,7 +613,7 @@ def introToAP():
             
             break
         except:#crdrd
-            if (time.time() - startTime >= 3):
+            if (time.time() - startTime >= 1.5):
                 introCount += 1
                 sendMessage("192.168.4.22", 80, "BaseStationIP")
                 print("sent message to AP: ", introCount)
@@ -604,6 +621,7 @@ def introToAP():
             continue
         #test the input to see if it is the confirmation code
         #if it is, we can break
+    
 
 def checkQueue(q_in):
     global selDrone, displayVar
