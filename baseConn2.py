@@ -555,7 +555,7 @@ def manualControl():
                 throttle = appThrottle * 10 + 1000
         else:
             appThrottle = 0 
-        for i in range(0,7):
+        for i in range(0,len(drones)):
             if(i == activeDrone):
                 drones[activeDrone].yaw = yaw
                 drones[activeDrone].pitch = pitch

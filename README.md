@@ -35,7 +35,7 @@
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- § 107.35 – Operation of Multiple Small UAS<br>
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- Registered each drone With FAA<br>
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- Registered RSD with ODA<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- Request Fria <br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- FRIA zone <br>
 
 </details>
 
@@ -51,7 +51,7 @@
     <summary>
         <b>Summary of Base Station Code</b>
     </summary>
-    <p> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Code for the base station and keyboard controls for pitch, roll, yaw, and throttle. The base station is responsible for transmitting and &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;receiving signals to and from the drone's coverage area.</p>
+    <p><span style="width: 40px; display: inline-block;"></span><span>Code for the base station and keyboard controls for pitch, roll, yaw, and throttle. The base station is responsible for transmitting and receiving signals to and from the drone's coverage area.</span></p>
 
 </details>
 
