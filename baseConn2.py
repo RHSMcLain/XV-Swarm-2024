@@ -21,7 +21,12 @@ global controller
 
 global UDP_IP, UDP_PORT, ip, sock
 global manualControlThread
+global listenerThread
 global killThreads
+
+global qFromComms
+global qToComms
+
 global app
 
 global pitch, roll, yaw, throttle, navHold, armVar, killswitch
@@ -511,7 +516,7 @@ def clamp(val):
 
 def manualControl():
     global manualYes, killswitch, throttle, yaw, roll, pitch, armVar, navHold, app, sock, killThreads, usingAppThrottle, appThrottle
-
+    tkprint("Manual Control Thread started")
     while not killThreads: #continously loop until killThreads is true
 
         if controller:
@@ -533,12 +538,14 @@ def manualControl():
 
         if(manualYes):
             app.updateDroneDisplay()
-
+            armVar = 1600
             if(usingAppThrottle):
                 throttle = appThrottle * 10 + 1000
-            sendMessage(drones[activeDrone].ipAddress, drones[activeDrone].port, "MAN" + "|" + ip + "|" + str(yaw) + "|" + str(pitch) + "|" + str(roll) + "|" + str(throttle) + "|" + str(killswitch) + "|" + str(armVar) + "|" + str(navHold) + "|")
         else:
+            armVar = 1000
             appThrottle = 0
+        if(activeDrone != -1):
+            sendMessage(drones[activeDrone].ipAddress, drones[activeDrone].port, "MAN" + "|" + ip + "|" + str(yaw) + "|" + str(pitch) + "|" + str(roll) + "|" + str(throttle) + "|" + str(killswitch) + "|" + str(armVar) + "|" + str(navHold) + "|")
         time.sleep(0.002)
     tkprint("Manual Control Thread terminated")
 
@@ -553,11 +560,10 @@ def handshake(msg, addr):
         tkprint(addr[1])
         addDrone(parts[2], addr[0], addr[1])
         # app.my_label.configure(text="DRONE CONNECTED", image=my_image)
-        displayVar = displayVar.replace("\nChecking Que", "")
+        tkprint("\nChecking Que")
         going = True
         for i in range(1,len(drones)):
-            tkprint("\nConnected: " + drones[i].name)
-            app.textbox1.configure(text = displayVar)
+            tkprint(f"\nConnected: {drones[i].name}")
         for adrone in drones:
             tkprint(adrone)
 
@@ -601,9 +607,12 @@ def findScreenScale():
     return (height, width)
 
 def runAfterAppLaunch():
-    global UDP_IP, UDP_PORT, sock, manualControlThread
+    global UDP_IP, UDP_PORT, sock, manualControlThread, qFromComms, qToComms
 
     getMyIP()
+
+    qFromComms = Queue() #gets information from the comms thread
+    qToComms = Queue() #sends information to the comms thread
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -622,6 +631,12 @@ def runAfterAppLaunch():
     #Starting the Thread for manual control
     manualControlThread = Thread(target=manualControl, args=())
     manualControlThread.start()
+
+    #Starting the Thread for the listener
+    listenerThread = Thread(target=listen, args=(qFromComms, qToComms))
+    listenerThread.start()
+
+    app.after(1000, checkQueue, qFromComms)
 
 def introToAP():
     global sock
@@ -650,19 +665,17 @@ def introToAP():
             if (time.time() - startTime >= 1.5):
                 introCount += 1
                 sendMessage("192.168.4.22", 80, "BaseStationIP")
-                tkprint("sent message to AP: ", introCount)
+                tkprint(f"sent message to AP: {introCount}")
                 startTime = time.time()
             continue
         #test the input to see if it is the confirmation code
         #if it is, we can break
 
 def checkQueue(q_in):
-    global selDrone, displayVar
+    global selDrone
     global going
     if (not q_in.empty()):
         tkprint("checking queue")
-        displayVar += "\nChecking Que"
-        app.textbox1.configure(text=displayVar)
         #grab the item
         #process the info
         #mark it complete
@@ -679,7 +692,7 @@ def checkQueue(q_in):
         if cmd == "HND":
             #HANDSHAKE
             handshake(msg, (addr, port))
-    app.after(700, checkQueue, q_in)
+    if not killThreads:app.after(700, checkQueue, q_in)
 
 def listen(q_out, q_in):#happens on a separate thread
     global killThreads
@@ -702,7 +715,7 @@ def listen(q_out, q_in):#happens on a separate thread
         strData = addr[0] + "*" + str(addr[1]) + "*" + strData#the ip, the port, the message
         # the message is pipe (|) delimited. The ip, port, and message are * delimited
         q_out.put(strData) #this sends the message to the main thread
-    tkprint("terminated listener thread")
+    tkprint("Listener thread Terminated")
 
 
 #adjusting the size of the app
