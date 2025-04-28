@@ -22,7 +22,7 @@ import tkinter.messagebox
 from PIL import Image, GifImagePlugin, ImageTk
 from collections import deque
 GifImagePlugin.LOADING_STRATEGY = GifImagePlugin.LoadingStrategy.RGB_ALWAYS
-from FlightStickCode.FlightStick import FlightStick
+from Resources.FlightStickCode.FlightStick import FlightStick
 
 #stuffs to install
 # python3 -m install --upgrade pip
