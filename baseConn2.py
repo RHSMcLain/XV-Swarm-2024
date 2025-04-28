@@ -7,6 +7,8 @@ import os
 from queue import Queue
 from pynput.keyboard import Key, Listener
 import time
+from tkinter import * 
+from tkinter.ttk import *
 import customtkinter
 import platform
 from Resources.FlightStickCode.FlightStick import FlightStick
@@ -17,25 +19,13 @@ global appThrottle
 global usingAppThrottle
 global controller
 
-global UDP_IP
-global UDP_PORT
-global ip
-global sock
+global UDP_IP, UDP_PORT, ip, sock
 global manualControlThread
 global killThreads
 global app
 
-global selectedDrone
-global activeDrones
-
-global pitch
-global roll
-global yaw
-global throttle
-global navHold
-global killswitch
-global activeDrone
-global droneCount
+global pitch, roll, yaw, throttle, navHold, armVar, killswitch
+global activeDrone, droneCount, selectedDrone, activeDrones
 
 killswitch = 1000
 throttle = 1000
@@ -56,7 +46,7 @@ droneCount = 0
 UDP_IP = 0
 ip = 0
 drones = []
-drones.append(Drone(0, "HelloWorldDrone", "10.20.18.23", 85, "inactive"))
+#drones.append(Drone(0, "HelloWorldDrone", "10.20.18.23", 85, "inactive"))
 
 #armvar is armed at 1575, disarmed at 1500
 #fail safes: out of wifi range
@@ -91,15 +81,25 @@ class tkConsole():
         self.textbox.insert("0.0", " "*17 +"- - - - - - - CONSOLE - - - - - - -" +"\n")
 
         self.disable()
+
+        self.msgCount = 0
     
     def log(self, text):
         self.enable()
         self.textbox.insert("2.0", text + "\n")
         self.disable()
+        self.msgCount = 0
     def error(self, text):
         self.enable()
         self.textbox.insert("2.0", text + "\n")
-        self.textbox.tag_add("red", "2.0", "2.100")
+        self.textbox.tag_add("red", "2.0", "3.0")
+        self.disable()
+        self.msgCount = 0
+    def logMsg(self):
+        self.msgCount += 1
+        self.enable()
+        if self.msgCount != 1: self.textbox.delete(2.0, 3.0)
+        self.textbox.insert("2.0", f"message count: {self.msgCount}\n")
         self.disable()
     def stick_not_connected(self):
         self.error('=========================================================================')
@@ -184,9 +184,12 @@ class dronActiveButton():
         self.inactiveHoverColor = colorPalette.droneInactiveHover
         self.activeHoverColor = colorPalette.droneActiveHover
         self.manualHoverColor = colorPalette.droneManualHover
+        self.notConnectedColor = colorPalette.droneNotConnected
         self.currentColor = self.inactiveColor
         self.currentHoverColor = self.inactiveHoverColor
         self.assigned = False
+
+        self.defaultName = "Not Connected"
 
         self.droneButton = customtkinter.CTkButton(
             master, 
@@ -194,21 +197,27 @@ class dronActiveButton():
             height=120, 
             command=self.onClick, 
             hover_color=self.currentHoverColor, 
-            text="Null Drone")
+            text=self.defaultName)
 
         self.setColor()
 
     def setColor(self):
-        match self.state:
-            case "inactive":
-                self.currentColor = self.inactiveColor
-                self.currentHoverColor = self.inactiveHoverColor
-            case "active":
-               self.currentColor = self.activeColor
-               self.currentHoverColor = self.activeHoverColor
-            case "manual":
-                self.currentColor = self.manualColor
-                self.currentHoverColor = self.manualHoverColor
+
+        if(self.droneButton.cget("text") == self.defaultName):
+            self.currentColor = self.notConnectedColor
+            self.currentHoverColor = self.notConnectedColor
+        else:
+            match self.state:
+                case "inactive":
+                    self.currentColor = self.inactiveColor
+                    self.currentHoverColor = self.inactiveHoverColor
+                case "active":
+                    self.currentColor = self.activeColor
+                    self.currentHoverColor = self.activeHoverColor
+                case "manual":
+                    self.currentColor = self.manualColor
+                    self.currentHoverColor = self.manualHoverColor
+
         self.droneButton.configure(fg_color=self.currentColor, hover_color=self.currentHoverColor)
 
     def onClick(self):
@@ -247,6 +256,8 @@ class App(customtkinter.CTk):
         self.geometry(f"{1500}x{800}")
         self.configure(fg_color=colorPalette.backgroundDark)
 
+        self.attemptingTerminate = False
+
         #killswitch, connect to ap, add test drone, bypass controller, Manual UDP Console and Send USP Message, Mode and Stage Control
         #textbox with Throttle, Pitch, Yaw, Roll, ArmVar, and Navhold
 
@@ -272,7 +283,7 @@ class App(customtkinter.CTk):
 
 
         #quit button
-        self.quitButton = Button(self, text="TERMINATE", command=lambda: self.attemptTerinteApp(), fg_color=colorPalette.buttonRed, hover_color=colorPalette.buttonRedHover)
+        self.quitButton = Button(self, text="TERMINATE", command=lambda: self.attemptTerminateApp(), fg_color=colorPalette.buttonRed, hover_color=colorPalette.buttonRedHover)
 
 
         self.activeDroneBar = customtkinter.CTkFrame(self, width=600)
@@ -317,7 +328,7 @@ class App(customtkinter.CTk):
 
         self.displayThrottleToggleButton.grid(row=2, column=0, pady=(20, 0))
 
-        self.quitButton.grid(row=3, column=0)
+        self.quitButton.grid(row=3, column=0, sticky="n")
 
         self.activeDroneBar.grid(row=3, column=1)        
 
@@ -338,24 +349,40 @@ class App(customtkinter.CTk):
 
         self.after(100, runAfterAppLaunch) #delay enough for the mainloop to start
 
-    def attemptTerinteApp(self):
-        #check if drones are active and deny to terminate even if one is
+    def attemptTerminateApp(self):
+        
+        if self.attemptingTerminate:
+            tkprint("allready attempting to terminate")
+            return
+
+        self.attemptingTerminate = True
+
         tkprint("attempting termination")
+        #check if drones are active and deny to terminate even if one is
+        if detectActiveDrone():
+            self.console.error("Failsafe: AT LEAST ONE DRONE IS ACTIVE -- failed to close app")
+            self.attemptingTerminate = False
+            return
 
         popup = customtkinter.CTkToplevel()
         popup.title("confirm terminate")
+        popup.attributes("-topmost", True)
 
         confirmButton = Button(popup, text="confirm", command=self.terminateApp, width=150, fg_color=colorPalette.buttonRed, hover_color=colorPalette.buttonRedHover)
-        cancelButton = Button(popup, text="cancel", command=popup.destroy, width=150)
+        cancelButton = Button(popup, text="cancel", command=lambda: self.destroyPopup(popup), width=150)
         confirmButton.grid(row=0, column=0)
         cancelButton.grid(row=0, column=1)
 
-    def terminateApp(self): #a is self for some reason
+    def terminateApp(self):
         global killThreads
         self.console.error("!!!  TERMINATING APP  !!!")
         killThreads = True
 
         self.after(500, self.destroy)
+
+    def destroyPopup(self, popup):
+        self.attemptingTerminate = False
+        popup.destroy()
 
     def updateThrottleDisplay(a, b, self): #Dont touch the aurguments, very finicky
         global appThrottle, usingAppThrottle
@@ -405,8 +432,10 @@ class App(customtkinter.CTk):
         self.droneDisplay.configure(state="disabled")
 
 def tkprint(text):
-    app.console.log(str(text))
-    #print(text)
+    try:
+        app.console.log(str(text))
+    except:
+        print("failed to reach console, printing in terminal instead:\n" + str(text))
 
 #This function detects the operating system and grabs the computers IP for networking between the AP and drones
 def getMyIP():
@@ -446,12 +475,13 @@ def bypassController(app):
 
 #Sends the packets of instructions to the drone
 def sendMessage(ipAddress, port, msg):
-    global sock, throttle
-    tkprint("sendMessage -- IP: " + str(ipAddress) + ", PORT: " + str(port) + "\n" + str(msg) + "\n----------------------------")
+    global sock, throttle, app
+    print("sendMessage -- IP: " + str(ipAddress) + ", PORT: " + str(port) + "\n" + str(msg) + "\n----------------------------")
+    app.console.logMsg()
     bMsg = msg.encode("ascii")
     sock.sendto(bMsg, (ipAddress, int(port)))
     app.updateDroneDisplay()
-    time.sleep(0.002)
+    #time.sleep(0.002)
 
 #Switches from Manual to Swarm
 def MODESwarm():
@@ -513,23 +543,23 @@ def manualControl():
     tkprint("Manual Control Thread terminated")
 
 def handshake(msg, addr):
-    global displayVar, going
+    global going
     parts = msg.split("|")
     i = int(parts[1])
     if (i == -1):
         i = len(drones)
-        print(i)
-        print(addr)
-        print(addr[1])
+        tkprint(i)
+        tkprint(addr)
+        tkprint(addr[1])
         addDrone(parts[2], addr[0], addr[1])
         # app.my_label.configure(text="DRONE CONNECTED", image=my_image)
         displayVar = displayVar.replace("\nChecking Que", "")
         going = True
         for i in range(1,len(drones)):
-            displayVar += ("\nConnected: " + drones[i].name)
+            tkprint("\nConnected: " + drones[i].name)
             app.textbox1.configure(text = displayVar)
         for adrone in drones:
-            print(adrone)
+            tkprint(adrone)
 
     else:
         if drones[i].name == parts[2]:
@@ -538,19 +568,6 @@ def handshake(msg, addr):
             drones[i].port = addr[1]
     #droneList.update() 
 
-
-def sendMessage(ipAddress, port, msg):
-    global sock, throttle
-    print("sendMessage")
-    print(ipAddress)
-    print(port)
-    print(msg)
-    print("----------------------------")    
-    bMsg = msg.encode("ascii")
-    sock.sendto(bMsg, (ipAddress, int(port)))
-    #print("sent message")
-    time.sleep(0.002)
-
 #place holder functions
 def addDrone(name, ipAdr, port):
     global droneCount
@@ -558,13 +575,30 @@ def addDrone(name, ipAdr, port):
     drones.append(Drone(droneCount, name, ipAdr, port, "inactive"))
     app.droneButton[droneCount].changeText(drones[droneCount].name)
     app.droneButton[droneCount].assigned = True
-    tkprint("Drone \"" +name +"\" added")
+    app.droneButton[droneCount].setColor()
+    tkprint(f"Drone \"{name}\" added")
     droneCount += 1
 
 def buttonRefresh():
     global app
     for i in range(0,8):
         app.droneButton[i].manualUpdate()
+
+#if there are any drones that are active this will return True
+def detectActiveDrone():
+    global app
+    for i in range(0, 8):
+        if not app.droneButton[i].state == "inactive":
+            return True
+    return False
+
+#returns the height and width of the screen in a tuple
+def findScreenScale():
+    root = Tk()
+    height = root.winfo_screenheight()
+    width = root.winfo_screenwidth()
+    root.destroy()
+    return (height, width)
 
 def runAfterAppLaunch():
     global UDP_IP, UDP_PORT, sock, manualControlThread
@@ -594,8 +628,8 @@ def introToAP():
     #tell the AP that we are the base station. 
     #AP needs to save that IP address to tell it to drones (so they can connect to the base station)
     sendMessage("192.168.4.22", 80, "BaseStationIP")
-    print ("sent message to AP")
-    print("Listening for Response from AP.........")
+    tkprint ("sent message to AP")
+    tkprint("Listening for Response from AP.........")
     #listen 
     #TODO: PUT IN A RESEND EVERY FEW SECONDS
     #CODE FOR THAT INCLUDES: curr_time = round(time.time()*1000)
@@ -606,28 +640,27 @@ def introToAP():
         data = b""    #the b prefix makes it byte dat
         try:
             data, addr = sock.recvfrom(1024)
-            print(data)
-            print("Decoding Data...")
+            tkprint(data)
+            tkprint("Decoding Data...")
             strData = data.decode("utf-8")
-            print("Received message %s" % data)
+            tkprint("Received message %s" % data)
             
             break
         except:#crdrd
             if (time.time() - startTime >= 1.5):
                 introCount += 1
                 sendMessage("192.168.4.22", 80, "BaseStationIP")
-                print("sent message to AP: ", introCount)
+                tkprint("sent message to AP: ", introCount)
                 startTime = time.time()
             continue
         #test the input to see if it is the confirmation code
         #if it is, we can break
-    
 
 def checkQueue(q_in):
     global selDrone, displayVar
     global going
     if (not q_in.empty()):
-        print("checking queue")
+        tkprint("checking queue")
         displayVar += "\nChecking Que"
         app.textbox1.configure(text=displayVar)
         #grab the item
@@ -649,8 +682,9 @@ def checkQueue(q_in):
     app.after(700, checkQueue, q_in)
 
 def listen(q_out, q_in):#happens on a separate thread
-    print("Listener Thread began")
-    while True:
+    global killThreads
+    tkprint("Listener Thread initiated")
+    while not killThreads:
         #check if we need to stop--grab from q_in  
         data = b""    #the b prefix makes it byte data
         if (not q_in.empty()):
@@ -663,16 +697,30 @@ def listen(q_out, q_in):#happens on a separate thread
         except:
             continue
         strData = data.decode("utf-8")
-        print("Received message %s" % data)
+        tkprint("Received message %s" % data)
         # strData = strData + "|" + addr[0] + "|" + str(addr[1])#the message, the ip, the port
         strData = addr[0] + "*" + str(addr[1]) + "*" + strData#the ip, the port, the message
         # the message is pipe (|) delimited. The ip, port, and message are * delimited
         q_out.put(strData) #this sends the message to the main thread
-    print("goodbye")
+    tkprint("terminated listener thread")
+
+
+#adjusting the size of the app
+screenHeight, screenWidth = findScreenScale()
+if(screenWidth < 1200):
+    customtkinter.set_widget_scaling(0.5)
+    customtkinter.set_window_scaling(0.5)
+elif(screenWidth < 1500):
+    customtkinter.set_widget_scaling(0.7)
+    customtkinter.set_window_scaling(0.7)
+
 
 app = App()
 
 app.mainloop()
 
-
+#this only runs once the app is closed
+if killThreads == False:
+    print("\033[31mplease us the TERMINATE button in the future as it has safegaurds in place.\033[0m")
+    killThreads = True
 

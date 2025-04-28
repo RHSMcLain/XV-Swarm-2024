@@ -12,6 +12,8 @@ class colorPalette():
       
     droneManual = '#AE9527'
     droneManualHover = '#8C781F'
+
+    droneNotConnected = "#808080"
     
     buttonRed = '#951E1E'
     buttonRedHover = '#451011'
