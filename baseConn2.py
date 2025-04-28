@@ -391,6 +391,18 @@ def tkprint(text):
     app.console.log(str(text))
     #print(text)
 
+def manMsgConstruct(droneNum):
+    global ip
+    return ("MAN" + "|" + 
+            ip + "|" + 
+            str(drones[droneNum].yaw) + "|" + 
+            str(drones[droneNum].pitch) + "|" + 
+            str(drones[droneNum].roll) + "|" + 
+            str(drones[droneNum].throttle) + "|" + 
+            str(drones[droneNum].killswitch) + "|" + 
+            str(drones[droneNum].armVar) + "|" + 
+            str(drones[droneNum].navHold) + "|")
+    
 #This function detects the operating system and grabs the computers IP for networking between the AP and drones
 def getMyIP():
     try:
@@ -463,7 +475,7 @@ def clamp(val):
     return val
 
 def manualControl():
-    global manualYes, killswitch, throttle, yaw, roll, pitch, armVar, navHold, app, sock, killThreads, usingAppThrottle, appThrottle
+    global manualYes, killswitch, throttle, yaw, roll, pitch, armVar, navHold, app, sock, killThreads, usingAppThrottle, appThrottle, drones
 
     while not killThreads: #continously loop until killThreads is true
 
@@ -489,9 +501,23 @@ def manualControl():
 
             if(usingAppThrottle):
                 throttle = appThrottle * 10 + 1000
-            sendMessage(drones[activeDrone].ipAddress, drones[activeDrone].port, "MAN" + "|" + ip + "|" + str(yaw) + "|" + str(pitch) + "|" + str(roll) + "|" + str(throttle) + "|" + str(killswitch) + "|" + str(armVar) + "|" + str(navHold) + "|")
         else:
-            appThrottle = 0
+            appThrottle = 0 
+        for i in range(0,7):
+            if(i == activeDrone):
+                drones[activeDrone].yaw = yaw
+                drones[activeDrone].pitch = pitch
+                drones[activeDrone].roll = roll
+                drones[activeDrone].throttle = throttle
+                drones[activeDrone].armVar = 1600
+                sendMessage(drones[i].ipAddress, drones[i].port, manMsgConstruct(i))
+            else:
+                drones[i].yaw = 1500
+                drones[i].pitch = 1500
+                drones[i].roll = 1500
+                drones[i].throttle = 1000
+                drones[i].armVar = 1000
+                sendMessage(drones[i].ipAddress, drones[i].port, manMsgConstruct(i))
         time.sleep(0.002)
     tkprint("Manual Control Thread terminated")
 
@@ -546,7 +572,7 @@ def addDrone(name, ipAdr, port):
 
 def buttonRefresh():
     global app
-    for i in range(0,8):
+    for i in range(0,7):
         app.droneButton[i].manualUpdate()
 
 def runAfterAppLaunch():
@@ -651,6 +677,7 @@ def listen(q_out, q_in):#happens on a separate thread
         # the message is pipe (|) delimited. The ip, port, and message are * delimited
         q_out.put(strData) #this sends the message to the main thread
     print("goodbye")
+
 
 app = App()
 
