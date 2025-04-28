@@ -1,6 +1,6 @@
 import socket
 import netifaces as ni
-from Drone import Drone
+from Resources.Drone import Drone
 import random as r
 from threading import Thread
 import os

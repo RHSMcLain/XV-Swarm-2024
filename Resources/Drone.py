@@ -34,7 +34,7 @@ class Drone:
                 waypointArr[0] = None
             else:
                 del waypointArr[i]
-class Track():
+class Track:
     id = None
     gpsLon = None
     gpsLat = None
