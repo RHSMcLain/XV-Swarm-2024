@@ -7,7 +7,7 @@
 #define MSP_WP 118
 #define MSP_SET_WP 209                 
 
-char handShake[] = "HND|-1|Betsy";
+char handShake[] = "HND|-1|Christine";
 
 char ssid[] = "XV_Basestation";          //  network SSID (name)
 int status = WL_IDLE_STATUS;             // the Wi-Fi radio's status
@@ -691,6 +691,7 @@ void Listen(){
     }    
   }  
   else if(armVar == 1575 && (millis() - countDis) > 1000){
+    Serial.print("Disconnected");
     armVar = 1000;
   }
 }
