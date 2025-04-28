@@ -435,6 +435,18 @@ def tkprint(text):
     except:
         print("Failed to reach console, printing in terminal instead:\n" + str(text))
 
+def manMsgConstruct(droneNum):
+    global ip
+    return ("MAN" + "|" + 
+            ip + "|" + 
+            str(drones[droneNum].yaw) + "|" + 
+            str(drones[droneNum].pitch) + "|" + 
+            str(drones[droneNum].roll) + "|" + 
+            str(drones[droneNum].throttle) + "|" + 
+            str(drones[droneNum].killswitch) + "|" + 
+            str(drones[droneNum].armVar) + "|" + 
+            str(drones[droneNum].navHold) + "|")
+    
 #This function detects the operating system and grabs the computers IP for networking between the AP and drones
 def getMyIP():
     try:
@@ -718,6 +730,7 @@ if(screenWidth < 1200):
 elif(screenWidth < 1500):
     customtkinter.set_widget_scaling(0.7)
     customtkinter.set_window_scaling(0.7)
+
 
 
 app = App()
