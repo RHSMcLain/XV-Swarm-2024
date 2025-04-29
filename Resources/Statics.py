@@ -4,6 +4,8 @@ class colorPalette():
     forgroundDark = '#66717E'
     forgroundLight = '#BBBBBB'
     
+    droneDisplay = "#fac771"
+
     droneInactive = '#E65F5C'
     droneInactiveHover = '#B34846'
     

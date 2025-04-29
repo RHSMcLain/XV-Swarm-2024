@@ -26,10 +26,10 @@ global killThreads
 global qFromComms
 global qToComms
 
-global app
+global app, removeDroneSelection
 
 global pitch, roll, yaw, throttle, navHold, armVar, killswitch
-global activeDrone, droneCount, selectedDrone, activeDrones
+global activeDrone, droneCount, selectedDrone, activeDrones, maxDrones
 
 killswitch = 1000
 throttle = 1000
@@ -46,6 +46,8 @@ usingAppThrottle = False
 killThreads = False
 activeDrone = -1
 droneCount = 0
+maxDrones = 8
+removeDroneSelection = False
 
 UDP_IP = 0
 ip = 0
@@ -161,17 +163,17 @@ class tkSwitch():
         self.leftButton.grid(row=0, column=0, padx=(8, 0), pady=8)
         self.rightButton.grid(row=0, column=1, padx=(0, 8), pady=8)
 
-    def switchInteratction(self):
+    def switchInteratction(self, callFunctions=True):
         if(self.activeButton == "left"):
             self.activeButton = "right"
             self.leftButton.configure (fg_color=self.baseColor,      text_color=self.deselectedTextColor, hover_color=self.baseColor)
             self.rightButton.configure(fg_color=self.highLightColor, text_color=self.selectedTextColor,   hover_color=self.highLightColor)
-            self.rightFunction()
+            if callFunctions:self.rightFunction()
         else:
             self.activeButton = "left"
             self.leftButton.configure (fg_color=self.highLightColor, text_color=self.selectedTextColor,   hover_color=self.highLightColor)
             self.rightButton.configure(fg_color=self.baseColor,      text_color=self.deselectedTextColor, hover_color=self.baseColor)
-            self.leftFunction()
+            if callFunctions:self.leftFunction()
     
     def grid(self, **kwargs):self.container.grid(**kwargs)
 
@@ -222,6 +224,7 @@ class droneActiveButton():
         self.droneButton.configure(fg_color=self.currentColor, hover_color=self.currentHoverColor)
 
     def onClick(self):
+
         if (self.state == "inactive" and not manualYes and self.assigned):
             self.state = "active"
         elif (self.state != "manual" and manualYes and self.assigned):
@@ -247,6 +250,7 @@ class droneActiveButton():
     
     def changeText(self, newText):
         self.droneButton.configure(text=newText)
+    def getName(self): return self.droneButton.cget("text")
 
 
 class App(customtkinter.CTk):
@@ -265,12 +269,12 @@ class App(customtkinter.CTk):
 
         self.leftButtonBar = customtkinter.CTkFrame(self, width=140, corner_radius=0, fg_color=self.cget("fg_color")) #Holds left buttons (killswitch, connect to ap, text drone, bypass controller, and mode switch)
         
-        self.droneDisplay = customtkinter.CTkTextbox(self, activate_scrollbars=False, font=("Monaco", 20), width=305, spacing3=17, spacing1=19, fg_color="#fac771") #Orange bar left of console that displays drone throttle, pitch, yaw, etc.
+        self.droneDisplay = customtkinter.CTkTextbox(self, activate_scrollbars=False, font=("Monaco", 20), width=305, spacing3=17, spacing1=19, fg_color=colorPalette.droneDisplay) #Orange bar left of console that displays drone throttle, pitch, yaw, etc.
 
         #Buttons in left button bar
         self.killswitchbutton =       Button(self.leftButtonBar, text="Kill Drones",       command=lambda:self.killswitch(), fg_color=colorPalette.buttonRed, hover_color=colorPalette.buttonRedHover)
         self.bypassControllerButton = Button(self.leftButtonBar, text="Bypass Controller", command=lambda:bypassController(self))
-        self.addTestDroneButton =     Button(self.leftButtonBar, text="Add Test Drone",    command=lambda:addDrone("HelloWorldDrone", "10.20.18.23", 85))
+        self.addTestDroneButton =     Button(self.leftButtonBar, text="Add Test Drone",    command=lambda:addDrone("Test Drone #" + str(r.randint(100, 1000)), "10.20.18.23", 85))
         self.connectToAPButton =      Button(self.leftButtonBar, text="Connect To AP",     command=lambda:introToAP())
         
         self.manualControlSwitch = tkSwitch(self.leftButtonBar, MODEManual, MODESwarm, leftText="Manual", rightText="Swarm") #switch for Manual and Swarm modes in left button bar
@@ -281,31 +285,24 @@ class App(customtkinter.CTk):
         self.throttleSlider = customtkinter.CTkSlider(self.throttleBar, orientation="vertical", height=200, from_=0, to=100, command=lambda a: self.updateThrottleDisplay(a, self)) #Dont touch the aurguments
         self.displayThrottleToggleButton = customtkinter.CTkSwitch(self.throttleBar, text="Enable Display Throttle", command=lambda: self.toggleDisplayThrottle())
 
+        #Holds remove drones button and terminate button
+        self.lowerLeftButtonBar = customtkinter.CTkFrame(self, fg_color=self.cget("fg_color"))
+
+        #removes right most drone in drone array
+        self.removeDroneButton = Button(self.lowerLeftButtonBar, text="remove drone", command=removeDrone)
 
         #quit button
-        self.quitButton = Button(self, text="TERMINATE", command=lambda: self.attemptTerminateApp(), fg_color=colorPalette.buttonRed, hover_color=colorPalette.buttonRedHover)
+        self.quitButton = Button(self.lowerLeftButtonBar, text="TERMINATE", command=lambda: self.attemptTerminateApp(), fg_color=colorPalette.buttonRed, hover_color=colorPalette.buttonRedHover)
 
 
         self.activeDroneBar = customtkinter.CTkFrame(self, width=600)
-        self.droneButton = [None]*8
-        self.droneButton[0] = droneActiveButton(self.activeDroneBar, 0)
-        self.droneButton[1] = droneActiveButton(self.activeDroneBar, 1)
-        self.droneButton[2] = droneActiveButton(self.activeDroneBar, 2)
-        self.droneButton[3] = droneActiveButton(self.activeDroneBar, 3)
-        self.droneButton[4] = droneActiveButton(self.activeDroneBar, 4)
-        self.droneButton[5] = droneActiveButton(self.activeDroneBar, 5)
-        self.droneButton[6] = droneActiveButton(self.activeDroneBar, 6)
-        self.droneButton[7] = droneActiveButton(self.activeDroneBar, 7)
-
-        self.droneButton[1].grid(row=0, column=1, padx=15, pady=15)
-        self.droneButton[2].grid(row=0, column=2, padx=15, pady=15)
-        self.droneButton[3].grid(row=0, column=3, padx=15, pady=15)
-        self.droneButton[0].grid(row=0, column=0, padx=15, pady=15)
-        self.droneButton[4].grid(row=1, column=0, padx=15, pady=15)
-        self.droneButton[5].grid(row=1, column=1, padx=15, pady=15)
-        self.droneButton[6].grid(row=1, column=2, padx=15, pady=15)
-        self.droneButton[7].grid(row=1, column=3, padx=15, pady=15)
-
+        self.droneButtons = [None]*8
+        self.activeDroneBar.grid (row=3, column=1)
+        for i in range(0, 8): #creates 8 drone buttons in a 4x2 array
+            self.droneButtons[i] = droneActiveButton(self.activeDroneBar, i)
+            colMinus = 0
+            if i > 3: colMinus = 4
+            self.droneButtons[i].grid(row=round(i/8+0.1), column=i-colMinus, padx=15, pady=15)
 
         # Aligning all parts of the UI
         self.leftButtonBar.grid(row=0, column=0, pady=(10, 0), rowspan=4, sticky="nsew") #far left frame
@@ -318,19 +315,17 @@ class App(customtkinter.CTk):
 
 
         self.manualControlSwitch.grid   (row=4, column=0)
-        self.console.grid               (row=0, column=1)
-        self.droneDisplay.grid          (row=0, column=2, sticky="nsew")
+        self.console.grid               (row=0, column=1, padx=10, pady=10)
+        self.droneDisplay.grid          (row=0, column=2, padx=(0, 10), pady=10, sticky="nsew")
 
-        self.throttleBar.grid(row=0, column=5, rowspan=2, sticky="nsew") #far right frame
-
-        self.throttleSlider.grid(row=1, column=0, pady=15)
-        self.throttleDisplay.grid(row=0, column=0)
-
+        self.throttleBar.grid                (row=0, column=5, rowspan=2, sticky="nsew") #far right frame
+        self.throttleSlider.grid             (row=1, column=0, pady=15)
+        self.throttleDisplay.grid            (row=0, column=0)
         self.displayThrottleToggleButton.grid(row=2, column=0, pady=(20, 0))
 
-        self.quitButton.grid(row=3, column=0, sticky="n")
-
-        self.activeDroneBar.grid(row=3, column=1)        
+        self.lowerLeftButtonBar.grid(row=3, column=0)
+        self.removeDroneButton.grid (row=0, column=0)
+        self.quitButton.grid        (row=1, column=0)      
 
         #Placing text in the textboxes on bootup
         self.droneDisplay.tag_config("center", justify="center")
@@ -378,7 +373,7 @@ class App(customtkinter.CTk):
         self.console.error("!!!  TERMINATING APP  !!!")
         killThreads = True
 
-        self.after(500, self.destroy)
+        self.after(750, self.destroy) #more time than checkQueue update loop delays
 
     def destroyPopup(self, popup):
         self.attemptingTerminate = False
@@ -495,8 +490,13 @@ def sendMessage(ipAddress, port, msg):
 
 #Switches from Manual to Swarm
 def MODESwarm():
-    global manualYes
-    global activeDrone
+    global manualYes, activeDrone, app
+
+    if detectActiveDrone():
+        app.console.error("Failsafe -- Attempted to switch modes while at drone is active")
+        app.manualControlSwitch.switchInteratction(callFunctions=False)
+        return
+
     manualYes = False
     activeDrone = -1
     buttonRefresh()
@@ -504,7 +504,13 @@ def MODESwarm():
 
 #Switches from Swarm to Manual
 def MODEManual():
-    global manualYes
+    global manualYes, app
+
+    if detectActiveDrone():
+        app.console.error("Failsafe -- Attempted to switch modes while at drone is active")
+        app.manualControlSwitch.switchInteratction(callFunctions=False)
+        return
+
     manualYes = True
     buttonRefresh()
     tkprint("|||  MANUAL ENABLED  |||")
@@ -523,7 +529,7 @@ def clamp(val):
 def detectActiveDrone():
     global app
     for i in range(0, 8):
-        if not app.droneButton[i].state == "inactive":
+        if not app.droneButtons[i].state == "inactive":
             return True
     return False
 
@@ -531,7 +537,7 @@ def detectActiveDrone():
 def buttonRefresh():
     global app
     for i in range(0,8):
-        app.droneButton[i].manualUpdate()
+        app.droneButtons[i].manualUpdate()
 
 #returns the height and width of the screen in a tuple
 def findScreenScale():
@@ -603,7 +609,7 @@ def introToAP():
 def checkQueue(q_in):
     global selDrone
     global going
-    if (not q_in.empty()):
+    if (not q_in.empty() and not killThreads):
         tkprint("checking queue")
         #grab the item
         #process the info
@@ -622,18 +628,47 @@ def checkQueue(q_in):
             #HANDSHAKE
             handshake(msg, (addr, port))
     if not killThreads:app.after(700, checkQueue, q_in)
+    else:tkprint("checkQueue loop exited")
 
 #place holder functions
 def addDrone(name, ipAdr, port):
     global droneCount
     global app
+
+    if len(drones) == maxDrones:
+        app.console.error(f"Max number of drones is 8, limit exceeded with drone: {name}")
+        return
+
     drones.append(Drone(droneCount, name, ipAdr, port, "inactive"))
-    app.droneButton[droneCount].changeText(drones[droneCount].name)
-    app.droneButton[droneCount].assigned = True
-    app.droneButton[droneCount].setColor()
+    app.droneButtons[droneCount].changeText(drones[droneCount].name)
+    app.droneButtons[droneCount].assigned = True
+    app.droneButtons[droneCount].setColor()
     tkprint(f"Drone \"{name}\" added")
     droneCount += 1
 
+def removeDrone():
+    global drones, droneCount, app
+
+    if droneCount == 0:
+        tkprint("no drones to remove")
+        return
+
+    if app.droneButtons[droneCount - 1].state != "inactive":
+        app.console.error(f"Failsafe -- Attempted to delete active drone: {app.droneButtons[droneCount - 1].getName()}")
+        return
+    
+    droneCount -= 1
+
+    tkprint(f"deleted drone {drones[droneCount].name}")
+
+    app.droneButtons[droneCount].state = "inactive"
+    app.droneButtons[droneCount].changeText(app.droneButtons[droneCount].defaultName)
+    app.droneButtons[droneCount].assigned = False
+    app.droneButtons[droneCount].setColor()
+
+    del drones[droneCount]
+    
+    
 def manualControl():
     global manualYes, killswitch, throttle, yaw, roll, pitch, armVar, navHold, app, sock, killThreads, usingAppThrottle, appThrottle
     tkprint("Manual Control Thread initiated")
@@ -739,6 +774,6 @@ app.mainloop()
 
 #this only runs once the app is closed
 if killThreads == False:
-    print("\033[31mplease us the TERMINATE button in the future as it has safegaurds in place.\033[0m")
+    print("\033[31mplease use the TERMINATE button in the future as it has safegaurds in place.\033[0m")
     killThreads = True
 
