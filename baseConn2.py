@@ -460,7 +460,10 @@ class App(customtkinter.CTk):
             self.droneDisplay.configure(state="disabled")
     #toggles the variable that tells the drone buttons to delete themselves if clicked
     def select_drone_for_removal(self):
-        global removeDroneSelection
+        global removeDroneSelection, droneCount
+        if droneCount == 0: 
+            tkprint("no drones to remove")
+            return
         removeDroneSelection = not removeDroneSelection
         if removeDroneSelection:
             self.removeDroneButton.configure(text="removing drone")
