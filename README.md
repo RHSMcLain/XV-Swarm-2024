@@ -51,7 +51,7 @@
     <summary>
         <b>Summary of Base Station Code</b>
     </summary>
-    <p><span style="width: 40px; display: inline-block;"></span><span>Code for the base station and keyboard controls for pitch, roll, yaw, and throttle. The base station is responsible for transmitting and receiving signals to and from the drone's coverage area.</span></p>
+    <p><span style=width: 40px; display: inline-block;></span><span>Code for the base station and keyboard controls for pitch, roll, yaw, and throttle. The base station is responsible for transmitting and receiving signals to and from the drone's coverage area.</span></p>
 
 </details>
 
