@@ -13,12 +13,13 @@ class Drone:
     navHold = 1000
     global waypointArr
     waypointArr = [None]
-    def __init__(self, id, name, ipAddress, port, state) -> None:
+    def __init__(self, id, name, ipAddress, port, state, waypointArr) -> None:
         self.id = id
         self.name = name
         self.ipAddress = ipAddress
         self.port = port
         self.state = state
+        self.waypointArr = waypointArr
     def __str__(self):
         #This provides the string that will be used in the listbox
         return self.name
