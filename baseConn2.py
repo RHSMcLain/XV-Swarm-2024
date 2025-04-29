@@ -703,7 +703,7 @@ def addDrone(name, ipAdr, port):
         app.console.error(f"Max number of drones is 8, limit exceeded with drone: {name}")
         return
     
-    drones[open_drone_index] = Drone(open_drone_index, name, ipAdr, port, "inactive")
+    drones[open_drone_index] = Drone(open_drone_index, name, ipAdr, port, "inactive", [])
     app.droneButtons[open_drone_index].changeText(drones[open_drone_index].name)
     app.droneButtons[open_drone_index].assigned = True
     app.droneButtons[open_drone_index].setColor()
@@ -712,7 +712,7 @@ def addDrone(name, ipAdr, port):
 
 #deletes last drone in array: drones unless an index is specified
 def removeDrone(index=-1):
-    global drones, droneCount, app
+    global drones, droneCount, app, removeDroneSelection
 
     if index == -1: index = droneCount - 1
 
@@ -725,6 +725,8 @@ def removeDrone(index=-1):
 
     if app.droneButtons[index].state != "inactive":
         app.console.error(f"Failsafe -- Attempted to delete active drone: {app.droneButtons[index].getName()}")
+        removeDroneSelection = False
+        app.removeDroneButton.configure(text = "remove drone")
         return
     
     droneCount -= 1
