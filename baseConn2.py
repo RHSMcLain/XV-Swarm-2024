@@ -70,7 +70,7 @@ fs = FlightStick
 try:
     fs.__init__(fs)
 except:
-    controller = False
+    controller = True
     pass
 
 #this is the black console, everything except sendMessage() print to it instead of the terminal
@@ -87,7 +87,6 @@ class tkConsole():
                     border_width=7,
                     fg_color=colorPalette.console,
                     text_color="white"
-                    
                     )
 
         self.textbox = customtkinter.CTkTextbox(**config, font=('Monaco', 13))
@@ -115,12 +114,13 @@ class tkConsole():
         self.msgCount += 1
         self.enable()
         if self.msgCount != 1: self.textbox.delete(2.0, 3.0)
-        self.textbox.insert("2.0", f"message count: {self.msgCount}\n")
+        if self.msgCount == 1: self.textbox.insert("2.0", f"sent Message\n")
+        else: self.textbox.insert("2.0", f"message count: {self.msgCount}\n")
         self.disable()
     def stick_not_connected(self):
-        self.error('- - - - NO FLIGHTSTICK CONNECTED | CONNECT CONTROLLER AND RESTART - - - -')
+        self.error('- - NO FLIGHTSTICK CONNECTED | CONNECT CONTROLLER AND RESTART - -')
     def killswitch(self):
-        self.error('==========================KILL SWITCH ACTIVATED==========================')
+        self.error('========================KILL SWITCH ACTIVATED========================')
     def IP_is_zero(self):
         self.error('=========================================================================')
         self.error('- - - - - - - FATAL ERROR: IP IS 0, IP GRABBING CODE FAILED - - - - - - -')
@@ -295,7 +295,7 @@ class App(customtkinter.CTk):
         self.killswitchbutton =       Button(self.leftButtonBar, text="Kill Drones",       command=lambda:self.killswitch(), fg_color=colorPalette.buttonRed, hover_color=colorPalette.buttonRedHover)
         self.bypassControllerButton = Button(self.leftButtonBar, text="Bypass Controller", command=lambda:bypassController(self))
         self.addTestDroneButton =     Button(self.leftButtonBar, text="Add Test Drone",    command=lambda:addDrone("Test Drone #" + str(r.randint(100, 1000)), "10.20.18.23", 85))
-        self.connectToAPButton =      Button(self.leftButtonBar, text="Connect To AP",     command=lambda:introToAP())
+        self.connectToAPButton =      Button(self.leftButtonBar, text="Connect To AP",     command=lambda:introToAP2(0))
         
         self.manualControlSwitch = tkSwitch(self.leftButtonBar, MODEManual, MODESwarm, leftText="Manual", rightText="Swarm") #switch for Manual and Swarm modes in left button bar
 
@@ -475,10 +475,8 @@ class App(customtkinter.CTk):
 
 #prints text to the console, use this instead of print() in most cases
 def tkprint(text):
-    try:
-        app.console.log(str(text))
-    except:
-        print("Failed to reach console, printing in terminal instead:\n" + str(text))
+    try:    app.console.log(str(text))
+    except: print("Failed to reach console, printing in terminal instead:\n" + str(text))
 
 #generates a message packet for the drone index you give it
 def manMsgConstruct(droneNum):
@@ -496,31 +494,19 @@ def manMsgConstruct(droneNum):
 #Detects the operating system and grabs the computers IP for networking between the AP and drones
 def getMyIP():
     try:
-        global ipv4_address, ip, UDP_IP, UDP_PORT
+        global ip, UDP_IP, UDP_PORT
         hostname = socket.gethostname()
-        tkprint(hostname)
-        tkprint("Checking for operating system...")
-        if platform.system() == ("Windows"):
-            #IP ADDRESS FOR WINDOWS OS -------------------------------------------------
+        if platform.system() == ("Windows"): # IP ADDRESS FOR WINDOWS OS
             tkprint("Operating system is WINDOWS")
-            ipv4_address = socket.gethostbyname(hostname + ".local")
-            tkprint(f"Internal IPv4 Address for {hostname}: {ipv4_address}")
-            ip = ipv4_address
-            #IP ADDRESS FOR WINDOWS OS -------------------------------------------------
-        if platform.system() == ("Darwin"):
-            # IP ADRESSS FOR MAC OS =================================================================
+            ip = socket.gethostbyname(hostname + ".local")
+        if platform.system() == ("Darwin"): # IP ADRESSS FOR MAC OS
             tkprint("Operating system is MACOS")
             ip = ni.ifaddresses('en1')[ni.AF_INET][0]['addr']
-            # ip = "0.0.0.0"
-            # IP ADRESSS FOR MAC OS =================================================================
         UDP_PORT = 5005
         UDP_IP = ip
-        tkprint(ip)
-    except socket.gaierror as e:
-        tkprint("There was an error resolving the hostname.")
-        tkprint(e)
-    except Exception as e:
-        tkprint(f"An unexpected error occurred: {e}")
+        tkprint(f"host name: {hostname} || ip: {ip}")
+    except socket.gaierror as e: tkprint(f"There was an error resolving the hostname: {e}")
+    except Exception as e:       tkprint(f"An unexpected error occurred: {e}")
 
 #ignores the errors coming from the flightstick not connecting and clears the console
 def bypassController(app):
@@ -533,12 +519,10 @@ def bypassController(app):
 #Sends the packets of instructions to the drone
 def sendMessage(ipAddress, port, msg):
     global sock, throttle, app
-    print("sendMessage -- IP: " + str(ipAddress) + ", PORT: " + str(port) + "\n" + str(msg) + "\n----------------------------")
+    print(f"sendMessage -- IP: {ipAddress}, PORT: {port}\n{msg}\n=====================")
     app.console.logMsg()
     bMsg = msg.encode("ascii")
     sock.sendto(bMsg, (ipAddress, int(port)))
-    app.updateDroneDisplay()
-    #time.sleep(0.002)
 
 #Switches from Manual to Swarm
 def MODESwarm():
@@ -604,68 +588,41 @@ def findScreenScale():
 
 #adds the drones to the drone list
 def handshake(msg, addr):
-    global going
     parts = msg.split("|")
     i = int(parts[1])
     if (i == -1):
         i = len(drones)
-        tkprint(i)
-        tkprint(addr)
-        tkprint(addr[1])
+        tkprint("i: {i}, addr: {addr}, addr[1]: {addr[1]}")
         addDrone(parts[2], addr[0], addr[1])
-        tkprint("\nChecking Que")
-        going = True
-        # for i in drones:
-        #     if i:tkprint(f"\nConnected: {i}")
         for adrone in drones:
-            tkprint(adrone)
-
+            if adrone:tkprint(adrone)
     else:
         if drones[i].name == parts[2]:
             #we could update here
             drones[i].ipAddress = addr[0]
             drones[i].port = addr[1]
 
-#connects to AP
-def introToAP():
-    global sock
-    #tell the AP that we are the base station. 
-    #AP needs to save that IP address to tell it to drones (so they can connect to the base station)
+#new function uses recursion instead of an unleashed while True loop
+#Connects to AP, sends up to 3 messages with a 1.5 second delay
+def introToAP2(introCount):
+    global app
     sendMessage("192.168.4.22", 80, "BaseStationIP")
-    tkprint ("sent message to AP")
-    tkprint("Listening for Response from AP.........")
-    #listen 
-    #TODO: PUT IN A RESEND EVERY FEW SECONDS
-    #CODE FOR THAT INCLUDES: curr_time = round(time.time()*1000)
-    startTime = time.time()
-    introCount = 1
-    while introCount < 3:
-    #check if we need to stop--grab from q_in  
-        data = b""    #the b prefix makes it byte dat
-        try:
-            data, addr = sock.recvfrom(1024)
-            tkprint(data)
-            tkprint("Decoding Data...")
-            strData = data.decode("utf-8")
-            tkprint("Received message %s" % data)
-            
-            break
-        except:#crdrd
-            if (time.time() - startTime >= 1.5):
-                introCount += 1
-                sendMessage("192.168.4.22", 80, "BaseStationIP")
-                tkprint(f"sent message to AP: {introCount}")
-                startTime = time.time()
-            continue
-        #test the input to see if it is the confirmation code
-        #if it is, we can break
+    introCount += 1
+    data = b"" #the b prefix makes it byte data
+    try:
+        data, addr = sock.recvfrom(1024)
+        tkprint("Connected to AP")
+        #tkprint(data, addr)
+    except:
+        tkprint(f"sent message to AP (msg #{introCount})")
+        if introCount == 3: tkprint("unable to connect to AP, try resetting it")
+        else: app.after(1500, introToAP2, introCount)
 
 #connects the drones, runs once every 700ms
 def checkQueue(q_in):
-    global selDrone
-    global going
+    global killThreads, app
     if (not q_in.empty() and not killThreads):
-        tkprint("checking queue")
+        tkprint("checking q_in")
         #grab the item
         #process the info
         #mark it complete
@@ -674,16 +631,14 @@ def checkQueue(q_in):
         addr = parts[0]
         port = int(parts[1])
         msg = parts[2]
-        # print(parts)
         msgParts = msg.split("|")
 
         cmd = msgParts[0]
 
         if cmd == "HND":
-            #HANDSHAKE
             handshake(msg, (addr, port))
-    if not killThreads:app.after(700, checkQueue, q_in)
-    else:tkprint("checkQueue loop exited")
+    if not killThreads: app.after(700, checkQueue, q_in)
+    else: tkprint("checkQueue loop exited")
 
 #returns the index in array: drones that is the first empty slot
 def get_open_drone_index():
@@ -770,7 +725,7 @@ def manualControl():
             appThrottle = 0
         for i in range(0, 8):
             if drones[i]:
-                try:
+                try: #deleting a drone in manual mode will sometimes throw an error which is caught be this, because it looks up a nonexistant drone obj
                     if i == activeDrone:
                         drones[activeDrone].throttle = throttle
                         drones[activeDrone].pitch = pitch
@@ -789,9 +744,7 @@ def manualControl():
                         drones[i].killswitch = killswitch
                         drones[i].armVar = 1500
                         sendMessage(drones[i].ipAddress, drones[i].port, manMsgConstruct(i))
-                except(E):
-                    print(E)
-                    pass
+                except:pass
 
         time.sleep(0.002)
     tkprint("Manual Control Thread terminated")
@@ -836,7 +789,7 @@ def runAfterAppLaunch():
         app.console.IP_is_zero() #send error
     if UDP_PORT == 0:
         app.console.port_is_zero() #send error
-    tkprint("UDP IP is " + str(UDP_IP))
+    #tkprint("UDP IP is " + str(UDP_IP))
 
 
 
