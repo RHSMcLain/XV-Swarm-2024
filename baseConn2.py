@@ -54,6 +54,8 @@ UDP_IP = 0
 ip = 0
 drones = [None]*8
 
+# Cody Webb made this, Bjorn didn't help one bit
+
 #armvar is armed at 1575, disarmed at 1500
 #fail safes: out of wifi range, landing drone before allowing a disable
 #autoland feature where drone lands itself slowly
@@ -613,8 +615,8 @@ def handshake(msg, addr):
         addDrone(parts[2], addr[0], addr[1])
         tkprint("\nChecking Que")
         going = True
-        for i in range(1,len(drones)):
-            tkprint(f"\nConnected: {drones[i].name}")
+        # for i in drones:
+        #     if i:tkprint(f"\nConnected: {i}")
         for adrone in drones:
             tkprint(adrone)
 
@@ -703,7 +705,7 @@ def addDrone(name, ipAdr, port):
         app.console.error(f"Max number of drones is 8, limit exceeded with drone: {name}")
         return
     
-    drones[open_drone_index] = Drone(open_drone_index, name, ipAdr, port, "inactive", [])
+    drones[open_drone_index] = Drone(open_drone_index, name, ipAdr, port, "inactive")
     app.droneButtons[open_drone_index].changeText(drones[open_drone_index].name)
     app.droneButtons[open_drone_index].assigned = True
     app.droneButtons[open_drone_index].setColor()
@@ -762,14 +764,35 @@ def manualControl():
 
         if(manualYes):
             app.updateDroneDisplay()
-            armVar = 1600
             if(usingAppThrottle):
                 throttle = appThrottle * 10 + 1000
         else:
-            armVar = 1000
             appThrottle = 0
-        if(activeDrone != -1):
-            sendMessage(drones[activeDrone].ipAddress, drones[activeDrone].port, "MAN" + "|" + ip + "|" + str(yaw) + "|" + str(pitch) + "|" + str(roll) + "|" + str(throttle) + "|" + str(killswitch) + "|" + str(armVar) + "|" + str(navHold) + "|")
+        for i in range(0, 8):
+            if drones[i]:
+                try:
+                    if i == activeDrone:
+                        drones[activeDrone].throttle = throttle
+                        drones[activeDrone].pitch = pitch
+                        drones[activeDrone].roll = roll
+                        drones[activeDrone].yaw = yaw
+                        drones[activeDrone].navHold = navHold
+                        drones[activeDrone].killswitch = killswitch
+                        drones[activeDrone].armVar = 1600
+                        sendMessage(drones[activeDrone].ipAddress, drones[activeDrone].port, manMsgConstruct(activeDrone))
+                    elif manualYes:
+                        drones[i].throttle = 1000
+                        drones[i].pitch = 1500
+                        drones[i].roll = 1500
+                        drones[i].yaw = 1500
+                        drones[i].navHold = 1500
+                        drones[i].killswitch = killswitch
+                        drones[i].armVar = 1500
+                        sendMessage(drones[i].ipAddress, drones[i].port, manMsgConstruct(i))
+                except(E):
+                    print(E)
+                    pass
+
         time.sleep(0.002)
     tkprint("Manual Control Thread terminated")
 
