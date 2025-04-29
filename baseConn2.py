@@ -31,6 +31,7 @@ global app, removeDroneSelection
 global pitch, roll, yaw, throttle, navHold, armVar, killswitch
 global activeDrone, droneCount, selectedDrone, activeDrones, maxDrones
 
+#default manual mode variables
 killswitch = 1000
 throttle = 1000
 navHold = 1000
@@ -51,14 +52,18 @@ removeDroneSelection = False
 
 UDP_IP = 0
 ip = 0
-drones = []
+drones = [None]*8
 
 #armvar is armed at 1575, disarmed at 1500
 #fail safes: out of wifi range, landing drone before allowing a disable
+#autoland feature where drone lands itself slowly
 
-#the reason for all of the glitchiness in the console + drone disaplay is they delete lines before readding them and
+#the reason for all of the glitchiness in the console + drone display is they delete lines before reading them and
 #the deletions don't sync with the monitor refresh rate, so you get frames where the text hasn't been inserted
 
+#kill switch does not work in swarm mode
+
+#sets up the flighstick
 fs = FlightStick
 try:
     fs.__init__(fs)
@@ -66,6 +71,7 @@ except:
     controller = False
     pass
 
+#this is the black console, everything except sendMessage() print to it instead of the terminal
 class tkConsole():
     def __init__(self, app, row=0, column=0):
 
@@ -130,7 +136,7 @@ class tkConsole():
         self.textbox.delete(1.0, customtkinter.END)
         app.console.textbox.insert("0.0", " "*17 +"- - - - - - - CONSOLE - - - - - - -" +"\n")
         self.disable()
-
+#Aesthetically pleasing button
 class Button():
     def __init__(self, app, **kwargs):
         self.button = customtkinter.CTkButton(app, 
@@ -146,7 +152,7 @@ class Button():
         self.button.configure(**kwargs)
     def grid(self,padx=10,pady=10,**kwargs):self.button.grid(padx=padx,pady=pady,**kwargs)
     def configure(self,**kwargs):self.button.configure(**kwargs)
-
+#Guess what this is
 class tkSwitch():
     def __init__(self, app, leftFunction, rightFunction, leftText="option1", rightText="option2"):
         self.leftFunction = leftFunction
@@ -179,7 +185,7 @@ class tkSwitch():
             if callFunctions:self.leftFunction()
     
     def grid(self, **kwargs):self.container.grid(**kwargs)
-
+#8 of these control the connected drones
 class droneActiveButton():
     def __init__(self, master, droneId):
         self.droneId = droneId
@@ -227,6 +233,13 @@ class droneActiveButton():
         self.droneButton.configure(fg_color=self.currentColor, hover_color=self.currentHoverColor)
 
     def onClick(self):
+        global removeDroneSelection
+
+        if removeDroneSelection: #remove self if we are selected to delete drone
+            removeDrone(self.droneId)
+            removeDroneSelection = False
+            return
+
 
         if (self.state == "inactive" and not manualYes and self.assigned):
             self.state = "active"
@@ -236,6 +249,8 @@ class droneActiveButton():
             buttonRefresh()
         else:
             self.state = "inactive"
+            if not detectActiveDrone():
+                activeDrone = -1
         
         self.setColor()
 
@@ -255,7 +270,7 @@ class droneActiveButton():
         self.droneButton.configure(text=newText)
     def getName(self): return self.droneButton.cget("text")
 
-
+#The entire UI is in the app
 class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
@@ -286,13 +301,13 @@ class App(customtkinter.CTk):
         #These are the components in the throttle bar
         self.throttleDisplay = customtkinter.CTkTextbox(self.throttleBar, height=100, font=("Arial", 18))
         self.throttleSlider = customtkinter.CTkSlider(self.throttleBar, orientation="vertical", height=200, from_=0, to=100, command=lambda a: self.updateThrottleDisplay(a, self)) #Dont touch the aurguments
-        self.displayThrottleToggleButton = customtkinter.CTkSwitch(self.throttleBar, text="Enable Display Throttle", command=lambda: self.toggleDisplayThrottle())
+        self.displayThrottleSwitch = customtkinter.CTkSwitch(self.throttleBar, text="Enable Display Throttle", command=lambda: self.toggleDisplayThrottle())
 
         #Holds remove drones button and terminate button
         self.lowerLeftButtonBar = customtkinter.CTkFrame(self, fg_color=self.cget("fg_color"))
 
         #removes right most drone in drone array
-        self.removeDroneButton = Button(self.lowerLeftButtonBar, text="remove drone", command=removeDrone)
+        self.removeDroneButton = Button(self.lowerLeftButtonBar, text="remove drone", command=self.select_drone_for_removal)
 
         #quit button
         self.quitButton = Button(self.lowerLeftButtonBar, text="TERMINATE", command=lambda: self.attemptTerminateApp(), fg_color=colorPalette.buttonRed, hover_color=colorPalette.buttonRedHover)
@@ -324,7 +339,7 @@ class App(customtkinter.CTk):
         self.throttleBar.grid                (row=0, column=5, rowspan=2, sticky="nsew") #far right frame
         self.throttleSlider.grid             (row=1, column=0, pady=15)
         self.throttleDisplay.grid            (row=0, column=0)
-        self.displayThrottleToggleButton.grid(row=2, column=0, pady=(20, 0))
+        self.displayThrottleSwitch.grid      (row=2, column=0, pady=(20, 0))
 
         self.lowerLeftButtonBar.grid(row=3, column=0)
         self.removeDroneButton.grid (row=0, column=0)
@@ -346,7 +361,7 @@ class App(customtkinter.CTk):
         self.throttleSlider.set(0)
 
         self.after(100, runAfterAppLaunch) #delay enough for the mainloop to start
-
+    #creates a popup window asking user if they want to quit the app
     def attemptTerminateApp(self):
         
         if self.attemptingTerminate:
@@ -370,18 +385,18 @@ class App(customtkinter.CTk):
         cancelButton = Button(popup, text="cancel", command=lambda: self.destroyPopup(popup), width=150)
         confirmButton.grid(row=0, column=0)
         cancelButton.grid(row=0, column=1)
-
+    #kills all threads then shutsdown when those threads have ended
     def terminateApp(self):
         global killThreads
         self.console.error("!!!  TERMINATING APP  !!!")
         killThreads = True
 
         self.after(750, self.destroy) #more time than checkQueue update loop delays
-
+    #kills the popup window
     def destroyPopup(self, popup):
         self.attemptingTerminate = False
         popup.destroy()
-
+    #if using the far right in-app throttle then this will update the display showing the %
     def updateThrottleDisplay(a, b, self): #Dont touch the aurguments, very finicky
         global appThrottle, usingAppThrottle
 
@@ -398,9 +413,26 @@ class App(customtkinter.CTk):
             
         self.throttleDisplay.tag_add("center", 0.0, customtkinter.END)
         self.throttleDisplay.configure(state="disabled")
-    
-    def toggleDisplayThrottle(self):
+    #runs when the switch to turn on/off the app throttle is clicked
+    def toggleDisplayThrottle(self, runFunction=True):
         global usingAppThrottle, appThrottle, throttle
+
+        if not runFunction: return
+
+        if detectActiveDrone(): 
+            self.console.error("Failsafe -- Can't toggle the app throttle while a drone is active")
+            if usingAppThrottle:self.displayThrottleSwitch.select()
+            else:self.displayThrottleSwitch.deselect()
+            return
+        if not manualYes: #can't have the display throttle be on in swarm mode
+            tkprint("app throttle only available in manual mode")
+            self.displayThrottleSwitch.deselect()
+            usingAppThrottle = False
+            self.updateThrottleDisplay(0, self)
+            appThrottle = 0
+            throttle = 1000
+            return
+
         usingAppThrottle = not usingAppThrottle
 
         if usingAppThrottle:tkprint("Display Throttle Enabled") 
@@ -409,13 +441,13 @@ class App(customtkinter.CTk):
         self.updateThrottleDisplay(0, self)
         appThrottle = 0
         throttle = 1000
-
-    def killswitch(self): #not connected to killswitch right now
+    #sets manual killswitch to 1700
+    def killswitch(self):
         global killswitch
         killswitch = 1700
         self.console.killswitch()
         self.killswitchbutton.configure(text="Drones Killed", fg_color="darkred")
-
+    #grabs the manual mode variables and displays them in the orange display
     def updateDroneDisplay(self):
         global throttle, roll, yaw, pitch, armVar, navHold
         displayText = f"Throttle: {round(throttle)}\nPitch:    {round(roll)}\nYaw:      {round(yaw)}\nRoll:     {round(pitch)}\nArmVar:   {round(armVar)}\nNavHold:  {round(navHold)}"
@@ -426,13 +458,24 @@ class App(customtkinter.CTk):
             self.droneDisplay.insert(0.0, displayText)
             self.droneDisplay.tag_add("center", 0.0, customtkinter.END)
             self.droneDisplay.configure(state="disabled")
+    #toggles the variable that tells the drone buttons to delete themselves if clicked
+    def select_drone_for_removal(self):
+        global removeDroneSelection
+        removeDroneSelection = not removeDroneSelection
+        if removeDroneSelection:
+            self.removeDroneButton.configure(text="removing drone")
+            tkprint("selected a drone to remove")
+        else:
+            self.removeDroneButton.configure(text="remove drone")
 
+#prints text to the console, use this instead of print() in most cases
 def tkprint(text):
     try:
         app.console.log(str(text))
     except:
         print("Failed to reach console, printing in terminal instead:\n" + str(text))
 
+#generates a message packet for the drone index you give it
 def manMsgConstruct(droneNum):
     global ip
     return ("MAN" + "|" + 
@@ -443,9 +486,9 @@ def manMsgConstruct(droneNum):
             str(drones[droneNum].throttle) + "|" + 
             str(drones[droneNum].killswitch) + "|" + 
             str(drones[droneNum].armVar) + "|" + 
-            str(drones[droneNum].navHold) + "|")
-    
-#This function detects the operating system and grabs the computers IP for networking between the AP and drones
+            str(drones[droneNum].navHold) + "|")   
+
+#Detects the operating system and grabs the computers IP for networking between the AP and drones
 def getMyIP():
     try:
         global ipv4_address, ip, UDP_IP, UDP_PORT
@@ -474,6 +517,7 @@ def getMyIP():
     except Exception as e:
         tkprint(f"An unexpected error occurred: {e}")
 
+#ignores the errors coming from the flightstick not connecting and clears the console
 def bypassController(app):
     global controller
     app.console.clear()
@@ -503,6 +547,9 @@ def MODESwarm():
     manualYes = False
     activeDrone = -1
     buttonRefresh()
+
+    app.toggleDisplayThrottle() #make sure it's switched off for swarm mode
+
     tkprint("|||  MANUAL STOPPED  |||")
 
 #Switches from Swarm to Manual
@@ -633,45 +680,64 @@ def checkQueue(q_in):
     if not killThreads:app.after(700, checkQueue, q_in)
     else:tkprint("checkQueue loop exited")
 
-#place holder functions
+#returns the index in array: drones that is the first empty slot
+def get_open_drone_index():
+    global drones, droneCount
+    for i in range(0, 8):
+        if i > droneCount:
+            return i
+        elif not drones[i]:
+            return i
+    return -1
+
+#adds a drone object to array: drones
 def addDrone(name, ipAdr, port):
     global droneCount
     global app
+    open_drone_index = get_open_drone_index() #returning -1 means all slots are filled
 
-    if len(drones) == maxDrones:
+    if open_drone_index == -1:
         app.console.error(f"Max number of drones is 8, limit exceeded with drone: {name}")
         return
-
-    drones.append(Drone(droneCount, name, ipAdr, port, "inactive"))
-    app.droneButtons[droneCount].changeText(drones[droneCount].name)
-    app.droneButtons[droneCount].assigned = True
-    app.droneButtons[droneCount].setColor()
+    
+    drones[open_drone_index] = Drone(open_drone_index, name, ipAdr, port, "inactive")
+    app.droneButtons[open_drone_index].changeText(drones[open_drone_index].name)
+    app.droneButtons[open_drone_index].assigned = True
+    app.droneButtons[open_drone_index].setColor()
     tkprint(f"Drone \"{name}\" added")
     droneCount += 1
 
-def removeDrone():
+#deletes last drone in array: drones unless an index is specified
+def removeDrone(index=-1):
     global drones, droneCount, app
+
+    if index == -1: index = droneCount - 1
 
     if droneCount == 0:
         tkprint("no drones to remove")
         return
+    if not drones[index]:
+        tkprint(f"no drone at index: {index}")
+        return
 
-    if app.droneButtons[droneCount - 1].state != "inactive":
-        app.console.error(f"Failsafe -- Attempted to delete active drone: {app.droneButtons[droneCount - 1].getName()}")
+    if app.droneButtons[index].state != "inactive":
+        app.console.error(f"Failsafe -- Attempted to delete active drone: {app.droneButtons[index].getName()}")
         return
     
     droneCount -= 1
 
-    tkprint(f"deleted drone {drones[droneCount].name}")
+    tkprint(f"deleting drone {drones[index].name}")
 
-    app.droneButtons[droneCount].state = "inactive"
-    app.droneButtons[droneCount].changeText(app.droneButtons[droneCount].defaultName)
-    app.droneButtons[droneCount].assigned = False
-    app.droneButtons[droneCount].setColor()
+    app.droneButtons[index].state = "inactive"
+    app.droneButtons[index].changeText(app.droneButtons[index].defaultName)
+    app.droneButtons[index].assigned = False
+    app.droneButtons[index].setColor()
 
-    del drones[droneCount]
-    
-    
+    drones[index] = None
+
+    app.removeDroneButton.configure(text = "remove drone")
+
+#runs a while True loop on a separate thread, recieves flighstick inputs and sends outputs
 def manualControl():
     global manualYes, killswitch, throttle, yaw, roll, pitch, armVar, navHold, app, sock, killThreads, usingAppThrottle, appThrottle
     tkprint("Manual Control Thread initiated")
@@ -702,7 +768,8 @@ def manualControl():
         time.sleep(0.002)
     tkprint("Manual Control Thread terminated")
 
-def listen(q_out, q_in):#happens on a separate thread
+#recieves messages on a seperate thread
+def listen(q_out, q_in):
     global killThreads
     tkprint("Listener Thread initiated")
     while not killThreads:
@@ -710,9 +777,6 @@ def listen(q_out, q_in):#happens on a separate thread
         data = b""    #the b prefix makes it byte data
         if (not q_in.empty()):
             qIn = q_in.get()
-            if (qIn == "TERMINATE"):
-                q_out.put("STOPPING")
-                break
         try:
             data, addr = sock.recvfrom(1024)
         except:
@@ -725,6 +789,7 @@ def listen(q_out, q_in):#happens on a separate thread
         q_out.put(strData) #this sends the message to the main thread
     tkprint("Listener thread Terminated")
 
+#runs everything inside of it after the app launches so we have access to the UI
 def runAfterAppLaunch():
     global UDP_IP, UDP_PORT, sock, manualControlThread, qFromComms, qToComms
 
@@ -757,9 +822,6 @@ def runAfterAppLaunch():
 
     app.after(1000, checkQueue, qFromComms)
 
-
-
-
 #adjusting the size of the app
 screenHeight, screenWidth = findScreenScale()
 if(screenWidth < 1200):
@@ -771,9 +833,9 @@ elif(screenWidth < 1500):
 
 
 
-app = App()
+app = App() #creates an instance of the UI
 
-app.mainloop()
+app.mainloop() #Program doesn't make it past this point until the UI is closed or terminated
 
 #this only runs once the app is closed
 if killThreads == False:
