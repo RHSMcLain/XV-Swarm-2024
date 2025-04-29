@@ -481,7 +481,7 @@ def tkprint(text):
 #generates a message packet for the drone index you give it
 def manMsgConstruct(droneNum):
     global ip
-    return ("MAN" + "|" + 
+    return ("MAN|" + 
             ip + "|" + 
             str(drones[droneNum].yaw) + "|" + 
             str(drones[droneNum].pitch) + "|" + 
@@ -489,7 +489,18 @@ def manMsgConstruct(droneNum):
             str(drones[droneNum].throttle) + "|" + 
             str(drones[droneNum].killswitch) + "|" + 
             str(drones[droneNum].armVar) + "|" + 
-            str(drones[droneNum].navHold) + "|")   
+            str(drones[droneNum].navHold) + "|")  
+    
+#generates a message packet 
+def swmMsgConstruct(droneNum):
+    global ip
+    length = len(drones[droneNum].waypointArr)
+    store = None
+    for i in range(1, length+1):
+        store + (str(drones[droneNum].waypointArr[i]) + "|")
+    return ("SWM|" +ip +"|" +drones[droneNum].state +"|" +length +"|" +store)
+    
+    
 
 #Detects the operating system and grabs the computers IP for networking between the AP and drones
 def getMyIP():
