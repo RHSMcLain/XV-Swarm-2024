@@ -56,6 +56,9 @@ drones = []
 #armvar is armed at 1575, disarmed at 1500
 #fail safes: out of wifi range, landing drone before allowing a disable
 
+#the reason for all of the glitchiness in the console + drone disaplay is they delete lines before readding them and
+#the deletions don't sync with the monitor refresh rate, so you get frames where the text hasn't been inserted
+
 fs = FlightStick
 try:
     fs.__init__(fs)
