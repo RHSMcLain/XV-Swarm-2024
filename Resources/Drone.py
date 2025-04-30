@@ -11,7 +11,6 @@ class Drone:
     killswitch = 1000
     armVar = 1000
     navHold = 1000
-    global waypointArr
     waypointArr = [None]
     def __init__(self, id, name, ipAddress, port, state) -> None:
         self.id = id
@@ -19,21 +18,22 @@ class Drone:
         self.ipAddress = ipAddress
         self.port = port
         self.state = state
+        self.waypointArr
     def __str__(self):
         #This provides the string that will be used in the listbox
         return self.name
-    def waypointAdd(targetLat, targetLon, targetAlt, waitTime): #pushes a new waypoint onto the list
-        waypointArr.append(Track(targetLat, targetLon, targetAlt, waitTime, len(waypointArr)))
-    def waypointRemove(waypointID): #deletes the waypoint from the list
-        del waypointArr[waypointID]
-    def waypointReplace(targetLat, targetLon, targetAlt, waitTime, waypointID): #replaces the waypoint
-        waypointArr[waypointID] = Track(targetLat, targetLon, targetAlt, waitTime, waypointID)
-    def waypointClear(): #deletes all waypoints and replaces id 0 with none
-        for i in range(0,len(waypointArr)):
+    def waypointAdd(self, targetLat, targetLon, targetAlt, waitTime): #pushes a new waypoint onto the list
+        self.waypointArr.append(Track(targetLat, targetLon, targetAlt, waitTime, len(self.waypointArr)))
+    def waypointRemove(self, waypointID): #deletes the waypoint from the list
+        del self.waypointArr[waypointID]
+    def waypointReplace(self, targetLat, targetLon, targetAlt, waitTime, waypointID): #replaces the waypoint
+        self.waypointArr[waypointID] = Track(targetLat, targetLon, targetAlt, waitTime, waypointID)
+    def waypointClear(self): #deletes all waypoints and replaces id 0 with none
+        for i in range(0,len(self.waypointArr)):
             if i == 0:
-                waypointArr[0] = None
+                self.waypointArr[0] = None
             else:
-                del waypointArr[i]
+                del self.waypointArr[i]
 class Track:
     id = None
     gpsLon = None
@@ -46,3 +46,5 @@ class Track:
         self.alt = alt
         self.time = time
         self.id = id
+    def message(self):
+        return (str(self.id) +"*" +str(self.gpsLon) +"*" +str(self.gpsLat) +"*" +str(self.alt) +"*" +str(self.time) +"*" +str(1))

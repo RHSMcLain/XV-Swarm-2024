@@ -507,7 +507,7 @@ def swmMsgConstruct(droneNum):
     length = len(drones[droneNum].waypointArr)
     store = None
     for i in range(1, length+1):
-        store + (str(drones[droneNum].waypointArr[i]) + "|")
+        store + (drones[droneNum].waypointArr[i].message + "|")
     return ("SWM|" +ip +"|" +drones[droneNum].state +"|" +length +"|" +store)
     
   
