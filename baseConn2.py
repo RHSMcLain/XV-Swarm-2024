@@ -328,7 +328,7 @@ class App(customtkinter.CTk):
             self.droneButtons[i].grid(row=round(i/8+0.1), column=i-colMinus, padx=15, pady=15)
 
         self.swarmBar = customtkinter.CTkFrame(self)
-        self.swarmTestButton = Button(self.swarmBar, text="Swarm Test", command=swarmTest)
+        self.swarmTestButton = Button(self.swarmBar, text="Swarm Test", command=swarmTest2)
 
 
         self.swarmBar.grid(row=1, column=2, sticky="nsew")
@@ -584,6 +584,34 @@ def swarmTest():
     app.after(5000, send_to_swarm, 1500, 1500, 1500, 1000, 1000)
     app.after(6000, disarm_all_swarm_drones)
 
+def swarmTest2(start_time=0, r=True):
+    global app
+    if r: 
+        tkprint(f"swarm test started")
+        start_time = time.time()
+    arm_all_swarm_drones()
+    current_seconds = time.time() - start_time
+
+    if current_seconds >= 1 and current_seconds <= 5:
+        percent_done = map_range(current_seconds, 1, 5, 0, 1)
+        throttle_curve = smooth_value(percent_done)
+        throttle_map = round(map_range(throttle_curve, 0, 1, 1000, 2000), 4)
+        tkprint(f"{round(current_seconds, 4)}, {throttle_map}")
+
+    if current_seconds >=5 and current_seconds <=7:
+        percent_done = round(map_range(current_seconds, 5, 7, 0, 1), 4)
+        throttle_curve = smooth_value(percent_done)
+        throttle_map = round(map_range(throttle_curve, 0, 1, 1000, 2000), 4)
+        tkprint(f"{round(current_seconds, 4)}, {throttle_map}")
+
+    if current_seconds >= 7:
+        tkprint("disarming")
+
+    if current_seconds < 10:
+        app.after(10, swarmTest2, start_time, False)
+    else:
+        tkprint("swarm test ended")
+
 def send_to_swarm(yaw, pitch, roll, throttle, killswitch):
     global drones
     for drone in drones:
@@ -599,13 +627,13 @@ def send_to_swarm(yaw, pitch, roll, throttle, killswitch):
 def arm_all_swarm_drones():
     for drone in drones:
         if drone:
-            if drone.state != "inactive":
+            if drone.state != "inactive" and drone.armVar <= 1575:
                 drone.armVar = 1600
                 tkprint(f"armed swarm drone: {drone.name}")
 def disarm_all_swarm_drones():
     for drone in drones:
         if drone:
-            if drone.state != "inactive":
+            if drone.state != "inactive" and drone.armVar >= 1575:
                 drone.armVar = 1500
                 tkprint(f"disarmed swarm drone: {drone.name}")
 
@@ -619,6 +647,21 @@ def clamp(val):
     if val > highLimit:
         val = highLimit   
     return val
+
+#input 0 to 1, outputs 0 to 1 with a sigmoid smooth function, max rate of change at 0.5
+def smooth_value(x):
+    x = max(0, min(1, x))  # Clamp input to [0, 1]
+    return x**3 * (x * (x * 6 - 15) + 10)
+
+#maps the number between from_min and from_max onto the range between to_min and to_max, all inclusive
+def map_range(value, from_min, from_max, to_min, to_max):
+    # Clamp input value within the original range
+    if from_max == from_min:
+        raise ValueError("Original range cannot be zero.")
+    
+    # Calculate the scaled value
+    scaled = (value - from_min) / (from_max - from_min)
+    return to_min + (scaled * (to_max - to_min))
 
 #if there are any drones that are active this will return True
 def detectActiveDrone():
