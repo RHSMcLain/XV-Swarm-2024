@@ -581,6 +581,7 @@ def swarmTest():
     arm_all_swarm_drones()
     app.after(1000, send_to_swarm, 1500, 1500, 1500, 1200, 1000)
     app.after(5000, send_to_swarm, 1500, 1500, 1500, 1000, 1000)
+    app.after(6000, disarm_all_swarm_drones)
 
 def send_to_swarm(yaw, pitch, roll, throttle, killswitch):
     global drones
@@ -591,7 +592,8 @@ def send_to_swarm(yaw, pitch, roll, throttle, killswitch):
                 drone.pitch = pitch
                 drone.roll = roll
                 drone.throttle = throttle
-                sendMessage(manMsgConstruct(drone.id), drone.ipAddress, drone.port)
+                drone.killswitch = killswitch
+                sendMessage(drone.ipAddress, drone.port, manMsgConstruct(drone.id))
                 tkprint(f"sent swarm message to drone: {drone.name}")
 
 def arm_all_swarm_drones():
@@ -600,6 +602,12 @@ def arm_all_swarm_drones():
             if drone.state != "inactive":
                 drone.armVar = 1600
                 tkprint(f"armed swarm drone: {drone.name}")
+def disarm_all_swarm_drones():
+    for drone in drones:
+        if drone:
+            if drone.state != "inactive":
+                drone.armVar = 1600
+                tkprint(f"disarmed swarm drone: {drone.name}")
 
 
 #This function is used to ensure that values for control inputs are kept in acceptable values
@@ -699,7 +707,7 @@ def handshake(msg, addr):
     i = int(parts[1])
     if (i == -1):
         i = len(drones)
-        tkprint("i: {i}, addr: {addr}, addr[1]: {addr[1]}")
+        tkprint(f"i: {i}, addr: {addr}, addr[1]: {addr[1]}")
         addDrone(parts[2], addr[0], addr[1])
         for adrone in drones:
             if adrone:tkprint(adrone)
