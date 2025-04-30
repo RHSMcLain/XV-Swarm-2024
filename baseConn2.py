@@ -55,6 +55,7 @@ ip = 0
 drones = [None]*8
 
 # Cody Webb made this, Bjorn didn't help one bit
+# I helped some :(
 
 #armvar is armed at 1575, disarmed at 1500
 #fail safes: out of wifi range, landing drone before allowing a disable
@@ -500,7 +501,7 @@ def swmMsgConstruct(droneNum):
         store + (str(drones[droneNum].waypointArr[i]) + "|")
     return ("SWM|" +ip +"|" +drones[droneNum].state +"|" +length +"|" +store)
     
-    
+  
 
 #Detects the operating system and grabs the computers IP for networking between the AP and drones
 def getMyIP():
