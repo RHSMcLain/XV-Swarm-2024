@@ -594,7 +594,6 @@ def send_to_swarm(yaw, pitch, roll, throttle, killswitch):
                 drone.roll = roll
                 drone.throttle = throttle
                 drone.killswitch = killswitch
-                sendMessage(drone.ipAddress, drone.port, manMsgConstruct(drone.id))
                 tkprint(f"sent swarm message to drone: {drone.name}")
 
 def arm_all_swarm_drones():
@@ -607,7 +606,7 @@ def disarm_all_swarm_drones():
     for drone in drones:
         if drone:
             if drone.state != "inactive":
-                drone.armVar = 1600
+                drone.armVar = 1500
                 tkprint(f"disarmed swarm drone: {drone.name}")
 
 
@@ -762,17 +761,18 @@ def manualControl():
     tkprint("Manual Control Thread initiated")
     while not killThreads: #continously loop until killThreads is true
 
-        if controller:
-            try:
-                fs.readFlightStick(fs)
-                yaw = clamp(round(fs.yaw, 2))
-                roll = clamp(round(fs.roll, 2))
-                pitch = clamp(round(fs.pitch, 2))
-                throttle = clamp(round(fs.throttle, 2))
-            except:
-                pass
-        else:
-            app.console.stick_not_connected()
+        if not usingAppThrottle:
+            if controller:
+                try:
+                    fs.readFlightStick(fs)
+                    yaw = clamp(round(fs.yaw, 2))
+                    roll = clamp(round(fs.roll, 2))
+                    pitch = clamp(round(fs.pitch, 2))
+                    throttle = clamp(round(fs.throttle, 2))
+                except:
+                    pass
+            else:
+                app.console.stick_not_connected()
 
         if(manualYes):
             app.updateDroneDisplay()
@@ -780,6 +780,7 @@ def manualControl():
                 throttle = appThrottle * 10 + 1000
         else:
             appThrottle = 0
+            swarmControl()
         for i in range(0, 8):
             if drones[i]:
                 try: #deleting a drone in manual mode will sometimes throw an error which is caught be this, because it looks up a nonexistant drone obj
@@ -805,6 +806,12 @@ def manualControl():
 
         time.sleep(0.002)
     tkprint("Manual Control Thread terminated")
+
+def swarmControl():
+    global drones
+    for drone in drones:
+        if drone and drone.state == "active":
+            sendMessage(drone.ipAddress, drone.port, manMsgConstruct(drone.id))
 
 #recieves messages on a seperate thread
 def listen(q_out, q_in):
