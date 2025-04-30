@@ -575,7 +575,7 @@ def MODEManual():
     buttonRefresh()
     tkprint("|||  MANUAL ENABLED  |||")
 
-#all drones go up then down
+#all drones go up then down DOES NOT WORK, needs to be reworked to send many many more messages
 def swarmTest():
     global app
     tkprint("swarm test started!")
