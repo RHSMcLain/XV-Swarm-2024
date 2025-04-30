@@ -235,7 +235,7 @@ class droneActiveButton():
         self.droneButton.configure(fg_color=self.currentColor, hover_color=self.currentHoverColor)
 
     def onClick(self):
-        global removeDroneSelection
+        global removeDroneSelection, drones
 
         if removeDroneSelection: #remove self if we are selected to delete drone
             removeDrone(self.droneId)
@@ -254,6 +254,8 @@ class droneActiveButton():
             if not detectActiveDrone():
                 activeDrone = -1
         
+        drones[self.droneId].state = self.state
+
         self.setColor()
 
     def grid(self, **kwargs):
@@ -295,7 +297,7 @@ class App(customtkinter.CTk):
         self.killswitchbutton =       Button(self.leftButtonBar, text="Kill Drones",       command=lambda:self.killswitch(), fg_color=colorPalette.buttonRed, hover_color=colorPalette.buttonRedHover)
         self.bypassControllerButton = Button(self.leftButtonBar, text="Bypass Controller", command=lambda:bypassController(self))
         self.addTestDroneButton =     Button(self.leftButtonBar, text="Add Test Drone",    command=lambda:addDrone("Test Drone #" + str(r.randint(100, 1000)), "10.20.18.23", 85))
-        self.connectToAPButton =      Button(self.leftButtonBar, text="Connect To AP",     command=lambda:introToAP2(0))
+        self.connectToAPButton =      Button(self.leftButtonBar, text="Connect To AP",     command=lambda:introToAP(0))
         
         self.manualControlSwitch = tkSwitch(self.leftButtonBar, MODEManual, MODESwarm, leftText="Manual", rightText="Swarm") #switch for Manual and Swarm modes in left button bar
 
@@ -317,12 +319,19 @@ class App(customtkinter.CTk):
 
         self.activeDroneBar = customtkinter.CTkFrame(self, width=600)
         self.droneButtons = [None]*8
-        self.activeDroneBar.grid (row=3, column=1)
+        self.activeDroneBar.grid (row=1, column=1)
         for i in range(0, 8): #creates 8 drone buttons in a 4x2 array
             self.droneButtons[i] = droneActiveButton(self.activeDroneBar, i)
             colMinus = 0
             if i > 3: colMinus = 4
             self.droneButtons[i].grid(row=round(i/8+0.1), column=i-colMinus, padx=15, pady=15)
+
+        self.swarmBar = customtkinter.CTkFrame(self)
+        self.swarmTestButton = Button(self.swarmBar, text="Swarm Test", command=swarmTest)
+
+
+        self.swarmBar.grid(row=1, column=2, sticky="nsew")
+        self.swarmTestButton.grid(row=0, column=0)
 
         # Aligning all parts of the UI
         self.leftButtonBar.grid(row=0, column=0, pady=(10, 0), rowspan=4, sticky="nsew") #far left frame
@@ -338,12 +347,12 @@ class App(customtkinter.CTk):
         self.console.grid               (row=0, column=1, padx=10, pady=10)
         self.droneDisplay.grid          (row=0, column=2, padx=(0, 10), pady=10, sticky="nsew")
 
-        self.throttleBar.grid                (row=0, column=5, rowspan=2, sticky="nsew") #far right frame
+        self.throttleBar.grid                (row=0, column=5, pady=10, rowspan=2, sticky="new") #far right frame
         self.throttleSlider.grid             (row=1, column=0, pady=15)
         self.throttleDisplay.grid            (row=0, column=0)
         self.displayThrottleSwitch.grid      (row=2, column=0, pady=(20, 0))
 
-        self.lowerLeftButtonBar.grid(row=3, column=0)
+        self.lowerLeftButtonBar.grid(row=1, column=0)
         self.removeDroneButton.grid (row=0, column=0)
         self.quitButton.grid        (row=1, column=0)      
 
@@ -565,6 +574,34 @@ def MODEManual():
     buttonRefresh()
     tkprint("|||  MANUAL ENABLED  |||")
 
+#all drones go up then down
+def swarmTest():
+    global app
+    tkprint("swarm test started!")
+    arm_all_swarm_drones()
+    app.after(1000, send_to_swarm, 1500, 1500, 1500, 1200, 1000)
+    app.after(5000, send_to_swarm, 1500, 1500, 1500, 1000, 1000)
+
+def send_to_swarm(yaw, pitch, roll, throttle, killswitch):
+    global drones
+    for drone in drones:
+        if drone:
+            if drone.state != "inactive" and drone.killswitch < 1700 and drone.armVar >= 1575:
+                drone.yaw = yaw
+                drone.pitch = pitch
+                drone.roll = roll
+                drone.throttle = throttle
+                sendMessage(manMsgConstruct(drone.id), drone.ipAddress, drone.port)
+                tkprint(f"sent swarm message to drone: {drone.name}")
+
+def arm_all_swarm_drones():
+    for drone in drones:
+        if drone:
+            if drone.state != "inactive":
+                drone.armVar = 1600
+                tkprint(f"armed swarm drone: {drone.name}")
+
+
 #This function is used to ensure that values for control inputs are kept in acceptable values
 def clamp(val):
     lowLimit = 1000
@@ -596,60 +633,6 @@ def findScreenScale():
     width = root.winfo_screenwidth()
     root.destroy()
     return (height, width)
-
-#adds the drones to the drone list
-def handshake(msg, addr):
-    parts = msg.split("|")
-    i = int(parts[1])
-    if (i == -1):
-        i = len(drones)
-        tkprint("i: {i}, addr: {addr}, addr[1]: {addr[1]}")
-        addDrone(parts[2], addr[0], addr[1])
-        for adrone in drones:
-            if adrone:tkprint(adrone)
-    else:
-        if drones[i].name == parts[2]:
-            #we could update here
-            drones[i].ipAddress = addr[0]
-            drones[i].port = addr[1]
-
-#new function uses recursion instead of an unleashed while True loop
-#Connects to AP, sends up to 3 messages with a 1.5 second delay
-def introToAP2(introCount):
-    global app
-    sendMessage("192.168.4.22", 80, "BaseStationIP")
-    introCount += 1
-    data = b"" #the b prefix makes it byte data
-    try:
-        data, addr = sock.recvfrom(1024)
-        tkprint("Connected to AP")
-        #tkprint(data, addr)
-    except:
-        tkprint(f"sent message to AP (msg #{introCount})")
-        if introCount == 3: tkprint("unable to connect to AP, try resetting it")
-        else: app.after(1500, introToAP2, introCount)
-
-#connects the drones, runs once every 700ms
-def checkQueue(q_in):
-    global killThreads, app
-    if (not q_in.empty() and not killThreads):
-        tkprint("checking q_in")
-        #grab the item
-        #process the info
-        #mark it complete
-        data = q_in.get()
-        parts = data.split("*")
-        addr = parts[0]
-        port = int(parts[1])
-        msg = parts[2]
-        msgParts = msg.split("|")
-
-        cmd = msgParts[0]
-
-        if cmd == "HND":
-            handshake(msg, (addr, port))
-    if not killThreads: app.after(700, checkQueue, q_in)
-    else: tkprint("checkQueue loop exited")
 
 #returns the index in array: drones that is the first empty slot
 def get_open_drone_index():
@@ -709,6 +692,60 @@ def removeDrone(index=-1):
     drones[index] = None
 
     app.removeDroneButton.configure(text = "remove drone")
+
+#adds the drones to the drone list
+def handshake(msg, addr):
+    parts = msg.split("|")
+    i = int(parts[1])
+    if (i == -1):
+        i = len(drones)
+        tkprint("i: {i}, addr: {addr}, addr[1]: {addr[1]}")
+        addDrone(parts[2], addr[0], addr[1])
+        for adrone in drones:
+            if adrone:tkprint(adrone)
+    else:
+        if drones[i].name == parts[2]:
+            #we could update here
+            drones[i].ipAddress = addr[0]
+            drones[i].port = addr[1]
+
+#new function uses recursion instead of an unleashed while True loop
+#Connects to AP, sends up to 3 messages with a 1.5 second delay
+def introToAP(introCount):
+    global app
+    sendMessage("192.168.4.22", 80, "BaseStationIP")
+    introCount += 1
+    data = b"" #the b prefix makes it byte data
+    try:
+        data, addr = sock.recvfrom(1024)
+        tkprint("Connected to AP")
+        #tkprint(data, addr)
+    except:
+        tkprint(f"sent message to AP (msg #{introCount})")
+        if introCount == 3: tkprint("unable to connect to AP, try resetting it")
+        else: app.after(1500, introToAP, introCount)
+
+#connects the drones, runs once every 700ms
+def checkQueue(q_in):
+    global killThreads, app
+    if (not q_in.empty() and not killThreads):
+        tkprint("checking q_in")
+        #grab the item
+        #process the info
+        #mark it complete
+        data = q_in.get()
+        parts = data.split("*")
+        addr = parts[0]
+        port = int(parts[1])
+        msg = parts[2]
+        msgParts = msg.split("|")
+
+        cmd = msgParts[0]
+
+        if cmd == "HND":
+            handshake(msg, (addr, port))
+    if not killThreads: app.after(700, checkQueue, q_in)
+    else: tkprint("checkQueue loop exited")
 
 #runs a while True loop on a separate thread, recieves flighstick inputs and sends outputs
 def manualControl():
