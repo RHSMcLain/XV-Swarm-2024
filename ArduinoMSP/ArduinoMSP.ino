@@ -51,7 +51,7 @@ bool enabled = false;
 Waypoint waypointArr[16];
 
 
-uint16_t rc_values[8];
+uint16_t rc_values[16];
 long start;
 
 struct{
@@ -72,7 +72,7 @@ struct{
 
 
 
-struct ManualControlMessage{
+struct PrevMessage{
   IPAddress sourceIP;
   String cmd;
   double yaw;
@@ -305,7 +305,7 @@ void MSPLoop(){
   rc_values[6] = 1700;
   rc_values[7] = killswitch;
   rc_values[9] = 1600;
-  commandMSP(MSP_SET_RAW_RC, rc_values, 16);
+  commandMSP(MSP_SET_RAW_RC, rc_values, (2*sizeof(rc_Values)));
 }
 
 void setup(){
@@ -340,12 +340,13 @@ void setup(){
   rc_values[5] = 1000;
   rc_values[6] = 1500;
   rc_values[7] = 1500;
+  rc_values[8] = 1000;
   rc_values[9] = 1600;
-  commandMSP(MSP_SET_RAW_RC, rc_values, 16);
-  commandMSP(MSP_SET_RAW_RC, rc_values, 16);
-  commandMSP(MSP_SET_RAW_RC, rc_values, 16);
+  for(int i = 0; i <= 3; i++){
+    commandMSP(MSP_SET_RAW_RC, rc_values, (2*sizeof(rc_Values)));
+  }
   delay(500);
-  commandMSP(MSP_SET_RAW_RC, rc_values, 16);
+  commandMSP(MSP_SET_RAW_RC, rc_values, (2*sizeof(rc_Values)));
 }//end setup
 
 void loop() {
@@ -395,7 +396,7 @@ void loop() {
     updateTime = millis();
   }
   // else if (state == 5) {
-  //   //call parsemanualcontrolmessage and process the results
+  //   //call parsePrevMessage and process the results
   //   //but do it in listen
   //   // Serial.println(roll);
   //   // Serial.println(yaw);
@@ -591,8 +592,8 @@ void MillisStuff() { //specifies whatever this stuff is for use in the loop, to 
   }
 }
 
-ManualControlMessage parseMessage(char buffer[]){
-  ManualControlMessage msg;
+PrevMessage parseMessage(char buffer[]){
+  PrevMessage msg;
   char *token;
   token = strtok(buffer, "|");
   int i = 0;
@@ -659,16 +660,16 @@ ManualControlMessage parseMessage(char buffer[]){
           break;
       }
     }
-    roll = msg.roll;
-    pitch = msg.pitch;
-    throttle = msg.throttle;
-    yaw = msg.yaw;
-    killswitch = msg.killswitch;
-    armVar = msg.armVar;
-    navHold = msg.navHold;
     i++;
     token = strtok(NULL, "|"); 
   }
+  roll = msg.roll;
+  pitch = msg.pitch;
+  throttle = msg.throttle;
+  yaw = msg.yaw;
+  killswitch = msg.killswitch;
+  armVar = msg.armVar;
+  navHold = msg.navHold;
   return msg;  
 //HAS REQUIRED PACKETS FROM LISTEN, CODE FOR MANUAL MODE HERE --------------
 //Currently does not include a break, repeats loop forever
@@ -719,7 +720,7 @@ void Listen(){
         }
       }
       else if (wifiState == 5){
-        ManualControlMessage msg = parseMessage(packetBuffer);
+        PrevMessage msg = parseMessage(packetBuffer);
         if(serialUSB)
         {
           Serial.print("packet: ");
