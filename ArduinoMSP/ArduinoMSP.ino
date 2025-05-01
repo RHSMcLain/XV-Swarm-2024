@@ -19,6 +19,7 @@ char packetBuffer[256];                  //buffer to hold incoming packet
 WiFiUDP Udp;
 unsigned int localPort = 2390;
 char  ReplyBuffer[] = "Drone 1";
+char state[];
 int wifiState = 0;                       //Wifi connection state
 bool firstConnectFrame = false;          //First Loop while connected to wifi           
 IPAddress bsip; //holds the base station ip address     
@@ -47,6 +48,8 @@ int blinkSpeed = 10;
 bool lightOn = false;
 bool bootComplete = false;               //Finished Drone Booting sequence
 bool enabled = false;
+Waypoint waypointArr[16];
+
 
 uint16_t rc_values[8];
 long start;
@@ -85,6 +88,17 @@ struct BSIPMessage{
   String cmd;
   IPAddress BSIP;
 };
+
+class Waypoint{
+  public:
+      uint32_t lat;
+      uint32_t lon;
+      uint32_t alt;
+      uint16_t heading;
+      uint16_t time;
+      uint8_t flag;
+  private:
+}
 
 void commandMSP(uint8_t cmd, uint16_t data[], uint8_t n_cbytes){
 
@@ -582,6 +596,9 @@ ManualControlMessage parseMessage(char buffer[]){
   char *token;
   token = strtok(buffer, "|");
   int i = 0;
+  int wpNum = 0;
+  int length;
+  char lastWp;
   while(token != 0){
     //Serial.println(token);
     switch(i){
@@ -616,19 +633,29 @@ ManualControlMessage parseMessage(char buffer[]){
       }
       else if(msg.cmd == "SWM"){
         case 2:
-
+          state = atoi(token);
           break;
         case 3:
-
+          length = atoi(token);
           break;
         case 4:
-
-          break;
-        case 5:
-
-          break;
-        case 6:
-          
+          do{
+            wpNum = token;
+            token = strtok(NULL, "|"); 
+            waypointArr.[wpNum].lon = token;
+            token = strtok(NULL, "|"); 
+            waypointArr.[wpNum].lat = token;
+            token = strtok(NULL, "|"); 
+            waypointArr.[wpNum].alt = token;
+            token = strtok(NULL, "|"); 
+            waypointArr.[wpNum].heading = token;
+            token = strtok(NULL, "|"); 
+            waypointArr.[wpNum].time = token;
+            token = strtok(NULL, "|"); 
+            waypointArr.[wpNum].flag = token;
+            token = strtok(NULL, "|"); 
+            lastWp = token;
+          }while(lastWp == "loop");
           break;
       }
     }

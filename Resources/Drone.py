@@ -39,12 +39,14 @@ class Track:
     gpsLon = None
     gpsLat = None
     alt = None
+    heading = None
     time = None
-    def __init__(self, gpsLon, gpsLat, alt, time, id) -> None:
+    def __init__(self, gpsLon, gpsLat, alt, heading, time, id) -> None:
         self.gpsLon = gpsLon
         self.gpsLat = gpsLat
         self.alt = alt
         self.time = time
+        self.heading = heading
         self.id = id
     def message(self):
-        return (str(self.id) +"|" +str(self.gpsLon) +"|" +str(self.gpsLat) +"|" +str(self.alt) +"|" +str(self.time) +"|" +str(1))
+        return (str(self.id) +"|" +str(self.gpsLon) +"|" +str(self.gpsLat) +"|" +str(self.alt) +"|" +str(self.heading) +"|" +str(self.time) +"|" +str(1))
