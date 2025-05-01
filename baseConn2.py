@@ -55,17 +55,23 @@ UDP_IP = 0
 ip = 0
 drones = [None]*8
 
-# Cody Webb made this, Bjorn didn't help one bit
-# I helped some :(
+'''
+Cody Webb made this, Bjorn didn't help one bit
+I helped some :(
 
-#armvar is armed at 1575, disarmed at 1500
-#fail safes: out of wifi range, landing drone before allowing a disable
-#autoland feature where drone lands itself slowly
+armvar is armed at 1575, disarmed at 1500
 
-#the reason for all of the glitchiness in the console + drone display is they delete lines before reading them and
-#the deletions don't sync with the monitor refresh rate, so you get frames where the text hasn't been inserted
+#TODO:
+fail safes: out of wifi range, landing drone before allowing a disable
+autoland feature where drone lands itself slowly <-- this is done when AP is disconnected, but an auto land button would be good
+Display last message sent to drones, maybe for each drone in swarm?
 
-#kill switch does not work in swarm mode
+the reason for all of the glitchiness in the console + drone display is they delete lines before reading them and
+the deletions don't sync with the monitor refresh rate, so you get frames where the text hasn't been inserted
+
+kill switch does not work in swarm mode
+
+'''
 
 #sets up the flighstick
 fs = FlightStick
@@ -113,11 +119,13 @@ class tkConsole():
         self.disable()
         self.msgCount = 0
     def logMsg(self):
+        global app
         self.msgCount += 1
         self.enable()
         if self.msgCount != 1: self.textbox.delete(2.0, 3.0)
         if self.msgCount == 1: self.textbox.insert("2.0", f"sent Message\n")
         else: self.textbox.insert("2.0", f"message count: {self.msgCount}\n")
+        app.updateDroneDisplay()
         self.disable()
     def stick_not_connected(self):
         self.error('- - NO FLIGHTSTICK CONNECTED | CONNECT CONTROLLER AND RESTART - -')
@@ -318,7 +326,6 @@ class App(customtkinter.CTk):
         #quit button
         self.quitButton = Button(self.lowerLeftButtonBar, text="TERMINATE", command=lambda: self.attemptTerminateApp(), fg_color=colorPalette.buttonRed, hover_color=colorPalette.buttonRedHover)
 
-
         self.activeDroneBar = customtkinter.CTkFrame(self, width=600)
         self.droneButtons = [None]*8
         self.activeDroneBar.grid (row=1, column=1)
@@ -454,17 +461,18 @@ class App(customtkinter.CTk):
         self.updateThrottleDisplay(0, self)
         appThrottle = 0
         throttle = 1000
-    #sets manual killswitch to 1700
+    #sets manual killswitch to 1700 and sends kill msg to all swarm drones
     def killswitch(self):
         global killswitch
         killswitch = 1700
+        kill_all_swarm_drones()
         self.console.killswitch()
         self.killswitchbutton.configure(text="Drones Killed", fg_color="darkred")
     #grabs the manual mode variables and displays them in the orange display
     def updateDroneDisplay(self):
         global throttle, roll, yaw, pitch, armVar, navHold
         displayText = f"Throttle: {round(throttle)}\nPitch:    {round(roll)}\nYaw:      {round(yaw)}\nRoll:     {round(pitch)}\nArmVar:   {round(armVar)}\nNavHold:  {round(navHold)}"
-        if displayText.replace(" ", "").replace("\n", "") != self.droneDisplay.get("1.0", customtkinter.END).replace(" ", "").replace("\n", ""):
+        if displayText.replace(" ", "").replace("\n", "") != self.droneDisplay.get("1.0", customtkinter.END).replace(" ", "").replace("\n", ""): #if its not the same message
             self.droneDisplay.configure(state="normal")
             self.droneDisplay.tag_config("center", justify="center")
             self.droneDisplay.delete(0.0, customtkinter.END)
@@ -576,7 +584,7 @@ def MODEManual():
     buttonRefresh()
     tkprint("|||  MANUAL ENABLED  |||")
 
-#all drones go up then down DOES NOT WORK, needs to be reworked to send many many more messages
+#all drones throttle to 1200 and back down. 6 seconds total
 def swarmTest():
     global app
     tkprint("swarm test started!")
@@ -585,30 +593,38 @@ def swarmTest():
     app.after(5000, send_to_swarm, 1500, 1500, 1500, 1000, 1000)
     app.after(6000, disarm_all_swarm_drones)
 
+# all drones arm, gradually increase throttle to 1600 and back down, disarm. 10 seconds total
 def swarmTest2(start_time=0, r=True):
     global app
+
+    if not detectActiveDrone():
+        tkprint("no active drones to test swarm")
+        return
+
     if r: 
-        tkprint(f"swarm test started")
+        tkprint(f"swarm test 2 started")
         start_time = time.time()
-    arm_all_swarm_drones()
+        arm_all_swarm_drones()
     current_seconds = time.time() - start_time
 
     throttle_curve = 1000
-    percent_done = 1000
 
     if current_seconds >= 1 and current_seconds <= 5:
-        percent_done = map_range(current_seconds, 1, 5, 1000, 1600)
-    elif current_seconds >=5 and current_seconds <=7:
-        percent_done = map_range(current_seconds, 5, 7, 1000, 1600)
+        throttle_curve = map_range(current_seconds, 1, 5, 1000, 1600)
+    elif current_seconds >=5 and current_seconds <=6:
+        throttle_curve = 1600
+    elif current_seconds >=6 and current_seconds <=9:
+        throttle_curve = 1600 - map_range(current_seconds, 6, 9, 0, 600)
     
     #tkprint(f"{round(current_seconds, 4)}, {throttle_curve}")
-    throttle_curve = clamp(round(sigmoid_smooth(percent_done, 1000, 1600, 1.2)))
+    throttle_curve = clamp(round(sigmoid_smooth(throttle_curve, 1000, 1600, 1.2)))
     send_to_swarm(1500, 1500, 1500, throttle_curve, 1000)
 
-    if current_seconds >= 7:
+    if current_seconds >= 9:
+        send_to_swarm(1500, 1500, 1500, 1000, 1000)
         disarm_all_swarm_drones()
 
-    if current_seconds < 8:
+    if current_seconds < 10:
         app.after(10, swarmTest2, start_time, False)
     else:
         tkprint("swarm test 2 ended")
@@ -623,12 +639,13 @@ def send_to_swarm(yaw, pitch, roll, throttle, killswitch):
                 drone.roll = roll
                 drone.throttle = throttle
                 drone.killswitch = killswitch
-                tkprint(f"sent swarm message to drone: {drone.name}")
+                #tkprint(f"sent swarm message to drone: {drone.name}")
 
 def arm_all_swarm_drones():
     for drone in drones:
         if drone:
             if drone.state != "inactive" and drone.armVar <= 1575:
+                drone.throttle = 1000
                 drone.armVar = 1600
                 tkprint(f"armed swarm drone: {drone.name}")
 def disarm_all_swarm_drones():
@@ -637,6 +654,8 @@ def disarm_all_swarm_drones():
             if drone.state != "inactive" and drone.armVar >= 1575:
                 drone.armVar = 1500
                 tkprint(f"disarmed swarm drone: {drone.name}")
+def kill_all_swarm_drones():
+    send_to_swarm(1500, 1500, 1500, 1000, 1700)
 
 
 #This function is used to ensure that values for control inputs are kept in acceptable values
