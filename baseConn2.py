@@ -27,7 +27,7 @@ global killThreads
 global qFromComms
 global qToComms
 
-global app, removeDroneSelection
+global app, removeDroneSelection, messages_sent
 
 global pitch, roll, yaw, throttle, navHold, armVar, killswitch
 global activeDrone, droneCount, selectedDrone, activeDrones, maxDrones
@@ -50,6 +50,7 @@ activeDrone = -1
 droneCount = 0
 maxDrones = 8
 removeDroneSelection = False
+messages_sent = 0
 
 UDP_IP = 0
 ip = 0
@@ -65,11 +66,10 @@ armvar is armed at 1575, disarmed at 1500
 fail safes: out of wifi range, landing drone before allowing a disable
 autoland feature where drone lands itself slowly <-- this is done when AP is disconnected, but an auto land button would be good
 Display last message sent to drones, maybe for each drone in swarm?
+IntroToAP still sends 3 messages even if its allready connected
 
 the reason for all of the glitchiness in the console + drone display is they delete lines before reading them and
 the deletions don't sync with the monitor refresh rate, so you get frames where the text hasn't been inserted
-
-kill switch does not work in swarm mode
 
 '''
 
@@ -104,27 +104,26 @@ class tkConsole():
         self.textbox.insert("0.0", " "*17 +"- - - - - - - CONSOLE - - - - - - -" +"\n")
 
         self.disable()
-
-        self.msgCount = 0
     
     def log(self, text):
+        global messages_sent
         self.enable()
         self.textbox.insert("2.0", text + "\n")
         self.disable()
-        self.msgCount = 0
+        messages_sent = 0
     def error(self, text):
+        global messages_sent
         self.enable()
         self.textbox.insert("2.0", text + "\n")
         self.textbox.tag_add("red", "2.0", "3.0")
         self.disable()
-        self.msgCount = 0
-    def logMsg(self):
-        global app
-        self.msgCount += 1
+        messages_sent = 0
+    def check_sent_messages(self):
+        global app, messages_sent
         self.enable()
-        if self.msgCount != 1: self.textbox.delete(2.0, 3.0)
-        if self.msgCount == 1: self.textbox.insert("2.0", f"sent Message\n")
-        else: self.textbox.insert("2.0", f"message count: {self.msgCount}\n")
+        if messages_sent != 1: self.textbox.delete(2.0, 3.0)
+        if messages_sent == 1: self.textbox.insert("2.0", f"sent Message\n")
+        else: self.textbox.insert("2.0", f"message count: {messages_sent}\n")
         app.updateDroneDisplay()
         self.disable()
     def stick_not_connected(self):
@@ -548,9 +547,12 @@ def bypassController(app):
 
 #Sends the packets of instructions to the drone
 def sendMessage(ipAddress, port, msg):
-    global sock, throttle, app
+    global sock, throttle, app, messages_sent
     print(f"sendMessage -- IP: {ipAddress}, PORT: {port}\n{msg}\n=====================")
-    app.console.logMsg()
+    messages_sent += 1
+    if(messages_sent % 10 == 0):
+        try: app.console.check_sent_messages()
+        except: pass
     bMsg = msg.encode("ascii")
     sock.sendto(bMsg, (ipAddress, int(port)))
 
@@ -610,14 +612,14 @@ def swarmTest2(start_time=0, r=True):
     throttle_curve = 1000
 
     if current_seconds >= 1 and current_seconds <= 5:
-        throttle_curve = map_range(current_seconds, 1, 5, 1000, 1600)
+        throttle_curve = map_range(current_seconds, 1, 5, 1000, 1500)
     elif current_seconds >=5 and current_seconds <=6:
-        throttle_curve = 1600
+        throttle_curve = 1500
     elif current_seconds >=6 and current_seconds <=9:
-        throttle_curve = 1600 - map_range(current_seconds, 6, 9, 0, 600)
+        throttle_curve = 1500 - map_range(current_seconds, 6, 9, 0, 500)
     
     #tkprint(f"{round(current_seconds, 4)}, {throttle_curve}")
-    throttle_curve = clamp(round(sigmoid_smooth(throttle_curve, 1000, 1600, 1.2)))
+    throttle_curve = clamp(round(sigmoid_smooth(throttle_curve, 1000, 1500, 1.2)))
     send_to_swarm(1500, 1500, 1500, throttle_curve, 1000)
 
     if current_seconds >= 9:
@@ -880,7 +882,7 @@ def manualControl():
                         sendMessage(drones[i].ipAddress, drones[i].port, manMsgConstruct(i))
                 except:pass
 
-        time.sleep(0.002)
+        time.sleep(0.00002)
     tkprint("Manual Control Thread terminated")
 
 def swarmControl():
