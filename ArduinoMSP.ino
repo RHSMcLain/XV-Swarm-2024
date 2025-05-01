@@ -591,35 +591,40 @@ ManualControlMessage parseMessage(char buffer[]){
       case 1:
         msg.sourceIP = token;
         break;
-      case 2:
-        msg.yaw = atoi(token);       
-        break;
-      case 3:
-        msg.pitch = atoi(token);  //pitch
-        break;
-      case 4: 
-        msg.roll = atoi(token);
-        break;
-      case 5:
-        msg.throttle = atoi(token);
-        break;
-      case 6:
-        msg.killswitch = atoi(token);
-        break;
-      case 7:
-        msg.armVar = atoi(token);
-        break;
-      case 8:
-        msg.navHold = atoi(token);
-        break;
+      if(msg.cmd == "MAN"){
+        case 2:
+          msg.yaw = atoi(token);       
+          break;
+        case 3:
+          msg.pitch = atoi(token);  //pitch
+          break;
+        case 4: 
+          msg.roll = atoi(token);
+          break;
+        case 5:
+          msg.throttle = atoi(token);
+          break;
+        case 6:
+          msg.killswitch = atoi(token);
+          break;
+        case 7:
+          msg.armVar = atoi(token);
+          break;
+        case 8:
+          msg.navHold = atoi(token);
+          break;
       }
-      roll = msg.roll;
-      pitch = msg.pitch;
-      throttle = msg.throttle;
-      yaw = msg.yaw;
-      killswitch = msg.killswitch;
-      armVar = msg.armVar;
-      navHold = msg.navHold;
+      else if(msg.cmd == "SWM"){
+        
+      }
+    }
+    roll = msg.roll;
+    pitch = msg.pitch;
+    throttle = msg.throttle;
+    yaw = msg.yaw;
+    killswitch = msg.killswitch;
+    armVar = msg.armVar;
+    navHold = msg.navHold;
     i++;
     token = strtok(NULL, "|"); 
   }
