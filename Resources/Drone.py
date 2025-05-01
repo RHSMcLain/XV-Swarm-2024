@@ -47,4 +47,4 @@ class Track:
         self.time = time
         self.id = id
     def message(self):
-        return (str(self.id) +"*" +str(self.gpsLon) +"*" +str(self.gpsLat) +"*" +str(self.alt) +"*" +str(self.time) +"*" +str(1))
+        return (str(self.id) +"|" +str(self.gpsLon) +"|" +str(self.gpsLat) +"|" +str(self.alt) +"|" +str(self.time) +"|" +str(1))
