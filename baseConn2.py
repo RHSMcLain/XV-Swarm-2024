@@ -12,6 +12,7 @@ import customtkinter
 import platform
 from Resources.FlightStickCode.FlightStick import FlightStick
 from Resources.Statics import colorPalette
+import math
 
 global manualYes
 global appThrottle
@@ -238,7 +239,7 @@ class droneActiveButton():
     def onClick(self):
         global removeDroneSelection, drones
 
-        if removeDroneSelection: #remove self if we are selected to delete drone
+        if removeDroneSelection and self.assigned: #remove self if we are selected to delete drone
             removeDrone(self.droneId)
             removeDroneSelection = False
             return
@@ -255,7 +256,7 @@ class droneActiveButton():
             if not detectActiveDrone():
                 activeDrone = -1
         
-        drones[self.droneId].state = self.state
+        if self.assigned: drones[self.droneId].state = self.state
 
         self.setColor()
 
@@ -592,25 +593,25 @@ def swarmTest2(start_time=0, r=True):
     arm_all_swarm_drones()
     current_seconds = time.time() - start_time
 
-    if current_seconds >= 1 and current_seconds <= 5:
-        percent_done = map_range(current_seconds, 1, 5, 0, 1)
-        throttle_curve = smooth_value(percent_done)
-        throttle_map = round(map_range(throttle_curve, 0, 1, 1000, 2000), 4)
-        tkprint(f"{round(current_seconds, 4)}, {throttle_map}")
+    throttle_curve = 1000
+    percent_done = 1000
 
-    if current_seconds >=5 and current_seconds <=7:
-        percent_done = round(map_range(current_seconds, 5, 7, 0, 1), 4)
-        throttle_curve = smooth_value(percent_done)
-        throttle_map = round(map_range(throttle_curve, 0, 1, 1000, 2000), 4)
-        tkprint(f"{round(current_seconds, 4)}, {throttle_map}")
+    if current_seconds >= 1 and current_seconds <= 5:
+        percent_done = map_range(current_seconds, 1, 5, 1000, 1600)
+    elif current_seconds >=5 and current_seconds <=7:
+        percent_done = map_range(current_seconds, 5, 7, 1000, 1600)
+    
+    #tkprint(f"{round(current_seconds, 4)}, {throttle_curve}")
+    throttle_curve = clamp(round(sigmoid_smooth(percent_done, 1000, 1600, 1.2)))
+    send_to_swarm(1500, 1500, 1500, throttle_curve, 1000)
 
     if current_seconds >= 7:
-        tkprint("disarming")
+        disarm_all_swarm_drones()
 
-    if current_seconds < 10:
+    if current_seconds < 8:
         app.after(10, swarmTest2, start_time, False)
     else:
-        tkprint("swarm test ended")
+        tkprint("swarm test 2 ended")
 
 def send_to_swarm(yaw, pitch, roll, throttle, killswitch):
     global drones
@@ -648,10 +649,23 @@ def clamp(val):
         val = highLimit   
     return val
 
-#input 0 to 1, outputs 0 to 1 with a sigmoid smooth function, max rate of change at 0.5
-def smooth_value(x):
-    x = max(0, min(1, x))  # Clamp input to [0, 1]
-    return x**3 * (x * (x * 6 - 15) + 10)
+#intensity of 5 is strong, 1 is moderate, 0.1 is nearly linear
+def sigmoid_smooth(x, min_val, max_val, intensity):
+    # Clamp x to [min_val, max_val]
+    x = max(min(x, max_val), min_val)
+
+    # Normalize x to [0, 1]
+    normalized = (x - min_val) / (max_val - min_val)
+
+    # Apply sigmoid transformation
+    # The intensity affects the steepness of the sigmoid
+    # Higher intensity makes the curve steeper
+    steepness = intensity * 10  # adjust this multiplier as needed
+    sigmoid = 1 / (1 + math.exp(-steepness * (normalized - 0.5)))
+
+    # Map back to [min_val, max_val]
+    smoothed = min_val + sigmoid * (max_val - min_val)
+    return smoothed
 
 #maps the number between from_min and from_max onto the range between to_min and to_max, all inclusive
 def map_range(value, from_min, from_max, to_min, to_max):
