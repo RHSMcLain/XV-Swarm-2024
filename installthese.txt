@@ -1,4 +1,4 @@
-python3 -m install --upgrade pip
+python3 -m pip install --upgrade pip
 python3 -m pip install customtkinter
 python3 -m pip install --upgrade Pillow
 pip3 install netifaces

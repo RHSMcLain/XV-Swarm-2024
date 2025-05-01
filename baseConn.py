@@ -22,7 +22,7 @@ import tkinter.messagebox
 from PIL import Image, GifImagePlugin, ImageTk
 from collections import deque
 GifImagePlugin.LOADING_STRATEGY = GifImagePlugin.LoadingStrategy.RGB_ALWAYS
-from FlightStickCode.FlightStick import FlightStick
+from Resources.FlightStickCode.FlightStick import FlightStick
 
 #stuffs to install
 # python3 -m install --upgrade pip
@@ -151,7 +151,7 @@ def bypassController():
     if platform.system() == ("Darwin"):
         os.system('clear')
     else:
-        os.system('cls')      
+        os.system('cls') 
     print("Contoller bypassed, console cleared")
     displayVar = "Contoller bypassed, console cleared"
     app.textbox1.configure(text = displayVar)
@@ -244,7 +244,7 @@ def updateDroneNames():
             for i in range(len(drones)):
                 if (selectedDrone == str(drones[i].name)):
                     selDrone = drones[i]
-                    print ("Drone " + selDrone.name + " Connected with Port: " + str(selDrone.port) + " and IP: " + str(selDrone.ipAddress))
+                    print("Drone " + selDrone.name + " Connected with Port: " + str(selDrone.port) + " and IP: " + str(selDrone.ipAddress))
             setDroneName()
       
 #This function is used to ensure that values for control inputs are kept in acceptable values
@@ -285,7 +285,7 @@ def introToAP():
             if (time.time() - startTime >= 3):
                 introCount += 1
                 sendMessage("192.168.4.22", 80, "BaseStationIP")
-                print ("sent message to AP: ", introCount)
+                print("sent message to AP: ", introCount)
                 startTime = time.time()
             continue
         #test the input to see if it is the confirmation code
@@ -430,22 +430,6 @@ def manualControl():
     listener.start()
 
     while True:
-        # if keyQ:
-        #     yaw -= 1
-        # elif keyE:
-        #     yaw += 1
-        # if keyA:
-        #     roll -= 1
-        # elif keyD:
-        #     roll += 1
-        # if keyW:
-        #     pitch += 1
-        # elif keyS:
-        #     pitch -= 1
-        # if keyAU:
-        #     throttle += 1
-        # elif keyAD:
-        #     throttle -= 1
         if keyR:
             kill()
         if keyT:
@@ -483,9 +467,7 @@ def manualControl():
             except:
                 pass
         else:
-            print('\033[31m===========================================================================\033[0m')
-            print('\033[31m- - - - NO FLIGHTSTICK CONNECTED  |  CONNECT CONTROLLER AND RESTART - - - -\033[0m')
-            print('\033[31m===========================================================================\033[0m')
+            print("NO FLIGHTSTICK CONNECTED | FATAL ERROR")
             displayVar = "NO FLIGHTSTICK CONNECTED | FATAL ERROR"
             try:
                 throttle = int(app.slider_2.get())
@@ -537,7 +519,7 @@ def  addDrone():
     global droneNumber, app, drones, my_image,displayVar, going
     
     #this is just to test if tkinter will add them to the listbox on a button press.
-    drones.append(Drone(8, "test", "none", 17))
+    drones.append(Drone(8, "test", "198.236.127.1", 17))
     droneNumber = (droneNumber+1)
     print(str(drones))
     updateDroneNames()
@@ -558,6 +540,16 @@ def kill():
     app.radio_button_1.configure(fg_color="Red", text="Drone Killed", text_color="Red")
     app.radio_button_2.configure(fg_color="Red", text="Drone Killed", text_color="Red")
     app.radio_button_3.configure(fg_color="Red", text="Drone Killed", text_color="Red")
+
+def killAllDrones():
+    global drones
+    timeEnd = time.time() + 5
+    print("Killing " + str(len(drones)) + " drones")
+    while time.time() < timeEnd: #run for 5 seconds
+        for drone in drones:
+            if(drone.name != "Connecting"):
+                sendMessage(drone.ipAddress, drone.port, "MAN|1500|1500|1500|1500|1000|1700|1500|1500|") #send kill message
+            else: print("Drone is connecting")
 
 #This funcion sends the drone arming values
 def arm():
@@ -652,7 +644,7 @@ terminate = False
 maxDrones = 3
 drones = []
 #these next two lines are for testing only. Remove them
-drones.append(Drone(0, "HelloWorldDrone", "10.20.18.23", 85))
+drones.append(Drone(0, "HelloWorldDrone", "10.20.18.23", 85, "inactive"))
 droneNumber = (droneNumber+1)
 selDrone = drones[0]
 
@@ -660,12 +652,12 @@ selDrone = drones[0]
 #------------------------------------CUSTOM TKINTER GUI-----------------------
 #-----------------------------------------------------------------------------
 
-#THIS PART IS ALL OF THE APPLICATION COMPONENTS. DONT TOUCH
+#THIS PART IS ALL OF THE APPLICATION COMPONENTS. DONT TOUCH. -> But I want to touch, I'm touching >:(
 class App(customtkinter.CTk):  
     def __init__(self):
         super().__init__()
         self.title("Controlling Module")
-        self.geometry(f"{1100}x{580}")
+        self.geometry(f"{1500}x{580}")
 
         # configure grid layout (4x4)
         self.grid_columnconfigure(1, weight=1)
@@ -678,9 +670,13 @@ class App(customtkinter.CTk):
         self.sidebar_frame.grid_rowconfigure(4, weight=1)
         self.logo_label = customtkinter.CTkLabel(self.sidebar_frame, text="Swarm Control Module", font=customtkinter.CTkFont(size=20, weight="bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
-        self.sidebar_button_1 = customtkinter.CTkButton(self.sidebar_frame, command=lambda: kill(), text="Kill Switch", fg_color="Red")
+        #self.sidebar_button_1 = customtkinter.CTkButton(self.sidebar_frame, command=lambda: kill(), text="Kill Switch", fg_color="Red")
         #self.sidebar_button_event  -------------REMOVEED TEMP FOR TEST
-        self.sidebar_button_1.grid(row=1, column=0, padx=20, pady=10)
+        #self.sidebar_button_1.grid(row=1, column=0, padx=20, pady=10)
+
+        self.killAll = customtkinter.CTkButton(self.sidebar_frame, command=lambda: killAllDrones(), text="Kill All", fg_color="Red", hover_color='darkred')
+        self.killAll.grid(row=1, column=0, padx=20, pady=10)
+
         self.sidebar_button_2 = customtkinter.CTkButton(self.sidebar_frame, command=lambda: introToAP(), text="Connect To AP")
         self.sidebar_button_2.grid(row=2, column=0, padx=20, pady=10)
         self.sidebar_button_3 = customtkinter.CTkButton(self.sidebar_frame, command=self.sidebar_button_event, text="Test")
@@ -860,6 +856,7 @@ class App(customtkinter.CTk):
     def sidebar_button_event(self):
         print("sidebar_button click")
 
+
 #-----------------------------------------------------------------------------
 #----------------------------- END OF FIRST GRAB -----------------------------
 #-----------------------------------------------------------------------------
@@ -886,6 +883,7 @@ m.start()
 
 #Creating the App
 app = App()
+
 app.after(1000, checkQueue, qFromComms)
 
 info = Image.open(file)

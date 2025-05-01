@@ -1,41 +1,37 @@
-import platform
 import subprocess
-import re
 
-def get_wifi_signal_strength():
-    system = platform.system()
-    
-    if system == "Linux":
-        try:
-            result = subprocess.run(["iwconfig"], capture_output=True, text=True)
-            match = re.search(r"Signal level=(-?\d+) dBm", result.stdout)
-            if match:
-                return f"WiFi Signal Strength: {match.group(1)} dBm"
-        except Exception as e:
-            return f"Error: {e}"
-    
-    elif system == "Darwin":  # macOS
-        try:
-            result = subprocess.run(["/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport", "-I"], capture_output=True, text=True)
-            match = re.search(r"agrCtlRSSI: (-?\d+)", result.stdout)
-            if match:
-                return f"WiFi Signal Strength: {match.group(1)} dBm"
-        except Exception as e:
-            return f"Error: {e}"
-    
-    elif system == "Windows":
-        try:
-            result = subprocess.run(["netsh", "wlan", "show", "interfaces"], capture_output=True, text=True)
-            match = re.search(r"Signal\s*: (\d+)", result.stdout)
-            if match:
-                signal_percent = int(match.group(1))
-                return f"WiFi Signal Strength: {signal_percent}%"
-        except Exception as e:
-            return f"Error: {e}"
-    
-    else:
-        return "Unsupported OS"
-while True:
-    if __name__ == "__main__":
-        print(get_wifi_signal_strength())
-     
+def get_wifi_info():
+    try:
+        process = subprocess.Popen(['/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport','-I'], stdout=subprocess.PIPE)
+        out, err = process.communicate()
+        process.wait()
+
+        wifi_info = {}
+        for line in out.decode("utf-8").split("\n"):
+            if ": " in line:
+                key, val = line.split(": ")
+                key = key.replace(" ", "")
+                val = val.strip()
+
+                wifi_info[key] = val
+    except:
+        process = subprocess.Popen(['netsh', 'wlan', 'show', 'interfaces'],
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE,
+                               shell=True)
+        out, err = process.communicate()
+        process.wait()
+
+        wifi_info = {}
+        for line in out.decode('utf-8', errors='ignore').split('\n'):
+            if ':' in line:
+                parts = line.split(':', 1)
+                key = parts[0].strip().replace(' ', '')
+                val = parts[1].strip()
+                wifi_info[key] = val
+
+    return wifi_info
+
+
+wifi_info = get_wifi_info()
+print(wifi_info["SSID"])
