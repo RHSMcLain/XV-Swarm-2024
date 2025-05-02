@@ -12,7 +12,7 @@ from   Resources.Drone import Drone
 global manualYes
 global appThrottle
 global usingAppThrottle
-global controller
+global controller, bypass_controller
 
 global UDP_IP, UDP_PORT, ip, sock
 global manualControlThread
@@ -40,6 +40,7 @@ yaw = 1500
 
 manualYes = False
 controller = True
+bypass_controller = False
 appThrottle = 0
 usingAppThrottle = False
 killThreads = False
@@ -496,6 +497,7 @@ def connect_flightStick():
     try:
         fs.__init__(fs)
         tkprint("flightstick connected")
+        controller = True
     except:
         controller = False
         pass
@@ -575,11 +577,12 @@ def get_wifi_info():
 
 #ignores the errors coming from the flightstick not connecting and clears the console
 def bypassController(app):
-    global controller
+    global controller, bypass_controller
     #app.console.clear()
     tkprint("Contoller bypassed")
     app.bypassControllerButton.configure(text="Controller Bypassed")
     controller = True
+    bypass_controller = True
 
 #Sends the packets of instructions to the drone
 def sendMessage(ipAddress, port, msg):
@@ -871,7 +874,7 @@ def checkQueue(q_in):
 
 #runs a while True loop on a separate thread, recieves flighstick inputs and sends outputs
 def manualControl():
-    global manualYes, killswitch, throttle, yaw, roll, pitch, armVar, navHold, app, sock, killThreads, usingAppThrottle, appThrottle, time_start
+    global manualYes, killswitch, throttle, yaw, roll, pitch, armVar, navHold, app, sock, killThreads, usingAppThrottle, appThrottle, time_start, bypass_controller, controller
     tkprint("Manual Control Thread initiated")
     while not killThreads: #continously loop until killThreads is true
 
@@ -884,11 +887,11 @@ def manualControl():
                     pitch = clamp(round(fs.pitch, 2))
                     throttle = clamp(round(fs.throttle, 2))
                 except:
-                    pass
+                   controller = False
             else:
                 connect_flightStick()
                 if((datetime.datetime.now() - time_start) > datetime.timedelta(seconds=5)):
-                    app.console.stick_not_connected()
+                    if not bypass_controller: app.console.stick_not_connected()
                     time_start = datetime.datetime.now()
 
         if(manualYes):
