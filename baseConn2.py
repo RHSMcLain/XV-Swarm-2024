@@ -889,10 +889,10 @@ def manualControl():
                 except:
                    controller = False
             else:
-                connect_flightStick()
                 if((datetime.datetime.now() - time_start) > datetime.timedelta(seconds=5)):
                     if not bypass_controller: app.console.stick_not_connected()
                     time_start = datetime.datetime.now()
+                    connect_flightStick()
 
         if(manualYes):
             app.updateDroneDisplay()
