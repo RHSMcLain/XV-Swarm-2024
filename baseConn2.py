@@ -1,18 +1,13 @@
-import socket
+import socket, platform, subprocess
 import netifaces as ni
-from Resources.Drone import Drone
+from   threading import Thread
+from   queue import Queue
 import random as r
-from threading import Thread
-import os
-from queue import Queue
-from pynput.keyboard import Key, Listener
-import time
-from tkinter import * 
-import customtkinter
-import platform
-from Resources.FlightStickCode.FlightStick import FlightStick
-from Resources.Statics import colorPalette
-import math
+import time, math
+import customtkinter, tkinter
+from   Resources.FlightStickCode.FlightStick import FlightStick
+from   Resources.Statics import colorPalette
+from   Resources.Drone import Drone
 
 global manualYes
 global appThrottle
@@ -119,12 +114,11 @@ class tkConsole():
         self.disable()
         messages_sent = 0
     def check_sent_messages(self):
-        global app, messages_sent
+        global messages_sent
         self.enable()
-        if messages_sent != 1: self.textbox.delete(2.0, 3.0)
-        if messages_sent == 1: self.textbox.insert("2.0", f"sent Message\n")
-        else: self.textbox.insert("2.0", f"message count: {messages_sent}\n")
-        app.updateDroneDisplay()
+        if messages_sent > 1 and self.textbox.get(2.0, 3.0)[:13] == "message count": self.textbox.delete(2.0, 3.0)
+        self.textbox.insert("2.0", f"message count: {messages_sent}\n")
+        self.config["master"].updateDroneDisplay()
         self.disable()
     def stick_not_connected(self):
         self.error('- - NO FLIGHTSTICK CONNECTED | CONNECT CONTROLLER AND RESTART - -')
@@ -525,8 +519,8 @@ def swmMsgConstruct(droneNum):
 
 #Detects the operating system and grabs the computers IP for networking between the AP and drones
 def getMyIP():
+    global app, ip, UDP_IP, UDP_PORT
     try:
-        global ip, UDP_IP, UDP_PORT
         hostname = socket.gethostname()
         if platform.system() == ("Windows"): # IP ADDRESS FOR WINDOWS OS
             tkprint("Operating system is WINDOWS")
@@ -537,8 +531,37 @@ def getMyIP():
         UDP_PORT = 5005
         UDP_IP = ip
         tkprint(f"host name: {hostname} || ip: {ip}")
+
+        wifi_name = get_wifi_info()["SSID"]
+
+        tkprint(f"Wifi name: {wifi_name}")
+
+        if wifi_name != "XV_Basestation":
+            app.console.error("Connected to wrong wifi, connect to basestation wifi and restart")
+
     except socket.gaierror as e: tkprint(f"There was an error resolving the hostname: {e}")
     except Exception as e:       tkprint(f"An unexpected error occurred: {e}")
+
+# gets info including SSID, returns an object. use get_wifi_info()["SSID"]
+def get_wifi_info():
+    if platform.system() == ("Darwin"):
+        process = subprocess.Popen(['/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport','-I'], stdout=subprocess.PIPE)
+    else:
+        process = subprocess.Popen(['netsh', 'wlan', 'show', 'interfaces'],
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE,
+                               shell=True)
+    out, err = process.communicate()
+    process.wait()
+    wifi_info = {}
+    for line in out.decode('utf-8', errors='ignore').split('\n'):
+        if ':' in line:
+            parts = line.split(':', 1)
+            key = parts[0].strip().replace(' ', '')
+            val = parts[1].strip()
+            wifi_info[key] = val
+
+    return wifi_info
 
 #ignores the errors coming from the flightstick not connecting and clears the console
 def bypassController(app):
@@ -717,7 +740,7 @@ def buttonRefresh():
 
 #returns the height and width of the screen in a tuple
 def findScreenScale():
-    root = Tk()
+    root = tkinter.Tk()
     height = root.winfo_screenheight()
     width = root.winfo_screenwidth()
     root.destroy()
@@ -806,7 +829,7 @@ def introToAP(introCount):
     introCount += 1
     data = b"" #the b prefix makes it byte data
     try:
-        data, addr = sock.recvfrom(1024)
+        data, addr = sock.recvfrom(1024) #does this allways throw an error?
         tkprint("Connected to AP")
         #tkprint(data, addr)
     except:
