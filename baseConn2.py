@@ -66,7 +66,6 @@ fail safes: out of wifi range, landing drone before allowing a disable
 autoland feature where drone lands itself slowly <-- this is done when AP is disconnected, but an auto land button would be good
 Display last message sent to drones, maybe for each drone in swarm?
 IntroToAP still sends 3 messages even if its allready connected
-connect to flightstick after initial app launch
 get IP again after connecting to a new wifi
 
 the reason for all of the glitchiness in the console + drone display is they delete lines before reading them and
@@ -854,11 +853,13 @@ def introToAP(introCount):
     data = b"" #the b prefix makes it byte data
     try:
         data, addr = sock.recvfrom(1024) #does this allways throw an error?
-        tkprint("Connected to AP")
         #tkprint(data, addr)
     except:
         tkprint(f"sent message to AP (msg #{introCount})")
         if introCount == 3: tkprint("unable to connect to AP, try resetting it")
+        elif data != b"":
+            tkprint("Connected to AP")
+            return
         else: app.after(1500, introToAP, introCount)
 
 #connects the drones, runs once every 700ms
@@ -912,18 +913,21 @@ def manualControl():
         else:
             appThrottle = 0
             swarmControl()
+        one_drone_armed = False
         for i in range(0, 8):
             if drones[i]:
                 try: #deleting a drone in manual mode will sometimes throw an error which is caught be this, because it looks up a nonexistant drone obj
                     if i == activeDrone:
+                        armVar = 1600
                         drones[activeDrone].throttle = throttle
                         drones[activeDrone].pitch = pitch
                         drones[activeDrone].roll = roll
                         drones[activeDrone].yaw = yaw
                         drones[activeDrone].navHold = navHold
                         drones[activeDrone].killswitch = killswitch
-                        drones[activeDrone].armVar = 1600
+                        drones[activeDrone].armVar = armVar
                         sendMessage(drones[activeDrone].ipAddress, drones[activeDrone].port, manMsgConstruct(activeDrone))
+                        one_drone_armed = True
                     elif manualYes:
                         drones[i].throttle = 1000
                         drones[i].pitch = 1500
@@ -934,6 +938,8 @@ def manualControl():
                         drones[i].armVar = 1500
                         sendMessage(drones[i].ipAddress, drones[i].port, manMsgConstruct(i))
                 except:pass
+        if not one_drone_armed:
+            armVar = 1500
 
         time.sleep(0.00002)
     tkprint("Manual Control Thread terminated")
