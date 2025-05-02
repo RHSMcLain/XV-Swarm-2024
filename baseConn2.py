@@ -14,7 +14,7 @@ global appThrottle
 global usingAppThrottle
 global controller, bypass_controller
 
-global UDP_IP, UDP_PORT, ip, sock
+global UDP_IP, UDP_PORT, ip, sock, os_name
 global manualControlThread
 global listenerThread
 global killThreads
@@ -74,8 +74,31 @@ the deletions don't sync with the monitor refresh rate, so you get frames where 
 
 '''
 
-#sets up the flighstick
+#attempts to connect to the a flightstick
+def connect_flightStick():
+    global controller
+    if os_name == "mac": return
+    try:
+        fs.__init__(fs)
+        tkprint("flightstick connected")
+        controller = True
+    except:
+        controller = False
+        pass
+
+def get_os_name():
+    if platform.system() == ("Darwin"):
+        return "mac"
+    if platform.system() == ("Windows"):
+        return "windows"
+    print("unsupported OS")
+
+os_name = get_os_name()
+
+#sets up the flighstick, on mac we cant periodically try to connect to the flightstick.
 fs = FlightStick
+if os_name == "mac":
+    connect_flightStick()
 
 #this is the black console, everything except sendMessage() print to it instead of the terminal
 class tkConsole():
@@ -491,17 +514,6 @@ def tkprint(text):
     try:    app.console.log(str(text))
     except: print("Failed to reach console, printing in terminal instead:\n" + str(text))
 
-#attempts to connect to the a flightstick
-def connect_flightStick():
-    global controller
-    try:
-        fs.__init__(fs)
-        tkprint("flightstick connected")
-        controller = True
-    except:
-        controller = False
-        pass
-
 #generates a message packet for the drone index you give it
 def manMsgConstruct(droneNum):
     global ip
@@ -526,18 +538,16 @@ def swmMsgConstruct(droneNum):
         else:
             store + (drones[droneNum].waypointArr[i].message +"|" +"end" +"|")
     return ("SWM|" +ip +"|" +drones[droneNum].state +"|" +length +"|" +store)
-    
-  
 
 #Detects the operating system and grabs the computers IP for networking between the AP and drones
 def getMyIP():
-    global app, ip, UDP_IP, UDP_PORT
+    global app, ip, UDP_IP, UDP_PORT, os_name
     try:
         hostname = socket.gethostname()
-        if platform.system() == ("Windows"): # IP ADDRESS FOR WINDOWS OS
+        if os_name == "windows": # IP ADDRESS FOR WINDOWS OS
             tkprint("Operating system is WINDOWS")
             ip = socket.gethostbyname(hostname + ".local")
-        if platform.system() == ("Darwin"): # IP ADRESSS FOR MAC OS
+        if os_name == "mac": # IP ADRESSS FOR MAC OS
             tkprint("Operating system is MACOS")
             ip = ni.ifaddresses('en1')[ni.AF_INET][0]['addr']
         UDP_PORT = 5005
@@ -556,7 +566,8 @@ def getMyIP():
 
 # gets info including SSID, returns an object. use get_wifi_info()["SSID"]
 def get_wifi_info():
-    if platform.system() == ("Darwin"):
+    global os_name
+    if os_name == "mac":
         process = subprocess.Popen(['/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport','-I'], stdout=subprocess.PIPE)
     else:
         process = subprocess.Popen(['netsh', 'wlan', 'show', 'interfaces'],
@@ -893,6 +904,7 @@ def manualControl():
                 if((datetime.datetime.now() - time_start) > datetime.timedelta(seconds=5)):
                     if not bypass_controller: app.console.stick_not_connected()
                     time_start = datetime.datetime.now()
+                    connect_flightStick()
 
         if(manualYes):
             app.updateDroneDisplay()
