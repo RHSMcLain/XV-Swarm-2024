@@ -3,7 +3,7 @@ import netifaces as ni
 from   threading import Thread
 from   queue import Queue
 import random as r
-import time, math
+import time, math, datetime
 import customtkinter, tkinter
 from   Resources.FlightStickCode.FlightStick import FlightStick
 from   Resources.Statics import colorPalette
@@ -18,6 +18,8 @@ global UDP_IP, UDP_PORT, ip, sock
 global manualControlThread
 global listenerThread
 global killThreads
+
+global time_start
 
 global qFromComms
 global qToComms
@@ -46,6 +48,7 @@ droneCount = 0
 maxDrones = 8
 removeDroneSelection = False
 messages_sent = 0
+time_start = datetime.datetime.now()
 
 UDP_IP = 0
 ip = 0
@@ -62,6 +65,8 @@ fail safes: out of wifi range, landing drone before allowing a disable
 autoland feature where drone lands itself slowly <-- this is done when AP is disconnected, but an auto land button would be good
 Display last message sent to drones, maybe for each drone in swarm?
 IntroToAP still sends 3 messages even if its allready connected
+connect to flightstick after initial app launch
+get IP again after connecting to a new wifi
 
 the reason for all of the glitchiness in the console + drone display is they delete lines before reading them and
 the deletions don't sync with the monitor refresh rate, so you get frames where the text hasn't been inserted
@@ -70,11 +75,6 @@ the deletions don't sync with the monitor refresh rate, so you get frames where 
 
 #sets up the flighstick
 fs = FlightStick
-try:
-    fs.__init__(fs)
-except:
-    controller = True
-    pass
 
 #this is the black console, everything except sendMessage() print to it instead of the terminal
 class tkConsole():
@@ -121,7 +121,7 @@ class tkConsole():
         self.config["master"].updateDroneDisplay()
         self.disable()
     def stick_not_connected(self):
-        self.error('- - NO FLIGHTSTICK CONNECTED | CONNECT CONTROLLER AND RESTART - -')
+        self.error('- - !!! NO FLIGHTSTICK CONNECTED !!! - -')
     def killswitch(self):
         self.error('========================KILL SWITCH ACTIVATED========================')
     def IP_is_zero(self):
@@ -490,6 +490,16 @@ def tkprint(text):
     try:    app.console.log(str(text))
     except: print("Failed to reach console, printing in terminal instead:\n" + str(text))
 
+#attempts to connect to the a flightstick
+def connect_flightStick():
+    global controller
+    try:
+        fs.__init__(fs)
+        tkprint("flightstick connected")
+    except:
+        controller = False
+        pass
+
 #generates a message packet for the drone index you give it
 def manMsgConstruct(droneNum):
     global ip
@@ -566,8 +576,8 @@ def get_wifi_info():
 #ignores the errors coming from the flightstick not connecting and clears the console
 def bypassController(app):
     global controller
-    app.console.clear()
-    tkprint("Contoller bypassed, console cleared")
+    #app.console.clear()
+    tkprint("Contoller bypassed")
     app.bypassControllerButton.configure(text="Controller Bypassed")
     controller = True
 
@@ -861,7 +871,7 @@ def checkQueue(q_in):
 
 #runs a while True loop on a separate thread, recieves flighstick inputs and sends outputs
 def manualControl():
-    global manualYes, killswitch, throttle, yaw, roll, pitch, armVar, navHold, app, sock, killThreads, usingAppThrottle, appThrottle
+    global manualYes, killswitch, throttle, yaw, roll, pitch, armVar, navHold, app, sock, killThreads, usingAppThrottle, appThrottle, time_start
     tkprint("Manual Control Thread initiated")
     while not killThreads: #continously loop until killThreads is true
 
@@ -876,7 +886,10 @@ def manualControl():
                 except:
                     pass
             else:
-                app.console.stick_not_connected()
+                connect_flightStick()
+                if((datetime.datetime.now() - time_start) > datetime.timedelta(seconds=5)):
+                    app.console.stick_not_connected()
+                    time_start = datetime.datetime.now()
 
         if(manualYes):
             app.updateDroneDisplay()
@@ -943,6 +956,7 @@ def runAfterAppLaunch():
     global UDP_IP, UDP_PORT, sock, manualControlThread, qFromComms, qToComms
 
     getMyIP()
+    connect_flightStick()
 
     qFromComms = Queue() #gets information from the comms thread
     qToComms = Queue() #sends information to the comms thread
