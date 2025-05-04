@@ -45,10 +45,10 @@ void FcComs::reqMSP(uint8_t req, uint8_t *data, uint8_t n_bytes){
   Serial1.write(checksum);
 }
 
-void FcComs::sendWaypoints(){
+void FcComs::sendWaypoints(Waypoint wp[]){
   uint8_t checksum = 0;
   uint8_t n_bytes = 0;
-  uint8_t size = sizeof(waypointArr);
+  uint8_t size = sizeof(wp);
   n_bytes = size*18;
 
   Serial1.write((byte *) "$M<", 3);
@@ -62,10 +62,10 @@ void FcComs::sendWaypoints(){
     Serial1.write(i);
     checksum ^= i;
     //lat
-    uint8_t lat1 = ((uint32_t)waypointArr[i].lat >> 0) & 0xFF;
-    uint8_t lat2 = ((uint32_t)waypointArr[i].lat >> 8) & 0xFF;
-    uint8_t lat3 = ((uint32_t)waypointArr[i].lat >> 16) & 0xFF;
-    uint8_t lat4 = ((uint32_t)waypointArr[i].lat >> 24) & 0xFF;
+    uint8_t lat1 = ((uint32_t)wp[i].lat >> 0) & 0xFF;
+    uint8_t lat2 = ((uint32_t)wp[i].lat >> 8) & 0xFF;
+    uint8_t lat3 = ((uint32_t)wp[i].lat >> 16) & 0xFF;
+    uint8_t lat4 = ((uint32_t)wp[i].lat >> 24) & 0xFF;
     Serial1.write(lat1);
     Serial1.write(lat2);
     Serial1.write(lat3);
@@ -75,10 +75,10 @@ void FcComs::sendWaypoints(){
     checksum ^= lat3;
     checksum ^= lat4;
     //lon
-    uint8_t lon1 = ((uint32_t)waypointArr[i].lon >> 0) & 0xFF;
-    uint8_t lon2 = ((uint32_t)waypointArr[i].lon >> 8) & 0xFF;
-    uint8_t lon3 = ((uint32_t)waypointArr[i].lon >> 16) & 0xFF;
-    uint8_t lon4 = ((uint32_t)waypointArr[i].lon >> 24) & 0xFF;
+    uint8_t lon1 = ((uint32_t)wp[i].lon >> 0) & 0xFF;
+    uint8_t lon2 = ((uint32_t)wp[i].lon >> 8) & 0xFF;
+    uint8_t lon3 = ((uint32_t)wp[i].lon >> 16) & 0xFF;
+    uint8_t lon4 = ((uint32_t)wp[i].lon >> 24) & 0xFF;
     Serial1.write(lon1);
     Serial1.write(lon2);
     Serial1.write(lon3);
@@ -88,10 +88,10 @@ void FcComs::sendWaypoints(){
     checksum ^= lon3;
     checksum ^= lon4;
     //alt
-    uint8_t alt1 = ((uint32_t)waypointArr[i].alt >> 0) & 0xFF;
-    uint8_t alt2 = ((uint32_t)waypointArr[i].alt >> 8) & 0xFF;
-    uint8_t alt3 = ((uint32_t)waypointArr[i].alt >> 16) & 0xFF;
-    uint8_t alt4 = ((uint32_t)waypointArr[i].alt >> 24) & 0xFF;
+    uint8_t alt1 = ((uint32_t)wp[i].alt >> 0) & 0xFF;
+    uint8_t alt2 = ((uint32_t)wp[i].alt >> 8) & 0xFF;
+    uint8_t alt3 = ((uint32_t)wp[i].alt >> 16) & 0xFF;
+    uint8_t alt4 = ((uint32_t)wp[i].alt >> 24) & 0xFF;
     Serial1.write(alt1);
     Serial1.write(alt2);
     Serial1.write(alt3);
@@ -101,29 +101,29 @@ void FcComs::sendWaypoints(){
     checksum ^= alt3;
     checksum ^= alt4;
     //heading
-    uint8_t head1 = ((uint16_t)waypointArr[i].heading >> 0) & 0xFF;
-    uint8_t head2 = ((uint16_t)waypointArr[i].heading >> 8) & 0xFF;
+    uint8_t head1 = ((uint16_t)wp[i].heading >> 0) & 0xFF;
+    uint8_t head2 = ((uint16_t)wp[i].heading >> 8) & 0xFF;
     Serial1.write(head1);
     Serial1.write(head2);
     checksum ^= head1;
     checksum ^= head2;
     //time
-    uint8_t time1 = ((uint16_t)waypointArr[i].time >> 0) & 0xFF;
-    uint8_t time2 = ((uint16_t)waypointArr[i].time >> 8) & 0xFF;
+    uint8_t time1 = ((uint16_t)wp[i].time >> 0) & 0xFF;
+    uint8_t time2 = ((uint16_t)wp[i].time >> 8) & 0xFF;
     Serial1.write(time1);
     Serial1.write(time2);
     checksum ^= time1;
     checksum ^= time2;
     //flag
-    Serial1.write(waypointArr[i].flag);
-    checksum ^= waypointArr[i].flag;
+    Serial1.write(wp[i].flag);
+    checksum ^= wp[i].flag;
   }
 }
 
 void FcComs::readAttitudeData(){
-  delay(100);
   byte count = 0;
-
+  reqMSP(MSP_ATTITUDE, 0, 0);
+  delay(10);
   int16_t rollRec;
   int16_t pitchRec;
   int16_t yawRec;
@@ -169,9 +169,9 @@ void FcComs::readAttitudeData(){
 }
 
 void FcComs::readGPSData(){
-  delay(100);
   byte count = 0;
-
+  reqMSP(MSP_RAW_GPS, 0, 0);
+  delay(10);
   uint8_t gpsFix;
   uint8_t numSat;
   uint32_t lat;
@@ -268,6 +268,9 @@ PrevMessage_h WifiComs::parseMessage(char buffer[]){
     char *token;
     token = strtok(buffer, "|");
     int i = 0;
+    int wpNum = 0;
+    int length;
+    char lastWp;
     while(token != 0){
       //Serial.println(token);
       switch(i){
@@ -277,28 +280,61 @@ PrevMessage_h WifiComs::parseMessage(char buffer[]){
         case 1:
           msg.sourceIP = token;
           break;
-        case 2:
-          msg.yaw = atoi(token);       
-          break;
-        case 3:
-          msg.pitch = atoi(token);  //pitch
-          break;
-        case 4: 
-          msg.roll = atoi(token);
-          break;
-        case 5:
-          msg.throttle = atoi(token);
-          break;
-        case 6:
-          msg.killswitch = atoi(token);
-          break;
-        case 7:
-          msg.armVar = atoi(token);
-          break;
-        case 8:
-          msg.navHold = atoi(token);
-          break;
+        if(msg.cmd == "MAN"){
+          case 2:
+            msg.yaw = atoi(token);       
+            break;
+          case 3:
+            msg.pitch = atoi(token);  //pitch
+            break;
+          case 4: 
+            msg.roll = atoi(token);
+            break;
+          case 5:
+            msg.throttle = atoi(token);
+            break;
+          case 6:
+            msg.killswitch = atoi(token);
+            break;
+          case 7:
+            msg.armVar = atoi(token);
+            break;
+          case 8:
+            msg.navHold = atoi(token);
+            break;
         }
+        else if(msg.cmd == "SWM"){
+          if(i == 2){
+            i = 9;
+          }
+          case 9:
+            state = atoi(token);
+            break;
+          case 10:
+            length = atoi(token);
+            break;
+          case 11:
+            do{
+              wpNum = atoi(token);
+              token = strtok(NULL, "|"); 
+              waypointArr[wpNum].lon = atoi(token);
+              token = strtok(NULL, "|"); 
+              waypointArr[wpNum].lat = atoi(token);
+              token = strtok(NULL, "|"); 
+              waypointArr[wpNum].alt = atoi(token);
+              token = strtok(NULL, "|"); 
+              waypointArr[wpNum].heading = atoi(token);
+              token = strtok(NULL, "|"); 
+              waypointArr[wpNum].time = atoi(token);
+              token = strtok(NULL, "|"); 
+              waypointArr[wpNum].flag = atoi(token);
+              token = strtok(NULL, "|"); 
+              lastWp = *token;
+            }while(lastWp == *"loop");
+            newWaypoints = true;
+            break;
+        }
+      }
       i++;
       token = strtok(NULL, "|"); 
     }

@@ -31,6 +31,10 @@ class WifiComs{
         PrevMessage_h PrevMessage;
         BSIPMessage_h BSIPMessage;
         int wifiState = 0;
+        String state = "inactive";
+        Waypoint waypointArr[16];
+        bool newWaypoints = false;
+        
     private:
         char handShake[];
 
@@ -44,13 +48,11 @@ class FcComs{
 
         void reqMSP(uint8_t req, uint8_t *data, uint8_t n_bytes);
 
-        void sendWaypoints();
+        void sendWaypoints(Waypoint wp[]);
 
         void readAttitudeData();
 
         void readGPSData();
-
-        Waypoint waypointArr[16];
 
         msp_attitude_h msp_attitude;
         msp_raw_gps_h msp_raw_gps;
