@@ -316,7 +316,6 @@ void setup(){
   start = millis();
   delay(250);
   Serial1.begin(9600);
-  Serial.begin(9600);
   rc_values[0] = 1500;
   rc_values[1] = 1500;
   rc_values[2] = 885;
