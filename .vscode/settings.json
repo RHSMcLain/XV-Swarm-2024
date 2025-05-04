@@ -2,5 +2,8 @@
     "python.analysis.extraPaths": [
         "./Resources",
         "./Resources/FlightStickCode"
-    ]
+    ],
+    "files.associations": {
+        "filesystem": "cpp"
+    }
 }

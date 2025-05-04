@@ -1,0 +1,25 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "C:\\Users\\bjorn\\AppData\\Local\\Arduino15/**",
+                "C:\\Users\\bjorn\\Documents\\Arduino\\libraries/**",
+                "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community/**",
+                "C:/Users/bjorn/AppData/Local/Arduino15/packages/arduino/hardware/samd/1.8.14/cores/arduino"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "windowsSdkVersion": "10.0.26100.0",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-msvc-x64",
+            "compilerPath": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.43.34808/bin/Hostx64/x64/cl.exe"
+        }
+    ],
+    "version": 4
+}
