@@ -134,7 +134,11 @@ void FcComs::readAttitudeData(){
     byte second;
     switch (count) {
       //first five bytes are header-type informatin, so start at 6
-    case 1 ... 5:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
       Serial1.read();
       break;
     case 6:
@@ -188,7 +192,11 @@ void FcComs::readGPSData(){
     byte fourth;
     switch (count) {
       //first five bytes are header-type informatin, so start at 6
-    case 1 ... 5:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
       Serial1.read();
       break;
     case 6: //Fix, 1 is yes, 0 is no
@@ -258,7 +266,7 @@ void FcComs::readGPSData(){
   msp_raw_gps.gpsCourse = gpsCourse;
 }
 
-IPAddress bsip;
+Arduino_h::IPAddress bsip;
 int connectTime = 0;
 WiFiUDP Udp;
 bool firstconnectframe = false;
@@ -308,7 +316,7 @@ PrevMessage_h WifiComs::parseMessage(char buffer[]){
             i = 9;
           }
           case 9:
-            state = atoi(token);
+            state = token;
             break;
           case 10:
             length = atoi(token);
@@ -425,7 +433,7 @@ int WifiComs::Listen(char packetBuffer[255]){
       //Serial.print("Received packet of size ");
       //Serial.println(packetSize);
       //Serial.print("From ");
-      IPAddress remoteIp = Udp.remoteIP();
+      Arduino_h::IPAddress remoteIp = Udp.remoteIP();
       //Serial.print(remoteIp);
       //Serial.print(", port ");
       //Serial.println(Udp.remotePort());

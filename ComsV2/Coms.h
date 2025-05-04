@@ -31,7 +31,7 @@ class WifiComs{
         PrevMessage_h PrevMessage;
         BSIPMessage_h BSIPMessage;
         int wifiState = 0;
-        String state = "inactive";
+        ::String state = "inactive";
         Waypoint waypointArr[16];
         bool newWaypoints = false;
         
@@ -92,8 +92,8 @@ class msp_raw_gps_h{
 
 class PrevMessage_h{
     public:
-        IPAddress sourceIP;
-        String cmd;
+        Arduino_h::IPAddress sourceIP;
+        Arduino_h::String cmd;
         double yaw;
         double pitch;
         double roll;
@@ -106,7 +106,7 @@ class PrevMessage_h{
 
 class BSIPMessage_h{
     public:
-        String cmd;
-        IPAddress BSIP;
+        Arduino_h::String cmd;
+        Arduino_h::IPAddress BSIP;
     private:
 };
