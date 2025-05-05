@@ -31,7 +31,7 @@ class WifiComs{
         PrevMessage_h PrevMessage;
         BSIPMessage_h BSIPMessage;
         int wifiState = 0;
-        ::String state = "inactive";
+        Arduino_h::String state = "inactive";
         Waypoint waypointArr[16];
         bool newWaypoints = false;
         

@@ -338,6 +338,7 @@ PrevMessage_h WifiComs::parseMessage(char buffer[]){
               waypointArr[wpNum].flag = atoi(token);
               token = strtok(NULL, "|"); 
               lastWp = *token;
+              token = strtok(NULL, "|");
             }while(lastWp == *"loop");
             newWaypoints = true;
             break;
