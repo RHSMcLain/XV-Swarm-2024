@@ -12,53 +12,6 @@
 // #define handShake "HND|-1|Betsy"
 #define ssid "XV_Basestation"
 
-class WifiComs{
-    public:
-        PrevMessage_h parseMessage(char buffer[]);
-
-        BSIPMessage_h parseBSIP(char buffer[]);
-
-        int Listen(char packetBuffer[255]);
-
-        int WifiConnection(char ReplyBuffer[]);
-
-        void SendMessage(char msg[]);
-
-        WifiComs(char handShake_1[]){
-            strcpy(handShake, handShake_1);
-        }
-
-        PrevMessage_h PrevMessage;
-        BSIPMessage_h BSIPMessage;
-        int wifiState = 0;
-        Arduino_h::String state = "inactive";
-        Waypoint waypointArr[16];
-        bool newWaypoints = false;
-        
-    private:
-        char handShake[];
-
-};
-
-class FcComs{
-    public:
-        void begin(int speed);
-
-        void commandMSP(uint8_t cmd, uint16_t data[], uint8_t n_cbytes);
-
-        void reqMSP(uint8_t req, uint8_t *data, uint8_t n_bytes);
-
-        void sendWaypoints(Waypoint wp[]);
-
-        void readAttitudeData();
-
-        void readGPSData();
-
-        msp_attitude_h msp_attitude;
-        msp_raw_gps_h msp_raw_gps;
-    private:
-};
-
 class Waypoint{
     public:
         uint32_t lat;
@@ -108,5 +61,51 @@ class BSIPMessage_h{
     public:
         Arduino_h::String cmd;
         Arduino_h::IPAddress BSIP;
+    private:
+};
+
+class WifiComs{
+    public:
+        PrevMessage_h parseMessage(char buffer[]);
+
+        BSIPMessage_h parseBSIP(char buffer[]);
+
+        int Listen(char packetBuffer[255]);
+
+        int WifiConnection(char ReplyBuffer[]);
+
+        void SendMessage(char msg[]);
+
+        WifiComs(char hnd[]){
+            handShake = hnd;
+        }
+
+        PrevMessage_h PrevMessage;
+        BSIPMessage_h BSIPMessage;
+        Waypoint waypointArr[16];
+        int wifiState = 0;
+        Arduino_h::String state = "inactive";
+        bool newWaypoints = false;
+        
+    private:
+        char* handShake;
+};
+
+class FcComs{
+    public:
+        void begin(int speed);
+
+        void commandMSP(uint8_t cmd, uint16_t data[], uint8_t n_cbytes);
+
+        void reqMSP(uint8_t req, uint8_t *data, uint8_t n_bytes);
+
+        void sendWaypoints(Waypoint wp[]);
+
+        void readAttitudeData();
+
+        void readGPSData();
+
+        msp_attitude_h msp_attitude;
+        msp_raw_gps_h msp_raw_gps;
     private:
 };

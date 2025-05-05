@@ -288,61 +288,59 @@ PrevMessage_h WifiComs::parseMessage(char buffer[]){
         case 1:
           msg.sourceIP = token;
           break;
-        if(msg.cmd == "MAN"){
-          case 2:
-            msg.yaw = atoi(token);       
-            break;
-          case 3:
-            msg.pitch = atoi(token);  //pitch
-            break;
-          case 4: 
-            msg.roll = atoi(token);
-            break;
-          case 5:
-            msg.throttle = atoi(token);
-            break;
-          case 6:
-            msg.killswitch = atoi(token);
-            break;
-          case 7:
-            msg.armVar = atoi(token);
-            break;
-          case 8:
-            msg.navHold = atoi(token);
-            break;
-        }
-        else if(msg.cmd == "SWM"){
-          if(i == 2){
-            i = 9;
+        case 2:
+          if(msg.cmd == "SWM"){
+            i = 8;
           }
-          case 9:
-            state = token;
-            break;
-          case 10:
-            length = atoi(token);
-            break;
-          case 11:
-            do{
-              wpNum = atoi(token);
-              token = strtok(NULL, "|"); 
-              waypointArr[wpNum].lon = atoi(token);
-              token = strtok(NULL, "|"); 
-              waypointArr[wpNum].lat = atoi(token);
-              token = strtok(NULL, "|"); 
-              waypointArr[wpNum].alt = atoi(token);
-              token = strtok(NULL, "|"); 
-              waypointArr[wpNum].heading = atoi(token);
-              token = strtok(NULL, "|"); 
-              waypointArr[wpNum].time = atoi(token);
-              token = strtok(NULL, "|"); 
-              waypointArr[wpNum].flag = atoi(token);
-              token = strtok(NULL, "|"); 
-              lastWp = *token;
-              token = strtok(NULL, "|");
-            }while(lastWp == *"loop");
-            newWaypoints = true;
-            break;
-        }
+          else{
+            msg.yaw = atoi(token);  
+          }     
+          break;
+        case 3:
+          msg.pitch = atoi(token);  //pitch
+          break;
+        case 4: 
+          msg.roll = atoi(token);
+          break;
+        case 5:
+          msg.throttle = atoi(token);
+          break;
+        case 6:
+          msg.killswitch = atoi(token);
+          break;
+        case 7:
+          msg.armVar = atoi(token);
+          break;
+        case 8:
+          msg.navHold = atoi(token);
+          break;
+        case 9:
+          state = token;
+          break;
+        case 10:
+          length = atoi(token);
+          break;
+        case 11:
+          do{
+            wpNum = atoi(token);
+            token = strtok(NULL, "|"); 
+            waypointArr[wpNum].lon = atoi(token);
+            token = strtok(NULL, "|"); 
+            waypointArr[wpNum].lat = atoi(token);
+            token = strtok(NULL, "|"); 
+            waypointArr[wpNum].alt = atoi(token);
+            token = strtok(NULL, "|"); 
+            waypointArr[wpNum].heading = atoi(token);
+            token = strtok(NULL, "|"); 
+            waypointArr[wpNum].time = atoi(token);
+            token = strtok(NULL, "|"); 
+            waypointArr[wpNum].flag = atoi(token);
+            token = strtok(NULL, "|"); 
+            lastWp = *token;
+            token = strtok(NULL, "|");
+          }while(lastWp == *"loop");
+          newWaypoints = true;
+          break;
       }
       i++;
       token = strtok(NULL, "|"); 
@@ -390,6 +388,7 @@ int WifiComs::WifiConnection(char ReplyBuffer[]){
       //Retry every 5 seconds
       connectTime = millis();
       firstconnectframe = true;
+      wifiState = 0;
       return 0;
     }
     else if(WiFi.status() == WL_CONNECTED && firstconnectframe){
@@ -398,28 +397,32 @@ int WifiComs::WifiConnection(char ReplyBuffer[]){
       Udp.beginPacket("192.168.4.22", 80);
       Udp.write("State: 0 -> 1 |Connected|");
       Udp.endPacket();
-      wifiState = 1;
       Udp.beginPacket("192.168.4.22", 80);
       Udp.write(ReplyBuffer);
       Udp.endPacket();
+      wifiState = 1;
+      firstconnectframe = false;
       return 1;
     }
     if(wifiState == 1 && WiFi.status() == WL_CONNECTED){
       Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
       Udp.write("State: 1 -> 2");
       Udp.endPacket();
+      wifiState = 2;
       return 2;
     }
     else if(wifiState == 2){ 
       Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
       Udp.write("AmDrone");
       Udp.endPacket();
+      wifiState = 3;
       return 3;
     }
     else if(wifiState == 4) {
       Udp.beginPacket(bsip, 5005);
       Udp.write(handShake);
       Udp.endPacket();
+      wifiState = 5;
       return 5;
     }
     else
@@ -453,11 +456,13 @@ int WifiComs::Listen(char packetBuffer[255]){
             bsip = msg.BSIP;
             // Serial.print("Base Station IP: ");
             // Serial.println(bsip);
+            wifiState = 4;
             return 4;
           }
         }
         else if (wifiState == 5){
           PrevMessage = parseMessage(packetBuffer);
+          wifiState = 5;
           return 5;
         }
       }    

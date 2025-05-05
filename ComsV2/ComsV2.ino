@@ -1,11 +1,11 @@
 #include <Coms.h>
 
-#define hndShake "HND|-1|Betsy"
+#define ident "HND|-1|Betsy"
 
 char ReplyBuffer[] = "Drone 1";
 char packetBuffer[256]; 
 
-WifiComs wifi(hndShake);
+WifiComs wifi(ident);
 FcComs msp; 
 uint16_t rc_values[8] = {1500, 1500, 885, 1500, 1500, 1000, 1500, 1500};
 
@@ -14,20 +14,20 @@ bool flashing = true;
 int blinkT = 100;
 long lastBlink = 0;
 
-void Setup(){
+void setup(){
     pinMode(LED_BUILTIN, OUTPUT);
     msp.begin(9600);
     Serial.begin(9600);
-    wifi.wifiState = wifi.WifiConnection(ReplyBuffer);
+    wifi.WifiConnection(ReplyBuffer);
     for(int i = 0; i < 3; i++){
         msp.commandMSP(MSP_SET_RAW_RC, rc_values, (2*sizeof(rc_values)));
         delay(100);
     }
 }
 
-void Loop(){
-    wifi.wifiState = wifi.WifiConnection(ReplyBuffer);
-    wifi.wifiState = wifi.Listen(packetBuffer);
+void loop(){
+    wifi.WifiConnection(ReplyBuffer);
+    wifi.Listen(packetBuffer);
     msp.readGPSData();
     if(wifi.newWaypoints){
         msp.sendWaypoints(wifi.waypointArr);
@@ -50,7 +50,7 @@ void Loop(){
         }
     }
     if((millis() - blinkT > lastBlink) && flashing){
-        Light();
+        LightSR();
     }
     else{
         digitalWrite(LED_BUILTIN, HIGH);
@@ -82,7 +82,7 @@ void RcSet(uint16_t pitch, uint16_t roll, uint16_t throttle, uint16_t yaw, uint1
     rc_values[7] = killswitch;
 }
 
-void Light(){
+void LightSR(){
     if(light){
         digitalWrite(LED_BUILTIN, HIGH);
     }
