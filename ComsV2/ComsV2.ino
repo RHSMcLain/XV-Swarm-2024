@@ -7,12 +7,21 @@ char packetBuffer[256];
 
 WifiComs wifi(ident);
 FcComs msp; 
-uint16_t rc_values[8] = {1500, 1500, 885, 1500, 1500, 1000, 1500, 1500};
+uint16_t rc_values[8] = {//rc channel values
+    1500,
+    1500, 
+    885, 
+    1500, 
+    1500, 
+    1000, 
+    1500, 
+    1500
+};    
 
-bool light = false;
-bool flashing = true;
-int blinkT = 100;
-long lastBlink = 0;
+bool light = false;     //light is on
+bool flashing = true;   //light should flash
+int blinkT = 100;       //time between state switches (ms)
+long lastBlink = 0;     //time of last state switch (ms)
 
 void setup(){
     pinMode(LED_BUILTIN, OUTPUT);
@@ -55,7 +64,7 @@ void loop(){
     else{
         digitalWrite(LED_BUILTIN, HIGH);
     }
-    switch (wifi.wifiState){
+    switch (wifi.wifiState){    //switch depending on the drones state
     case 1:
         flashing = true;
         blinkT = 100;
@@ -82,7 +91,7 @@ void RcSet(uint16_t pitch, uint16_t roll, uint16_t throttle, uint16_t yaw, uint1
     rc_values[7] = killswitch;
 }
 
-void LightSR(){
+void LightSR(){ //built in light as indicator sr latch
     if(light){
         digitalWrite(LED_BUILTIN, HIGH);
     }
