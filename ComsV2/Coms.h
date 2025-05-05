@@ -14,12 +14,12 @@
 
 class Waypoint{
     public:
-        uint32_t lat;
-        uint32_t lon;
-        uint32_t alt;
-        uint16_t heading;
-        uint16_t time;
-        uint8_t flag;
+        uint32_t lat;       //degrees
+        uint32_t lon;       //degrees
+        uint32_t alt;       //meters
+        uint16_t heading;   //degrees
+        uint16_t time;      //time to wait seconds
+        uint8_t flag;       //unused (0)
     private:
 };
 
@@ -34,9 +34,9 @@ class msp_attitude_h{
 class msp_raw_gps_h{
     public:
         uint8_t gpsFix;     //0 or 1
-        uint8_t numSat;
-        uint32_t lat;       //degrees / 10,000,000
-        uint32_t lon;       //degrees / 10,000,000
+        uint8_t numSat;     //number of satalites
+        uint32_t lat;       //degrees * 10,000,000
+        uint32_t lon;       //degrees * 10,000,000
         uint16_t gpsAlt;    //meters
         uint16_t gpsSpeed;  //cm / seconds
         uint16_t gpsCourse; //degrees
@@ -45,8 +45,8 @@ class msp_raw_gps_h{
 
 class PrevMessage_h{
     public:
-        Arduino_h::IPAddress sourceIP;
-        Arduino_h::String cmd;
+        Arduino_h::IPAddress sourceIP;  //Source of ip
+        Arduino_h::String cmd;          //Command (manual or swarm)
         double yaw;
         double pitch;
         double roll;
@@ -59,8 +59,8 @@ class PrevMessage_h{
 
 class BSIPMessage_h{
     public:
-        Arduino_h::String cmd;
-        Arduino_h::IPAddress BSIP;
+        Arduino_h::String cmd;      //Command
+        Arduino_h::IPAddress BSIP;  //Ip of the basestation
     private:
 };
 

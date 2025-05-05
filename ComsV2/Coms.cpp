@@ -14,16 +14,15 @@ void FcComs::commandMSP(uint8_t cmd, uint16_t data[], uint8_t n_cbytes){
 
   Serial1.write(cmd);
   checksum ^= cmd;
-
-  uint16_t cur_byte = 0;
-  while(cur_byte < (n_cbytes/2)){
-    int8_t byte1 = ((uint16_t)data[cur_byte] >> 0) & 0xFF;
-    int8_t byte2 = ((uint16_t)data[cur_byte] >> 8) & 0xFF;
-    Serial1.write(byte1);
-    Serial1.write(byte2);
-    checksum ^= byte1;
-    checksum ^= byte2;
-    cur_byte++;
+  for(uint8_t i = 0; i < sizeof(data); i++){
+    int8_t bytes[2] = {
+      ((uint16_t)data[i] >> 0) & 0xFF,
+      ((uint16_t)data[i] >> 8) & 0xFF
+    };
+    for(uint8_t x = 0; x < 2; x++){
+      Serial1.write(bytes[x]);
+      checksum ^= bytes[x];
+    }
   }
   Serial1.write(checksum);
   while(Serial1.available()){
@@ -61,62 +60,65 @@ void FcComs::sendWaypoints(Waypoint wp[]){
   for(uint8_t i = 0; i < size; i++){
     Serial1.write(i);
     checksum ^= i;
-    //lat
-    uint8_t lat1 = ((uint32_t)wp[i].lat >> 0) & 0xFF;
-    uint8_t lat2 = ((uint32_t)wp[i].lat >> 8) & 0xFF;
-    uint8_t lat3 = ((uint32_t)wp[i].lat >> 16) & 0xFF;
-    uint8_t lat4 = ((uint32_t)wp[i].lat >> 24) & 0xFF;
-    Serial1.write(lat1);
-    Serial1.write(lat2);
-    Serial1.write(lat3);
-    Serial1.write(lat4);
-    checksum ^= lat1;
-    checksum ^= lat2;
-    checksum ^= lat3;
-    checksum ^= lat4;
+    //lat creates array of each byte
+    uint8_t lat[4] = {
+      ((uint32_t)wp[i].lat >> 0) & 0xFF, 
+      ((uint32_t)wp[i].lat >> 8) & 0xFF, 
+      ((uint32_t)wp[i].lat >> 16) & 0xFF, 
+      ((uint32_t)wp[i].lat >> 24) & 0xFF
+    };
+    //for writes and checksums each byte
+    for(uint8_t x = 0; x < 4; x++){
+      Serial1.write(lat[x]);
+      checksum ^= lat[x];
+    }
     //lon
-    uint8_t lon1 = ((uint32_t)wp[i].lon >> 0) & 0xFF;
-    uint8_t lon2 = ((uint32_t)wp[i].lon >> 8) & 0xFF;
-    uint8_t lon3 = ((uint32_t)wp[i].lon >> 16) & 0xFF;
-    uint8_t lon4 = ((uint32_t)wp[i].lon >> 24) & 0xFF;
-    Serial1.write(lon1);
-    Serial1.write(lon2);
-    Serial1.write(lon3);
-    Serial1.write(lon4);
-    checksum ^= lon1;
-    checksum ^= lon2;
-    checksum ^= lon3;
-    checksum ^= lon4;
+    uint8_t lon[4] = {
+      ((uint32_t)wp[i].lon >> 0) & 0xFF,
+      ((uint32_t)wp[i].lon >> 8) & 0xFF,
+      ((uint32_t)wp[i].lon >> 16) & 0xFF,
+      ((uint32_t)wp[i].lon >> 24) & 0xFF
+    };
+    for(uint8_t x = 0; x < 4; x++){
+      Serial1.write(lon[x]);
+      checksum ^= lon[x];
+    }
     //alt
-    uint8_t alt1 = ((uint32_t)wp[i].alt >> 0) & 0xFF;
-    uint8_t alt2 = ((uint32_t)wp[i].alt >> 8) & 0xFF;
-    uint8_t alt3 = ((uint32_t)wp[i].alt >> 16) & 0xFF;
-    uint8_t alt4 = ((uint32_t)wp[i].alt >> 24) & 0xFF;
-    Serial1.write(alt1);
-    Serial1.write(alt2);
-    Serial1.write(alt3);
-    Serial1.write(alt4);
-    checksum ^= alt1;
-    checksum ^= alt2;
-    checksum ^= alt3;
-    checksum ^= alt4;
+    uint8_t alt[4] = {
+      ((uint32_t)wp[i].alt >> 0) & 0xFF,
+      ((uint32_t)wp[i].alt >> 8) & 0xFF,
+      ((uint32_t)wp[i].alt >> 16) & 0xFF,
+      ((uint32_t)wp[i].alt >> 24) & 0xFF
+    };
+    for(uint8_t x = 0; x < 4; x++){
+      Serial1.write(alt[x]);
+      checksum ^= alt[x];
+    }
     //heading
-    uint8_t head1 = ((uint16_t)wp[i].heading >> 0) & 0xFF;
-    uint8_t head2 = ((uint16_t)wp[i].heading >> 8) & 0xFF;
-    Serial1.write(head1);
-    Serial1.write(head2);
-    checksum ^= head1;
-    checksum ^= head2;
-    //time
-    uint8_t time1 = ((uint16_t)wp[i].time >> 0) & 0xFF;
-    uint8_t time2 = ((uint16_t)wp[i].time >> 8) & 0xFF;
-    Serial1.write(time1);
-    Serial1.write(time2);
-    checksum ^= time1;
-    checksum ^= time2;
+    uint8_t head[2] = {
+      ((uint16_t)wp[i].heading >> 0) & 0xFF,
+      ((uint16_t)wp[i].heading >> 8) & 0xFF
+    };
+    for(uint8_t x = 0; x < 2; x++){
+      Serial1.write(head[x]);
+      checksum ^= head[x];
+    }
+    //time to wait
+    uint8_t time[2] = {
+      ((uint16_t)wp[i].time >> 0) & 0xFF,
+      ((uint16_t)wp[i].time >> 8) & 0xFF
+    };
+    for(uint8_t x = 0; x < 2; x++){
+      Serial1.write(time[x]);
+      checksum ^= time[x];
+    }
     //flag
     Serial1.write(wp[i].flag);
     checksum ^= wp[i].flag;
+  }
+  Serial1.write(checksum);
+  while(Serial1.available()){
+    Serial1.read();
   }
 }
 
