@@ -4,6 +4,17 @@
         "./Resources/FlightStickCode"
     ],
     "files.associations": {
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "algorithm": "cpp",
+        "charconv": "cpp",
+        "chrono": "cpp",
+        "memory": "cpp",
+        "execution": "cpp",
+        "functional": "cpp",
+        "numeric": "cpp",
+        "regex": "cpp",
+        "xutility": "cpp",
+        "mutex": "cpp",
+        "stop_token": "cpp"
     }
 }

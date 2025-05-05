@@ -49,7 +49,7 @@ void loop(){
             RcSet(1500, 1500, 885, 1500, 1500, 1700, 1500, 1500);
         }
     }
-    if((millis() - blinkT > lastBlink) && flashing){
+    if((millis() - lastBlink > blinkT) && flashing){
         LightSR();
     }
     else{
