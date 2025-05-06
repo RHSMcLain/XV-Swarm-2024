@@ -1,4 +1,4 @@
-#include <Coms.h>
+#include "Coms.h"
 
 void FcComs::begin(int speed){
     Serial1.begin(speed);
@@ -14,15 +14,16 @@ void FcComs::commandMSP(uint8_t cmd, uint16_t data[], uint8_t n_cbytes){
 
   Serial1.write(cmd);
   checksum ^= cmd;
-  for(uint8_t i = 0; i < sizeof(data); i++){
-    int8_t bytes[2] = {
-      ((uint16_t)data[i] >> 0) & 0xFF,
-      ((uint16_t)data[i] >> 8) & 0xFF
-    };
-    for(uint8_t x = 0; x < 2; x++){
-      Serial1.write(bytes[x]);
-      checksum ^= bytes[x];
-    }
+
+  uint16_t cur_byte = 0;
+  while(cur_byte < (n_cbytes/2)){
+    int8_t byte1 = ((uint16_t)data[cur_byte] >> 0) & 0xFF;
+    int8_t byte2 = ((uint16_t)data[cur_byte] >> 8) & 0xFF;
+    Serial1.write(byte1);
+    Serial1.write(byte2);
+    checksum ^= byte1;
+    checksum ^= byte2;
+    cur_byte++;
   }
   Serial1.write(checksum);
   while(Serial1.available()){
@@ -276,6 +277,7 @@ bool firstconnectframe = false;
 PrevMessage_h WifiComs::parseMessage(char buffer[]){
     PrevMessage_h msg;
     char *token;
+    //Serial.println(buffer);
     token = strtok(buffer, "|");
     int i = 0;
     int wpNum = 0;
@@ -293,6 +295,7 @@ PrevMessage_h WifiComs::parseMessage(char buffer[]){
         case 2:
           if(msg.cmd == "SWM"){
             i = 8;
+            state = token;
           }
           else{
             msg.yaw = atoi(token);  
@@ -317,12 +320,9 @@ PrevMessage_h WifiComs::parseMessage(char buffer[]){
           msg.navHold = atoi(token);
           break;
         case 9:
-          state = token;
-          break;
-        case 10:
           length = atoi(token);
           break;
-        case 11:
+        case 10:
           do{
             wpNum = atoi(token);
             token = strtok(NULL, "|"); 
@@ -398,6 +398,7 @@ int WifiComs::WifiConnection(char ReplyBuffer[]){
       // Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
       Udp.beginPacket("192.168.4.22", 80);
       Udp.write("State: 0 -> 1 |Connected|");
+      Serial.println("State: 0 -> 1 |Connected|");
       Udp.endPacket();
       Udp.beginPacket("192.168.4.22", 80);
       Udp.write(ReplyBuffer);
@@ -409,6 +410,7 @@ int WifiComs::WifiConnection(char ReplyBuffer[]){
     if(wifiState == 1 && WiFi.status() == WL_CONNECTED){
       Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
       Udp.write("State: 1 -> 2");
+      Serial.println("State: 1 -> 2");
       Udp.endPacket();
       wifiState = 2;
       return 2;
@@ -416,14 +418,18 @@ int WifiComs::WifiConnection(char ReplyBuffer[]){
     else if(wifiState == 2){ 
       Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
       Udp.write("AmDrone");
+      Serial.println("State: 2 -> 3");
       Udp.endPacket();
       wifiState = 3;
       return 3;
     }
     else if(wifiState == 4) {
       Udp.beginPacket(bsip, 5005);
+      Serial.println(bsip);
+      Serial.println(handShake);
       Udp.write(handShake);
       Udp.endPacket();
+      Serial.println("State: 4 -> 5");
       wifiState = 5;
       return 5;
     }
@@ -459,10 +465,12 @@ int WifiComs::Listen(char packetBuffer[255]){
             // Serial.print("Base Station IP: ");
             // Serial.println(bsip);
             wifiState = 4;
+            Serial.println("State: 3 -> 4");
             return 4;
           }
         }
         else if (wifiState == 5){
+          // Serial.println(packetBuffer);
           PrevMessage = parseMessage(packetBuffer);
           wifiState = 5;
           return 5;

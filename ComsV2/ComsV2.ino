@@ -1,4 +1,4 @@
-#include <Coms.h>
+#include "Coms.h"
 
 #define ident "HND|-1|Betsy"
 
@@ -29,7 +29,7 @@ void setup(){
     Serial.begin(9600);
     wifi.WifiConnection(ReplyBuffer);
     for(int i = 0; i < 3; i++){
-        msp.commandMSP(MSP_SET_RAW_RC, rc_values, (2*sizeof(rc_values)));
+        msp.commandMSP(MSP_SET_RAW_RC, rc_values, 16);
         delay(100);
     }
 }
@@ -37,7 +37,7 @@ void setup(){
 void loop(){
     wifi.WifiConnection(ReplyBuffer);
     wifi.Listen(packetBuffer);
-    msp.readGPSData();
+    //msp.readGPSData();
     if(wifi.newWaypoints){
         msp.sendWaypoints(wifi.waypointArr);
         wifi.newWaypoints = false;
@@ -51,7 +51,14 @@ void loop(){
         rc_values[5] = wifi.PrevMessage.armVar;
         rc_values[6] = 1700;
         rc_values[7] = wifi.PrevMessage.killswitch;
-        msp.commandMSP(MSP_SET_RAW_RC, rc_values, (2*sizeof(rc_values)));
+        msp.commandMSP(MSP_SET_RAW_RC, rc_values, 16);
+        for(int i = 0; i < 8; i++){
+          Serial.print(rc_values[i]);
+          Serial.print("  ");
+          if(i == 7){
+            Serial.println();
+          }
+        }
     }
     else if(wifi.PrevMessage.cmd == "SWM"){
         if(wifi.state == "active"){
