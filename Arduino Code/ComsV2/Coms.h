@@ -12,6 +12,21 @@
 // #define handShake "HND|-1|Betsy"
 #define ssid "XV_Basestation"
 
+class Vector2D{
+    public:
+        double x;
+        double y;
+};
+
+class SearchArea{
+    public:
+        int dronesSearching;
+        int droneId;
+        double viewDistance;    //Meters
+        Vector2D searchBounds[2];
+    private:
+};
+
 class Waypoint{
     public:
         uint32_t lat;       //degrees
@@ -75,6 +90,8 @@ class WifiComs{
         int WifiConnection(char ReplyBuffer[]);
 
         void SendMessage(char msg[]);
+
+        Waypoint GenerateSearchPath(SearchArea searchArea);
 
         WifiComs(char hnd[]){
             handShake = hnd;

@@ -374,6 +374,100 @@ BSIPMessage_h WifiComs::parseBSIP(char buffer[]){
     return msg;  
 }
 
+Waypoint WifiComs::GenerateSearchPath(SearchArea searchArea){
+  int shapePoints = sizeof(searchArea.searchBounds);
+  char search = *"N";
+  char spread = *"E";
+  int laps;
+  double northSouth = searchArea.searchBounds[0].y - searchArea.searchBounds[1].y;
+  double eastWest = searchArea.searchBounds[0].x - searchArea.searchBounds[1].x;
+  double viewDeg = searchArea.viewDistance / 111111;
+  if(abs(northSouth) > abs(eastWest)){
+    if(northSouth > 0){
+      search = *"S";
+    }
+    else{
+      search = *"N";
+    }
+    if(eastWest > 0){
+      spread = *"W";
+    }
+    else{
+      spread = *"E";
+    }
+    laps = ceil(abs(northSouth)/(viewDeg*searchArea.dronesSearching*2));
+  }
+  else{
+    if(eastWest > 0){
+      search = *"S";
+    }
+    else{
+      search = *"N";
+    }
+    if(northSouth > 0){
+      spread = *"S";
+    }
+    else{
+      spread = *"N";
+    }
+    laps = ceil(abs(eastWest)/(viewDeg*searchArea.dronesSearching*2));
+  }
+  Waypoint path[16];
+  switch(search){
+    case *"N":
+      for(int i = 1; i/4 < laps; i+4){
+        path[i].lat = searchArea.searchBounds[0].x + viewDeg;
+        path[i+1].lat = searchArea.searchBounds[1].x - viewDeg;
+        path[i+2].lat = searchArea.searchBounds[1].x - viewDeg;
+        path[i+3].lat = searchArea.searchBounds[0].x + viewDeg;
+      }
+      break;
+    case *"E":
+      for(int i = 1; i/4 < laps; i+4){
+        path[i].lon = searchArea.searchBounds[0].y + viewDeg;
+        path[i+1].lon = searchArea.searchBounds[1].y - viewDeg;
+        path[i+2].lon = searchArea.searchBounds[1].y - viewDeg;
+        path[i+3].lon = searchArea.searchBounds[0].y + viewDeg;
+      }
+      break;
+    case *"S":
+      for(int i = 1; i/4 < laps; i+4){
+        path[i].lat = searchArea.searchBounds[0].x - viewDeg;
+        path[i+1].lat = searchArea.searchBounds[1].x + viewDeg;
+        path[i+2].lat = searchArea.searchBounds[1].x + viewDeg;
+        path[i+3].lat = searchArea.searchBounds[0].x - viewDeg;
+      }
+      break;
+    case *"W":
+      for(int i = 1; i/4 < laps; i+4){
+        path[i].lon = searchArea.searchBounds[0].y - viewDeg;
+        path[i+1].lon = searchArea.searchBounds[1].y + viewDeg;
+        path[i+2].lon = searchArea.searchBounds[1].y + viewDeg;
+        path[i+3].lon = searchArea.searchBounds[0].y - viewDeg;
+      }
+      break;
+  }
+  switch(spread){
+    case *"N":
+      for(int i = 1; i/4 < laps; i+4){}
+      path[1].lat = searchArea.searchBounds[0].x + (viewDeg*2*(searchArea.droneId+.5));
+      break;
+    case *"E":
+      for(int i = 1; i/4 < laps; i+4){}
+      path[1].lon = searchArea.searchBounds[0].y + (viewDeg*2*(searchArea.droneId+.5));
+      break;
+    case *"S":
+      for(int i = 1; i/4 < laps; i+4){}
+      path[1].lat = searchArea.searchBounds[0].x - (viewDeg*2*(searchArea.droneId+.5));
+      break;
+    case *"W":
+      for(int i = 1; i/4 < laps; i+4){}
+      path[1].lon = searchArea.searchBounds[0].y - (viewDeg*2*(searchArea.droneId+.5));
+      break;
+  }
+
+}
+
 void WifiComs::SendMessage(char msg[]){
     Udp.begin(localPort);
     // Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
