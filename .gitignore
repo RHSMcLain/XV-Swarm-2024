@@ -1,0 +1,5 @@
+__pycache__
+.vscode
+*.pyc
+c_cpp_properties.json
+settings.json
