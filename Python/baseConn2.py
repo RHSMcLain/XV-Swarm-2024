@@ -2,32 +2,33 @@ import socket, platform, subprocess
 import netifaces as ni
 from   threading import Thread
 from   queue import Queue
-import random as r
-import time, math, datetime
+import time, math, datetime, random
 import customtkinter, tkinter
 from   Resources.FlightStickCode.FlightStick import FlightStick
 from   Resources.Statics import colorPalette
 from   Resources.Drone import Drone
+from   PIL import Image
 
-global manualYes
-global appThrottle
-global usingAppThrottle
-global controller, bypass_controller
+global manualYes # manual mode boolean
+global appThrottle # value 0 - 100
+global usingAppThrottle # in app throttle in use boolean
+global controller, bypass_controller # controller boolean for if a flightstick is connected, bypass makes the console errors stop
 
-global UDP_IP, UDP_PORT, ip, sock, os_name
+global UDP_IP, UDP_PORT, ip, sock, os_name, wifi_connected, name_of_AP # ip is our ip, os_name is mac or windows
 global manualControlThread
 global listenerThread
-global killThreads
-global ongoing_swarm_flight
+global killThreads # bool, becomes True when we terminate the app
+global ongoing_swarm_flight, canceling_swarm_flight
 
 global time_start
-
+file = "Bjorn-unscreen.gif"
+photoimage_objects = []
 global qFromComms
 global qToComms
 
 global app, removeDroneSelection, messages_sent
 
-global pitch, roll, yaw, throttle, navHold, armVar, killswitch
+global pitch, roll, yaw, throttle, navHold, armVar, killswitch # manual control variables
 global activeDrone, droneCount, selectedDrone, activeDrones, maxDrones
 
 #default manual mode variables
@@ -52,10 +53,14 @@ removeDroneSelection = False
 messages_sent = 0
 time_start = datetime.datetime.now()
 ongoing_swarm_flight = False
+canceling_swarm_flight = False
+wifi_connected = False
+
+name_of_AP = "XV_Basestation" # set this to the wifi name of your AP
 
 UDP_IP = 0
 ip = 0
-drones = [None]*8
+drones = [None]*8 # empty drone slots are represented as None, allways an array of 8
 
 '''
 Cody Webb made this, Bjorn didn't help one bit
@@ -63,25 +68,43 @@ I helped some :(
 
 armvar is armed at 1575, disarmed at 1500
 
+MAN IP yaw pitch roll throttle killswitch armVar navHold
+
 #TODO:
 fail safes: out of wifi range, landing drone before allowing a disable
 autoland feature where drone lands itself slowly <-- this is done when AP is disconnected, but an auto land button would be good
-Display last message sent to drones, maybe for each drone in swarm?
 IntroToAP still sends 3 messages even if its allready connected
-get IP again after connecting to a new wifi
 
-the reason for all of the glitchiness in the console + drone display is they delete lines before reading them and
+Connencts to the wifi maybe successfully probably not, throws errors sometimes and crashes when you connect to AP
+
+the reason for all of the glitchiness in the console + MAN/SWM displays is they delete lines before reading them and
 the deletions don't sync with the monitor refresh rate, so you get frames where the text hasn't been inserted
+No easy way to solve this
 
 '''
+def animation(current_frame=0):
+    global loop
+    image = photoimage_objects[current_frame]
+
+    app.my_label.configure(image=image)
+    current_frame = current_frame + 1
+
+    if current_frame == frames:
+        current_frame = 0
+
+    loop = app.after(50, lambda: animation(current_frame))
+
+#This simply stops the gif
+def stop_animation():
+    app.after_cancel(loop)
 
 #attempts to connect to the a flightstick
-def connect_flightStick():
+def connect_flightStick(check = True):
     global controller
-    if os_name == "mac": return
+    if check and os_name == "mac": return
     try:
         fs.__init__(fs)
-        tkprint("flightstick connected")
+        if check: tkprint("flightstick connected")
         controller = True
     except:
         controller = False
@@ -97,8 +120,7 @@ os_name = get_os_name()
 #sets up the flighstick, on mac we cant periodically try to connect to the flightstick.
 fs = FlightStick
 if os_name == "mac":
-    connect_flightStick()
-
+    connect_flightStick(check=False)
 #this is the black console, everything except sendMessage() print to it instead of the terminal
 class tkConsole():
     def __init__(self, app, row=0, column=0):
@@ -141,7 +163,7 @@ class tkConsole():
         self.enable()
         if messages_sent > 1 and self.textbox.get(2.0, 3.0)[:13] == "message count": self.textbox.delete(2.0, 3.0)
         self.textbox.insert("2.0", f"message count: {messages_sent}\n")
-        self.config["master"].updateDroneDisplay()
+        self.config["master"].updateManualDisplay()
         self.disable()
     def stick_not_connected(self):
         self.error('- - !!! NO FLIGHTSTICK CONNECTED !!! - -')
@@ -328,7 +350,7 @@ class App(customtkinter.CTk):
         #Buttons in left button bar
         self.killswitchbutton =       Button(self.leftButtonBar, text="Kill Drones",       command=lambda:self.killswitch(), fg_color=colorPalette.buttonRed, hover_color=colorPalette.buttonRedHover)
         self.bypassControllerButton = Button(self.leftButtonBar, text="Bypass Controller", command=lambda:bypassController(self))
-        self.addTestDroneButton =     Button(self.leftButtonBar, text="Add Test Drone",    command=lambda:addDrone("Test Drone #" + str(r.randint(100, 1000)), "10.20.18.23", 85))
+        self.addTestDroneButton =     Button(self.leftButtonBar, text="Add Test Drone",    command=lambda:addDrone("Test Drone #" + str(random.randint(100, 1000)), "10.20.18.23", 85))
         self.connectToAPButton =      Button(self.leftButtonBar, text="Connect To AP",     command=lambda:introToAP(0))
         
         self.manualControlSwitch = tkSwitch(self.leftButtonBar, MODEManual, MODESwarm, leftText="Manual", rightText="Swarm") #switch for Manual and Swarm modes in left button bar
@@ -358,13 +380,19 @@ class App(customtkinter.CTk):
             self.droneButtons[i].grid(row=round(i/8+0.1), column=i-colMinus, padx=15, pady=15)
 
         self.swarmBar = customtkinter.CTkFrame(self)
-        self.swarmTestButton =             Button(self.swarmBar, text="Swarm Test",      command=swarmTest3,                         fg_color="#28663c", hover_color="#1a4227")
-        self.displaySwarmVariablesButton = Button(self.swarmBar, text="Swarm Variables", command=self.display_swarm_variables_popup, fg_color="#28663c", hover_color="#1a4227")
+        self.swarmTestButton =             Button(self.swarmBar, text="Swarm Test",      fg_color="#28663c", hover_color="#1a4227", command=swarmTest3)
+        self.stopSwarmTestButton =         Button(self.swarmBar, text="Stop Swarm",      fg_color="#28663c", hover_color="#1a4227", command=lambda:tkprint("Button not hooked up"))
+        self.displaySwarmVariablesButton = Button(self.swarmBar, text="Swarm Variables", fg_color="#28663c", hover_color="#1a4227", command=self.display_swarm_variables_popup)
+        self.putNextButtonHere =           Button(self.swarmBar, text="Green Button",    fg_color="#28663c", hover_color="#1a4227", command=lambda:animation())
 
+        self.my_label = customtkinter.CTkLabel(self, text="", height= 70, width = 210)
+        self.my_label.grid(row=1, column=0, padx=0, pady=0, sticky="new")
 
-        self.swarmBar.grid(row=1, column=2, sticky="nsew")
-        self.swarmTestButton.grid(row=0, column=0)
-        self.displaySwarmVariablesButton.grid(row=1, column=0)
+        self.swarmBar.grid                   (row=1, column=2, sticky="nsew")
+        self.swarmTestButton.grid            (row=0, column=0)
+        self.stopSwarmTestButton.grid        (row=1, column=0)
+        self.displaySwarmVariablesButton.grid(row=2, column=0)
+        self.putNextButtonHere.grid          (row=3, column=0)
 
         # Aligning all parts of the UI
         self.leftButtonBar.grid(row=0, column=0, pady=(10, 0), rowspan=4, sticky="nsew") #far left frame
@@ -376,14 +404,14 @@ class App(customtkinter.CTk):
         self.connectToAPButton.grid     (row=3, column=0)
 
 
-        self.manualControlSwitch.grid   (row=4, column=0)
-        self.console.grid               (row=0, column=1, padx=10, pady=10)
-        self.droneDisplay.grid          (row=0, column=2, padx=(0, 10), pady=10, sticky="nsew")
+        self.manualControlSwitch.grid(row=4, column=0)
+        self.console.grid            (row=0, column=1, padx=10, pady=10)
+        self.droneDisplay.grid       (row=0, column=2, padx=(0, 10), pady=10, sticky="nsew")
 
-        self.throttleBar.grid                (row=0, column=5, pady=10, rowspan=2, sticky="new") #far right frame
-        self.throttleSlider.grid             (row=1, column=0, pady=15)
-        self.throttleDisplay.grid            (row=0, column=0)
-        self.displayThrottleSwitch.grid      (row=2, column=0, pady=(20, 0))
+        self.throttleBar.grid          (row=0, column=5, pady=10, rowspan=2, sticky="new") #far right frame
+        self.throttleSlider.grid       (row=1, column=0, pady=15)
+        self.throttleDisplay.grid      (row=0, column=0)
+        self.displayThrottleSwitch.grid(row=2, column=0, pady=(20, 0))
 
         self.lowerLeftButtonBar.grid(row=1, column=0)
         self.removeDroneButton.grid (row=0, column=0)
@@ -486,8 +514,9 @@ class App(customtkinter.CTk):
 
             
             self.swarm_drone_displays[i].tag_add("center", 1.0, customtkinter.END)
+            self.swarm_drone_displays[i].configure(state="disabled")
 
-            self.displaying_swarm_variables = True
+        self.displaying_swarm_variables = True
     
     def update_swarm_varibles_display(self):
         global drones, manualYes
@@ -502,16 +531,18 @@ class App(customtkinter.CTk):
             if manualYes:
                 text = "Manual Mode"
             elif drones[i]:
-                text = f"{drones[i].name}\nIP: {drones[i].ipAddress}\nPORT:       {drones[i].port}\nThrottle: {drones[i].throttle}\nPitch:    {drones[i].pitch}\nYaw:      {drones[i].yaw}\nRoll:     {drones[i].roll}\nArmVar:   {drones[i].armVar}\nNavHold:  {drones[i].navHold}"
+                text = f"{drones[i].name}\nIP: {drones[i].ipAddress}\nPORT:     {drones[i].port}\nYaw:      {drones[i].yaw}\nPitch:    {drones[i].pitch}\nRoll:     {drones[i].roll}\nThrottle: {drones[i].throttle}\nArmVar:   {drones[i].armVar}\nNavHold:  {drones[i].navHold}"
             else:
                 text = "Not Connected"
             
             try: # throws an error if you close the window while this is running
                 if text.replace("\n", "") != display.get(1.0, customtkinter.END).replace("\n", ""):
+                    display.configure(state="normal")
                     display.tag_config("center", justify="center")
                     display.delete(1.0, customtkinter.END)
                     display.insert(1.0 , text)
                     display.tag_add("center", 1.0, customtkinter.END)
+                    display.configure(state="disabled")
             except:pass
 
 
@@ -563,14 +594,14 @@ class App(customtkinter.CTk):
     #sets manual killswitch to 1700 and sends kill msg to all swarm drones
     def killswitch(self):
         global killswitch
-        killswitch = 1700
-        kill_all_swarm_drones()
-        self.console.killswitch()
+        killswitch = 1700 # manual killswitch variable, 1700 is kill
+        kill_all_swarm_drones() # sets all drones killswitch to 1700
+        self.console.killswitch() # console prints that drones have been killed
         self.killswitchbutton.configure(text="Drones Killed", fg_color="darkred")
     #grabs the manual mode variables and displays them in the orange display
-    def updateDroneDisplay(self):
+    def updateManualDisplay(self):
         global throttle, roll, yaw, pitch, armVar, navHold
-        displayText = f"Throttle: {round(throttle)}\nPitch:    {round(pitch)}\nYaw:      {round(yaw)}\nRoll:     {round(roll)}\nArmVar:   {round(armVar)}\nNavHold:  {round(navHold)}"
+        displayText = f"Yaw:      {yaw}\nPitch:    {pitch}\nRoll:     {roll}\nThrottle: {throttle}\nArmVar:   {armVar}\nNavHold:  {navHold}"
         if displayText.replace(" ", "").replace("\n", "") != self.droneDisplay.get("1.0", customtkinter.END).replace(" ", "").replace("\n", ""): #if its not the same message
             self.droneDisplay.configure(state="normal")
             self.droneDisplay.tag_config("center", justify="center")
@@ -604,13 +635,13 @@ def manMsgConstruct(droneNum):
     global ip
     return ("MAN|" + 
             ip + "|" + 
-            str(clamp(drones[droneNum].pitch)) + "|" + 
-            str(clamp(drones[droneNum].roll)) + "|" + 
-            str(clamp(drones[droneNum].throttle)) + "|" + 
-            str(clamp(drones[droneNum].killswitch)) + "|" + 
-            str(clamp(drones[droneNum].armVar)) + "|" + 
-            str(clamp(drones[droneNum].yaw)) + "|" + 
-            str(clamp(drones[droneNum].navHold)) + "|")  
+            str(clamp(round(drones[droneNum].yaw))) + "|" + 
+            str(clamp(round(drones[droneNum].roll))) + "|" + 
+            str(clamp(round(drones[droneNum].pitch))) + "|" + 
+            str(clamp(round(drones[droneNum].throttle))) + "|" + 
+            str(clamp(round(drones[droneNum].killswitch))) + "|" + 
+            str(clamp(round(drones[droneNum].armVar))) + "|" + 
+            str(clamp(round(drones[droneNum].navHold))) + "|")  
     
 #generates a message packet 
 def swmMsgConstruct(droneNum):
@@ -626,14 +657,14 @@ def swmMsgConstruct(droneNum):
 
 #Detects the operating system and grabs the computers IP for networking between the AP and drones
 def getMyIP():
-    global app, ip, UDP_IP, UDP_PORT, os_name
+    global app, ip, UDP_IP, UDP_PORT, os_name, wifi_connected, name_of_AP
     try:
         hostname = socket.gethostname()
         if os_name == "windows": # IP ADDRESS FOR WINDOWS OS
-            tkprint("Operating system is WINDOWS")
+            #tkprint("Operating system is WINDOWS")
             ip = socket.gethostbyname(hostname + ".local")
         if os_name == "mac": # IP ADRESSS FOR MAC OS
-            tkprint("Operating system is MACOS")
+            #tkprint("Operating system is MACOS")
             ip = ni.ifaddresses('en1')[ni.AF_INET][0]['addr']
         UDP_PORT = 5005
         UDP_IP = ip
@@ -643,11 +674,16 @@ def getMyIP():
 
         tkprint(f"Wifi name: {wifi_name}")
 
-        if wifi_name != "XV_Basestation":
-            app.console.error("Connected to wrong wifi, connect to basestation wifi and restart")
+        if wifi_name != name_of_AP:
+            app.console.error(f"Connected to wrong wifi, connect to {name_of_AP} wifi")
+        else:
+            wifi_connected = True
+        
+        return
 
     except socket.gaierror as e: app.console.error(f"There was an error resolving the hostname: {e}")
     except Exception as e:       app.console.error(f"An unexpected error occurred: {e}")
+    app.console.error("Unabled to connect to wifi.")
 
 # gets info including SSID, returns an object. use get_wifi_info()["SSID"]
 def get_wifi_info():
@@ -682,14 +718,17 @@ def bypassController(app):
 
 #Sends the packets of instructions to the drone
 def sendMessage(ipAddress, port, msg):
-    global sock, throttle, app, messages_sent
-    print(f"sendMessage -- IP: {ipAddress}, PORT: {port}\n{msg}\n=====================")
-    messages_sent += 1
-    if(messages_sent % 10 == 0):
-        try: app.console.check_sent_messages()
-        except: pass
-    bMsg = msg.encode("ascii")
-    sock.sendto(bMsg, (ipAddress, int(port)))
+    global sock, throttle, app, messages_sent, canceling_swarm_flight
+    if canceling_swarm_flight:
+        print("canceling swarm flight")
+    else:
+        print(f"sendMessage -- IP: {ipAddress}, PORT: {port}\n{msg}\n=====================")
+        messages_sent += 1
+        if(messages_sent % 10 == 0):
+            try: app.console.check_sent_messages()
+            except: pass
+        bMsg = msg.encode("ascii")
+        sock.sendto(bMsg, (ipAddress, int(port)))
 
 #Switches from Manual to Swarm
 def MODESwarm():
@@ -721,53 +760,56 @@ def MODEManual():
     buttonRefresh()
     tkprint("|||  MANUAL ENABLED  |||")
 
-#all drones throttle to 1200 and back down. 6 seconds total
-def swarmTest():
-    global app
-    tkprint("swarm test started!")
-    arm_all_swarm_drones()
-    app.after(1000, send_to_swarm, 1500, 1500, 1500, 1200, 1000)
-    app.after(5000, send_to_swarm, 1500, 1500, 1500, 1000, 1000)
-    app.after(6000, disarm_all_swarm_drones)
+# #all drones throttle to 1200 and back down. 6 seconds total
+# def swarmTest():
+#     global app
+#     tkprint("swarm test started!")
+#     arm_all_swarm_drones()
+#     app.after(1000, send_to_swarm, 1500, 1500, 1500, 1200, 1000)
+#     app.after(5000, send_to_swarm, 1500, 1500, 1500, 1000, 1000)
+#     app.after(6000, disarm_all_swarm_drones)
 
-# all drones arm, gradually increase throttle to 1600 and back down, disarm. 10 seconds total
-def swarmTest2(start_time=0, r=True):
-    global app
+# # all drones arm, gradually increase throttle to 1600 and back down, disarm. 10 seconds total
+# def swarmTest2(start_time=0, r=True):
+#     global app
 
-    if not detectActiveDrone():
-        tkprint("no active drones to test swarm")
-        return
+#     if not detectActiveDrone():
+#         tkprint("no active drones to test swarm")
+#         return
 
-    if r: 
-        tkprint(f"swarm test 2 started")
-        start_time = time.time()
-        arm_all_swarm_drones()
-    current_seconds = time.time() - start_time
+#     if r: 
+#         tkprint(f"swarm test 2 started")
+#         start_time = time.time()
+#         arm_all_swarm_drones()
+#     current_seconds = time.time() - start_time
 
-    throttle_curve = 1000
+#     throttle_curve = 1000
 
-    if current_seconds >= 1 and current_seconds <= 5:
-        throttle_curve = map_range(current_seconds, 1, 5, 1000, 1500)
-    elif current_seconds >=5 and current_seconds <=6:
-        throttle_curve = 1500
-    elif current_seconds >=6 and current_seconds <=9:
-        throttle_curve = 1500 - map_range(current_seconds, 6, 9, 0, 500)
+#     if current_seconds >= 1 and current_seconds <= 5:
+#         throttle_curve = map_range(current_seconds, 1, 5, 1000, 1500)
+#     elif current_seconds >=5 and current_seconds <=6:
+#         throttle_curve = 1500
+#     elif current_seconds >=6 and current_seconds <=9:
+#         throttle_curve = 1500 - map_range(current_seconds, 6, 9, 0, 500)
     
-    #tkprint(f"{round(current_seconds, 4)}, {throttle_curve}")
-    throttle_curve = clamp(round(sigmoid_smooth(throttle_curve, 1000, 1500, 1.2)))
-    send_to_swarm(1500, 1500, 1500, throttle_curve, 1000)
+#     #tkprint(f"{round(current_seconds, 4)}, {throttle_curve}")
+#     throttle_curve = clamp(round(sigmoid_smooth(throttle_curve, 1000, 1500, 1.2)))
+#     send_to_swarm(1500, 1500, 1500, throttle_curve, 1000)
 
-    if current_seconds >= 9:
-        send_to_swarm(1500, 1500, 1500, 1000, 1000)
-        disarm_all_swarm_drones()
+#     if current_seconds >= 9:
+#         send_to_swarm(1500, 1500, 1500, 1000, 1000)
+#         disarm_all_swarm_drones()
 
-    if current_seconds < 10:
-        app.after(10, swarmTest2, start_time, False)
-    else:
-        tkprint("swarm test 2 ended")
+#     if current_seconds < 10:
+#         app.after(10, swarmTest2, start_time, False)
+#     else:
+#         tkprint("swarm test 2 ended")
 
+# slowly increases throttle to 1550, stays there to 1 second, then goes to 1400 for 5 seconds and disarms at 11s
 def swarmTest3(start_time=0, r=True):
-    global app, ongoing_swarm_flight
+    global app, ongoing_swarm_flight, canceling_swarm_flight
+
+    if canceling_swarm_flight: return
 
     if not detectActiveDrone():
         tkprint("no active drones to test swarm")
@@ -799,7 +841,7 @@ def swarmTest3(start_time=0, r=True):
     elif current_seconds <= 11:
         send_to_swarm(1500, 1500, 1500, 1400, 1000)
 
-    # from at 12s disarms drones
+    # at 11s disarms drones
     elif current_seconds <= 12:
         send_to_swarm(1500, 1500, 1500, 1000, 1000)
         disarm_all_swarm_drones()
@@ -811,7 +853,13 @@ def swarmTest3(start_time=0, r=True):
         tkprint("swarm test 2 ended")
         ongoing_swarm_flight = False
 
-    
+# send it 1450 throttle then disconnects AP
+def cancel_swarm_flight():
+    global canceling_swarm_flight
+    tkprint("!!! CANCELING SWARM FLIGHT !!!")    
+    canceling_swarm_flight = True
+
+    send_to_swarm(1500, 1500, 1500, 1450, 1000)
 
 # sets all active swarm drones variables to the ones provided
 def send_to_swarm(yaw, pitch, roll, throttle, killswitch):
@@ -996,13 +1044,12 @@ def introToAP(introCount):
     data = b"" #the b prefix makes it byte data
     try:
         data, addr = sock.recvfrom(1024) #does this allways throw an error?
-        #tkprint(data, addr)
     except:
         tkprint(f"sent message to AP (msg #{introCount})")
-        if introCount == 3: tkprint("unable to connect to AP, try resetting it")
-        elif data != b"":
+        if data != b"":
             tkprint("Connected to AP")
             return
+        if introCount == 3: tkprint("unable to connect to AP, try resetting it")
         else: app.after(1500, introToAP, introCount)
 
 #connects the drones, runs once every 700ms, sometimes gets stuck when closing the app without using the terminate button
@@ -1029,7 +1076,7 @@ def checkQueue(q_in):
 
 #runs a while True loop on a separate thread, recieves flighstick inputs and sends outputs. Funny enough it also calls swarm control, so this more like a main loop.
 def manualControl():
-    global manualYes, killswitch, throttle, yaw, roll, pitch, armVar, navHold, app, sock, killThreads, usingAppThrottle, appThrottle, time_start, bypass_controller, controller
+    global manualYes, killswitch, throttle, yaw, roll, pitch, armVar, navHold, app, sock, killThreads, usingAppThrottle, appThrottle, time_start, bypass_controller, controller, wifi_connected, UDP_IP, UDP_PORT
     tkprint("Manual Control Thread initiated")
     while not killThreads: #continously loop until killThreads is true
 
@@ -1037,20 +1084,27 @@ def manualControl():
             if controller: # if the controller is connected, read the outputs and load the manual global variables
                 try:
                     fs.readFlightStick(fs)
-                    yaw = clamp(round(fs.yaw, 2))
-                    roll = clamp(round(fs.roll, 2))
-                    pitch = clamp(round(fs.pitch, 2))
-                    throttle = clamp(round(fs.throttle, 2))
+                    yaw = clamp(round(fs.yaw)) - 4 # fucking scuffed
+                    roll = clamp(round(fs.roll))
+                    pitch = clamp(round(fs.pitch))
+                    throttle = clamp(round(fs.throttle))
                 except: # if it returns an error we know the controller is no longer connected
                    controller = False
-            else: # if the controller is not connected, periodically try to connected to it (windows only)
-                if((datetime.datetime.now() - time_start) > datetime.timedelta(seconds=5)):
+            # if the controller is not connected, periodically try to connected to it (windows only), and connect to wifi
+            if((datetime.datetime.now() - time_start) > datetime.timedelta(seconds=5)):
+                if not wifi_connected:
+                    getMyIP()
+                    
+                    app.after(100, setup_sock)
+                    
+                if not controller:
                     if not bypass_controller: app.console.stick_not_connected()
-                    time_start = datetime.datetime.now()
                     connect_flightStick()
+                time_start = datetime.datetime.now()
+                
 
         if(manualYes):
-            app.updateDroneDisplay()
+            app.updateManualDisplay()
             if(usingAppThrottle):
                 throttle = appThrottle * 10 + 1000
         else:
@@ -1090,6 +1144,21 @@ def manualControl():
         time.sleep(0.00002)
     tkprint("Manual Control Thread terminated")
 
+def setup_sock():
+    global app, sock, UDP_PORT, UDP_IP
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    try:
+        sock.setblocking(0)
+        sock.bind((UDP_IP, UDP_PORT))
+    except: app.console.error(f"Can't assign UDP_IP {UDP_IP} and UDP_PORT {UDP_PORT}")
+
+    if UDP_IP == 0:
+        app.console.IP_is_zero() #send error
+    if UDP_PORT == 0:
+        app.console.port_is_zero() #send error
+    #tkprint("UDP IP is " + str(UDP_IP))
+
 # runs continuously when manualYes is false
 def swarmControl():
     global drones
@@ -1111,7 +1180,9 @@ def listen(q_out, q_in):
             data, addr = sock.recvfrom(1024)
         except:
             continue
-        strData = data.decode("utf-8")
+        try: strData = data.decode("utf-8")
+        except Exception as e:
+            tkprint(f"I failed to decode data! {strData}")
         tkprint("Received message %s" % data)
         # strData = strData + "|" + addr[0] + "|" + str(addr[1])#the message, the ip, the port
         strData = addr[0] + "*" + str(addr[1]) + "*" + strData#the ip, the port, the message
@@ -1124,24 +1195,12 @@ def runAfterAppLaunch():
     global UDP_IP, UDP_PORT, sock, manualControlThread, qFromComms, qToComms
 
     getMyIP()
-    connect_flightStick()
+    #connect_flightStick()
 
     qFromComms = Queue() #gets information from the comms thread
     qToComms = Queue() #sends information to the comms thread
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-    sock.setblocking(0)
-
-    sock.bind((UDP_IP, UDP_PORT))
-
-    if UDP_IP == 0:
-        app.console.IP_is_zero() #send error
-    if UDP_PORT == 0:
-        app.console.port_is_zero() #send error
-    #tkprint("UDP IP is " + str(UDP_IP))
-
-
+    setup_sock()
 
     #Starting the Thread for manual control
     manualControlThread = Thread(target=manualControl, args=())
@@ -1165,11 +1224,17 @@ elif(screenWidth < 1500):
 
 
 app = App() #creates an instance of the UI
+info = Image.open(file)
+frames = info.n_frames  # number of frames
 
+#gifs and mainloop
+for i in range(frames):
+    obj = tkinter.PhotoImage(file=file, format=f"gif -index {i}")
+    # obj2 = customtkinter.CTkImage(dark_image = obj)
+    photoimage_objects.append(obj)
 app.mainloop() #Program doesn't make it past this point until the UI is closed or terminated
 
 #this only runs once the app is closed
 if killThreads == False:
     print("\033[31mplease use the TERMINATE button in the future as it has safegaurds in place.\033[0m")
     killThreads = True
-
