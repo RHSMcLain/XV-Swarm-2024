@@ -830,19 +830,19 @@ def swarmTest3(start_time=0, r=True):
     if current_seconds < 1:
         send_to_swarm(1500, 1500, 1500, 1000, 1000)
     # from 1s to 5s increase throttle slowly from 1000 to 1550, taking off
-    elif current_seconds >= 1 and current_seconds <=5:
-        send_to_swarm(1500, 1500, 1500, round(map_range(current_seconds, 1, 5, 1000, 1550)), 1000)
+    elif current_seconds >= 1 and current_seconds <=3:
+        send_to_swarm(1500, 1500, 1500, round(map_range(current_seconds, 1, 5, 1000, 1575)), 1000)
     
     # from 5s to 6s throttle set to 1550, in the air
     elif current_seconds <= 6:
         send_to_swarm(1500, 1500, 1500, 1550, 1000)
 
     # from 6s to 11s set throttle to 1400, drifting down and landing
-    elif current_seconds <= 11:
-        send_to_swarm(1500, 1500, 1500, 1400, 1000)
+    elif current_seconds <= 15:
+        send_to_swarm(1500, 1500, 1500, 1500, 1000)
 
     # at 11s disarms drones
-    elif current_seconds <= 12:
+    elif current_seconds <= 18:
         send_to_swarm(1500, 1500, 1500, 1000, 1000)
         disarm_all_swarm_drones()
 
