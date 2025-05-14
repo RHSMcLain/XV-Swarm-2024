@@ -1028,7 +1028,6 @@ def introToAP(introCount):
     sendMessage("192.168.4.22", 80, "BaseStationIP")
     introCount += 1
 
-
     tkprint(f"sent message to AP (msg #{introCount}), data: {lastData}")
     if lastData == b'reply':
         tkprint("Connected to AP")
@@ -1173,6 +1172,8 @@ def listen(q_out, q_in):
         try: strData = data.decode("utf-8")
         except Exception as e:
             tkprint(f"I failed to decode data! {strData}")
+
+        # print(f"strData: {strData}")
 
         if wifi_connected:
             lastData = data
