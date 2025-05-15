@@ -21,10 +21,9 @@ global killThreads # bool, becomes True when we terminate the app
 global ongoing_swarm_flight, canceling_swarm_flight
 
 global time_start
-file = "Bjorn-unscreen.gif"
-photoimage_objects = []
 global qFromComms
 global qToComms
+global lastData
 
 global app, removeDroneSelection, messages_sent
 
@@ -34,7 +33,7 @@ global activeDrone, droneCount, selectedDrone, activeDrones, maxDrones
 #default manual mode variables
 killswitch = 1000
 throttle = 1000
-navHold = 1000
+navHold = 1500
 armVar = 1000
 pitch = 1500
 roll = 1500
@@ -55,6 +54,7 @@ time_start = datetime.datetime.now()
 ongoing_swarm_flight = False
 canceling_swarm_flight = False
 wifi_connected = False
+lastData = ''
 
 name_of_AP = "XV_Basestation" # set this to the wifi name of your AP
 
@@ -82,21 +82,6 @@ the deletions don't sync with the monitor refresh rate, so you get frames where 
 No easy way to solve this
 
 '''
-def animation(current_frame=0):
-    global loop
-    image = photoimage_objects[current_frame]
-
-    app.my_label.configure(image=image)
-    current_frame = current_frame + 1
-
-    if current_frame == frames:
-        current_frame = 0
-
-    loop = app.after(50, lambda: animation(current_frame))
-
-#This simply stops the gif
-def stop_animation():
-    app.after_cancel(loop)
 
 #attempts to connect to the a flightstick
 def connect_flightStick(check = True):
@@ -383,7 +368,7 @@ class App(customtkinter.CTk):
         self.swarmTestButton =             Button(self.swarmBar, text="Swarm Test",      fg_color="#28663c", hover_color="#1a4227", command=swarmTest3)
         self.stopSwarmTestButton =         Button(self.swarmBar, text="Stop Swarm",      fg_color="#28663c", hover_color="#1a4227", command=lambda:tkprint("Button not hooked up"))
         self.displaySwarmVariablesButton = Button(self.swarmBar, text="Swarm Variables", fg_color="#28663c", hover_color="#1a4227", command=self.display_swarm_variables_popup)
-        self.putNextButtonHere =           Button(self.swarmBar, text="Green Button",    fg_color="#28663c", hover_color="#1a4227", command=lambda:animation())
+        self.putNextButtonHere =           Button(self.swarmBar, text="Toggle NavHold",    fg_color="#28663c", hover_color="#1a4227", command=lambda:self.toggleNavHold())
 
         self.my_label = customtkinter.CTkLabel(self, text="", height= 70, width = 210)
         self.my_label.grid(row=1, column=0, padx=0, pady=0, sticky="new")
@@ -624,6 +609,12 @@ class App(customtkinter.CTk):
             tkprint("selected a drone to remove")
         else:
             self.removeDroneButton.configure(text="remove drone")
+    
+    def toggleNavHold(a):
+        global navHold
+        if navHold == 1600:
+            navHold = 1500
+        else: navHold = 1600
 
 #prints text to the console, use this instead of print() in most cases
 def tkprint(text):
@@ -1038,19 +1029,17 @@ def handshake(msg, addr):
 #new function uses recursion instead of an unleashed while True loop
 #Connects to AP, sends up to 3 messages with a 1.5 second delay
 def introToAP(introCount):
-    global app
+    global app, lastData
     sendMessage("192.168.4.22", 80, "BaseStationIP")
     introCount += 1
-    data = b"" #the b prefix makes it byte data
-    try:
-        data, addr = sock.recvfrom(1024) #does this allways throw an error?
-    except:
-        tkprint(f"sent message to AP (msg #{introCount})")
-        if data != b"":
-            tkprint("Connected to AP")
-            return
-        if introCount == 3: tkprint("unable to connect to AP, try resetting it")
-        else: app.after(1500, introToAP, introCount)
+    
+    tkprint(f"sent message to AP (msg #{introCount})")
+    if lastData != b"":
+        tkprint("Connected to AP")
+        return
+    else: tkprint(f"lastData: {lastData}")
+    if introCount == 3: tkprint("unable to connect to AP, try resetting it")
+    else: app.after(1500, introToAP, introCount)
 
 #connects the drones, runs once every 700ms, sometimes gets stuck when closing the app without using the terminate button
 def checkQueue(q_in):
@@ -1076,7 +1065,7 @@ def checkQueue(q_in):
 
 #runs a while True loop on a separate thread, recieves flighstick inputs and sends outputs. Funny enough it also calls swarm control, so this more like a main loop.
 def manualControl():
-    global manualYes, killswitch, throttle, yaw, roll, pitch, armVar, navHold, app, sock, killThreads, usingAppThrottle, appThrottle, time_start, bypass_controller, controller, wifi_connected, UDP_IP, UDP_PORT
+    global manualYes, killswitch, throttle, yaw, roll, pitch, armVar, navHold, app, sock, killThreads, usingAppThrottle, appThrottle, time_start, bypass_controller, controller, wifi_connected, name_of_AP, UDP_IP, UDP_PORT
     tkprint("Manual Control Thread initiated")
     while not killThreads: #continously loop until killThreads is true
 
@@ -1092,10 +1081,14 @@ def manualControl():
                    controller = False
             # if the controller is not connected, periodically try to connected to it (windows only), and connect to wifi
             if((datetime.datetime.now() - time_start) > datetime.timedelta(seconds=5)):
+
+                if get_wifi_info()["SSID"] != name_of_AP:
+                    wifi_connected = False
+
                 if not wifi_connected:
                     getMyIP()
                     
-                    app.after(100, setup_sock)
+                    setup_sock()
                     
                 if not controller:
                     if not bypass_controller: app.console.stick_not_connected()
@@ -1133,7 +1126,7 @@ def manualControl():
                         drones[i].pitch = 1500
                         drones[i].roll = 1500
                         drones[i].yaw = 1500
-                        drones[i].navHold = 1500
+                        drones[i].navHold = navHold
                         drones[i].killswitch = killswitch
                         drones[i].armVar = 1500
                         sendMessage(drones[i].ipAddress, drones[i].port, manMsgConstruct(i))
@@ -1146,6 +1139,9 @@ def manualControl():
 
 def setup_sock():
     global app, sock, UDP_PORT, UDP_IP
+    try: sock.close()
+    except: pass
+
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     try:
@@ -1168,7 +1164,7 @@ def swarmControl():
 
 #recieves messages on a seperate thread
 def listen(q_out, q_in):
-    global killThreads
+    global killThreads, lastData
     tkprint("Listener Thread initiated")
     while not killThreads:
         time.sleep(0.00002) # lags spikes can happen if Threads are running while True loops, a delay seems to fix this
@@ -1179,15 +1175,28 @@ def listen(q_out, q_in):
         try:
             data, addr = sock.recvfrom(1024)
         except:
-            continue
+            pass
+
         try: strData = data.decode("utf-8")
         except Exception as e:
             tkprint(f"I failed to decode data! {strData}")
-        tkprint("Received message %s" % data)
-        # strData = strData + "|" + addr[0] + "|" + str(addr[1])#the message, the ip, the port
-        strData = addr[0] + "*" + str(addr[1]) + "*" + strData#the ip, the port, the message
-        # the message is pipe (|) delimited. The ip, port, and message are * delimited
-        q_out.put(strData) #this sends the message to the main thread
+        
+    
+        try:
+            if data == b"" or not wifi_connected: continue
+
+            tkprint("Received message %s" % data)
+            if wifi_connected:
+                lastData = data
+            else:
+                lastData = "incorrect wifi"
+
+            # strData = strData + "|" + addr[0] + "|" + str(addr[1])#the message, the ip, the port
+            strData = addr[0] + "*" + str(addr[1]) + "*" + strData#the ip, the port, the message
+            # the message is pipe (|) delimited. The ip, port, and message are * delimited
+            q_out.put(strData) #this sends the message to the main thread
+        except: pass
+
     tkprint("Listener thread Terminated")
 
 #runs everything inside of it after the app launches so we have access to the UI
@@ -1224,14 +1233,6 @@ elif(screenWidth < 1500):
 
 
 app = App() #creates an instance of the UI
-info = Image.open(file)
-frames = info.n_frames  # number of frames
-
-#gifs and mainloop
-for i in range(frames):
-    obj = tkinter.PhotoImage(file=file, format=f"gif -index {i}")
-    # obj2 = customtkinter.CTkImage(dark_image = obj)
-    photoimage_objects.append(obj)
 app.mainloop() #Program doesn't make it past this point until the UI is closed or terminated
 
 #this only runs once the app is closed
