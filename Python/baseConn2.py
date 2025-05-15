@@ -12,7 +12,7 @@ from   PIL import Image
 global manualYes # manual mode boolean
 global appThrottle # value 0 - 100
 global usingAppThrottle # in app throttle in use boolean
-global controller, bypass_controller # controller boolean for if a flightstick is connected, bypass makes the console errors stop
+global controller, bypass_controller, bypass_wifi # controller boolean for if a flightstick is connected, bypass makes the console errors stop
 
 global UDP_IP, UDP_PORT, ip, sock, os_name, wifi_connected, name_of_AP # ip is our ip, os_name is mac or windows
 global manualControlThread
@@ -43,6 +43,7 @@ yaw = 1500
 manualYes = False
 controller = True
 bypass_controller = False
+bypass_wifi = False
 appThrottle = 0
 usingAppThrottle = False
 killThreads = False
@@ -317,7 +318,7 @@ class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
         self.title("Controlling Module")
-        self.geometry(f"{1500}x{800}")
+        self.geometry(f"{1600}x{800}")
         self.configure(fg_color=colorPalette.backgroundDark)
 
         self.attemptingTerminate = False
@@ -335,8 +336,6 @@ class App(customtkinter.CTk):
 
         #Buttons in left button bar
         self.killswitchbutton =       Button(self.leftButtonBar, text="Kill Drones",       command=lambda:self.killswitch(), fg_color=colorPalette.buttonRed, hover_color=colorPalette.buttonRedHover)
-        self.bypassControllerButton = Button(self.leftButtonBar, text="Bypass Controller", command=lambda:bypassController(self))
-        self.addTestDroneButton =     Button(self.leftButtonBar, text="Add Test Drone",    command=lambda:addDrone("Test Drone #" + str(random.randint(100, 1000)), "10.20.18.23", 85))
         self.connectToAPButton =      Button(self.leftButtonBar, text="Connect To AP",     command=lambda:introToAP(0))
         
         self.manualControlSwitch = tkSwitch(self.leftButtonBar, MODEManual, MODESwarm, leftText="Manual", rightText="Swarm") #switch for Manual and Swarm modes in left button bar
@@ -367,34 +366,48 @@ class App(customtkinter.CTk):
 
         self.swarmBar = customtkinter.CTkFrame(self)
         self.swarmTestButton =             Button(self.swarmBar, text="Swarm Test",      fg_color="#28663c", hover_color="#1a4227", command=swarmTest3)
-        self.stopSwarmTestButton =         Button(self.swarmBar, text="Stop Swarm",      fg_color="#28663c", hover_color="#1a4227", command=lambda:tkprint("Button not hooked up"))
+        self.stopSwarmTestButton =         Button(self.swarmBar, text="Stop Swarm",      fg_color="#28663c", hover_color="#1a4227", command=cancel_swarm_flight)
         self.displaySwarmVariablesButton = Button(self.swarmBar, text="Swarm Variables", fg_color="#28663c", hover_color="#1a4227", command=self.display_swarm_variables_popup)
-        self.putNextButtonHere =           Button(self.swarmBar, text="Green Button",    fg_color="#28663c", hover_color="#1a4227", command=lambda:tkprint("GREEN"))
+        self.putNextButtonHere =           Button(self.swarmBar, text="",                fg_color="#28663c", hover_color="#1a4227")
 
         self.my_label = customtkinter.CTkLabel(self, text="", height= 70, width = 210)
+
+        #test buttons
+        self.testingButtonBar = customtkinter.CTkFrame(self)
+
+        self.bypassControllerButton = Button(self.testingButtonBar, text="Bypass Controller", command=self.bypassController)
+        self.bypassWifiButton =       Button(self.testingButtonBar, text="Bypass Wifi",       command=self.bypass_wifi)
+        self.addTestDroneButton =     Button(self.testingButtonBar, text="Add Test Drone",    command=lambda:addDrone("Test Drone #" + str(random.randint(100, 1000)), "10.20.18.23", 85))
+        self.testingButton2 =         Button(self.testingButtonBar, text="")
+
+        # Aligning all parts of the UI
+
         self.my_label.grid(row=1, column=0, padx=0, pady=0, sticky="new")
 
-        self.swarmBar.grid                   (row=1, column=2, sticky="nsew")
+        self.swarmBar.grid                   (row=1, column=2, sticky="nsw")
         self.swarmTestButton.grid            (row=0, column=0)
         self.stopSwarmTestButton.grid        (row=1, column=0)
         self.displaySwarmVariablesButton.grid(row=2, column=0)
         self.putNextButtonHere.grid          (row=3, column=0)
 
-        # Aligning all parts of the UI
+        self.testingButtonBar.grid      (row=1, column=3, padx=10, rowspan=4)
+        self.bypassControllerButton.grid(row=0, column=0)
+        self.bypassWifiButton.grid      (row=1, column=0)
+        self.addTestDroneButton.grid    (row=2, column=0)
+        self.testingButton2.grid        (row=3, column=0)
+
         self.leftButtonBar.grid(row=0, column=0, pady=(10, 0), rowspan=4, sticky="nsew") #far left frame
         self.leftButtonBar.grid_rowconfigure(5, weight=1)
 
         self.killswitchbutton.grid      (row=0, column=0)
-        self.bypassControllerButton.grid(row=1, column=0)
-        self.addTestDroneButton.grid    (row=2, column=0)
-        self.connectToAPButton.grid     (row=3, column=0)
+        self.connectToAPButton.grid     (row=1, column=0)
 
 
         self.manualControlSwitch.grid(row=4, column=0)
         self.console.grid            (row=0, column=1, padx=10, pady=10)
-        self.droneDisplay.grid       (row=0, column=2, padx=(0, 10), pady=10, sticky="nsew")
+        self.droneDisplay.grid       (row=0, column=2, padx=(5, 10), pady=10, sticky="ns")
 
-        self.throttleBar.grid          (row=0, column=5, pady=10, rowspan=2, sticky="new") #far right frame
+        self.throttleBar.grid          (row=0, column=3, pady=10, rowspan=2, sticky="nw") #far right frame
         self.throttleSlider.grid       (row=1, column=0, pady=15)
         self.throttleDisplay.grid      (row=0, column=0)
         self.displayThrottleSwitch.grid(row=2, column=0, pady=(20, 0))
@@ -530,7 +543,20 @@ class App(customtkinter.CTk):
                     display.tag_add("center", 1.0, customtkinter.END)
                     display.configure(state="disabled")
             except:pass
-
+    #ignores the errors coming from the wifi connecting, and wrong wifi
+    def bypass_wifi(self):
+        global bypass_wifi
+        tkprint("Wifi Bypassed")
+        self.bypassWifiButton.configure(text="Wifi Bypassed", fg_color=colorPalette.buttonBlueHover)
+        bypass_wifi = True
+    
+    #ignores the errors coming from the flightstick not connecting
+    def bypassController(self):
+        global controller, bypass_controller
+        tkprint("Contoller bypassed")
+        self.bypassControllerButton.configure(text="Controller Bypassed", fg_color=colorPalette.buttonBlueHover)
+        controller = True
+        bypass_controller = True
 
     #if using the far right in-app throttle then this will update the display showing the %
     def updateThrottleDisplay(a, b, self): #Dont touch the aurguments, very finicky
@@ -583,7 +609,7 @@ class App(customtkinter.CTk):
         killswitch = 1700 # manual killswitch variable, 1700 is kill
         kill_all_swarm_drones() # sets all drones killswitch to 1700
         self.console.killswitch() # console prints that drones have been killed
-        self.killswitchbutton.configure(text="Drones Killed", fg_color="darkred")
+        self.killswitchbutton.configure(text="Drones Killed", fg_color=colorPalette.buttonRedHover, hover_color=colorPalette.buttonRedHover)
     #grabs the manual mode variables and displays them in the orange display
     def updateManualDisplay(self):
         global throttle, roll, yaw, pitch, armVar, navHold
@@ -692,15 +718,6 @@ def get_wifi_info():
             wifi_info[key] = val
 
     return wifi_info
-
-#ignores the errors coming from the flightstick not connecting
-def bypassController(app):
-    global controller, bypass_controller
-    #app.console.clear()
-    tkprint("Contoller bypassed")
-    app.bypassControllerButton.configure(text="Controller Bypassed")
-    controller = True
-    bypass_controller = True
 
 #Sends the packets of instructions to the drone
 def sendMessage(ipAddress, port, msg):
@@ -1062,7 +1079,7 @@ def checkQueue(q_in):
 def manualControl():
     global manualYes, killswitch, throttle, yaw, roll, pitch, armVar, navHold, app
     global sock, killThreads, usingAppThrottle, appThrottle, time_start, bypass_controller, controller
-    global sock, wifi_connected, name_of_AP, UDP_IP, UDP_PORT
+    global sock, wifi_connected, name_of_AP, UDP_IP, UDP_PORT, bypass_wifi
     tkprint("Manual Control Thread initiated")
     while not killThreads: #continously loop until killThreads is true
 
@@ -1082,7 +1099,7 @@ def manualControl():
                 if get_wifi_info()["SSID"] != name_of_AP:
                     wifi_connected = False
 
-                if not wifi_connected:
+                if not wifi_connected and not bypass_wifi:
                     getMyIP()
                     setup_sock()
                     
