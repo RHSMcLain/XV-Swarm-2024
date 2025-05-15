@@ -24,6 +24,7 @@ global time_start
 global qFromComms
 global qToComms
 global lastData
+global accessPoint_connected
 
 global app, removeDroneSelection, messages_sent
 
@@ -54,6 +55,7 @@ time_start = datetime.datetime.now()
 ongoing_swarm_flight = False
 canceling_swarm_flight = False
 wifi_connected = False
+accessPoint_connected = False
 lastData = ''
 
 name_of_AP = "XV_Basestation" # set this to the wifi name of your AP
@@ -1029,15 +1031,16 @@ def handshake(msg, addr):
 #new function uses recursion instead of an unleashed while True loop
 #Connects to AP, sends up to 3 messages with a 1.5 second delay
 def introToAP(introCount):
-    global app, lastData
+    global app, lastData, accessPoint_connected
+
+    if accessPoint_connected:
+        tkprint("Connected to AP!")
+        return
+
     sendMessage("192.168.4.22", 80, "BaseStationIP")
     introCount += 1
-    
+
     tkprint(f"sent message to AP (msg #{introCount})")
-    if lastData != b"":
-        tkprint("Connected to AP")
-        return
-    else: tkprint(f"lastData: {lastData}")
     if introCount == 3: tkprint("unable to connect to AP, try resetting it")
     else: app.after(1500, introToAP, introCount)
 
@@ -1065,7 +1068,7 @@ def checkQueue(q_in):
 
 #runs a while True loop on a separate thread, recieves flighstick inputs and sends outputs. Funny enough it also calls swarm control, so this more like a main loop.
 def manualControl():
-    global manualYes, killswitch, throttle, yaw, roll, pitch, armVar, navHold, app, sock, killThreads, usingAppThrottle, appThrottle, time_start, bypass_controller, controller, wifi_connected, name_of_AP, UDP_IP, UDP_PORT
+    global manualYes, killswitch, throttle, yaw, roll, pitch, armVar, navHold, app, sock, killThreads, usingAppThrottle, appThrottle, time_start, bypass_controller, controller, wifi_connected, accessPoint_connected, name_of_AP, UDP_IP, UDP_PORT
     tkprint("Manual Control Thread initiated")
     while not killThreads: #continously loop until killThreads is true
 
@@ -1084,6 +1087,7 @@ def manualControl():
 
                 if get_wifi_info()["SSID"] != name_of_AP:
                     wifi_connected = False
+                    accessPoint_connected = False
 
                 if not wifi_connected:
                     getMyIP()
@@ -1164,7 +1168,7 @@ def swarmControl():
 
 #recieves messages on a seperate thread
 def listen(q_out, q_in):
-    global killThreads, lastData
+    global killThreads, lastData, accessPoint_connected
     tkprint("Listener Thread initiated")
     while not killThreads:
         time.sleep(0.00002) # lags spikes can happen if Threads are running while True loops, a delay seems to fix this
@@ -1186,10 +1190,11 @@ def listen(q_out, q_in):
             if data == b"" or not wifi_connected: continue
 
             tkprint("Received message %s" % data)
+            if data == b'reply': accessPoint_connected = True
             if wifi_connected:
                 lastData = data
             else:
-                lastData = "incorrect wifi"
+                lastData = b""
 
             # strData = strData + "|" + addr[0] + "|" + str(addr[1])#the message, the ip, the port
             strData = addr[0] + "*" + str(addr[1]) + "*" + strData#the ip, the port, the message
