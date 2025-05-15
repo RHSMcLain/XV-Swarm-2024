@@ -21,10 +21,10 @@ global killThreads # bool, becomes True when we terminate the app
 global ongoing_swarm_flight, canceling_swarm_flight
 
 global time_start
-photoimage_objects = []
 global qFromComms
 global qToComms
 global lastData
+global accessPoint_connected
 
 global app, removeDroneSelection, messages_sent
 
@@ -34,7 +34,7 @@ global activeDrone, droneCount, selectedDrone, activeDrones, maxDrones
 #default manual mode variables
 killswitch = 1000
 throttle = 1000
-navHold = 1000
+navHold = 1500
 armVar = 1000
 pitch = 1500
 roll = 1500
@@ -56,6 +56,7 @@ time_start = datetime.datetime.now()
 ongoing_swarm_flight = False
 canceling_swarm_flight = False
 wifi_connected = False
+accessPoint_connected = False
 lastData = ''
 
 name_of_AP = "XV_Basestation" # set this to the wifi name of your AP
@@ -636,6 +637,12 @@ class App(customtkinter.CTk):
             tkprint("selected a drone to remove")
         else:
             self.removeDroneButton.configure(text="remove drone")
+    
+    def toggleNavHold(a):
+        global navHold
+        if navHold == 1600:
+            navHold = 1500
+        else: navHold = 1600
 
 #prints text to the console, use this instead of print() in most cases
 def tkprint(text):
@@ -1041,15 +1048,16 @@ def handshake(msg, addr):
 #new function uses recursion instead of an unleashed while True loop
 #Connects to AP, sends up to 3 messages with a 1.5 second delay
 def introToAP(introCount):
-    global app, sock, lastData
+    global app, lastData, accessPoint_connected
+
+    if accessPoint_connected:
+        tkprint("Connected to AP!")
+        return
+
     sendMessage("192.168.4.22", 80, "BaseStationIP")
     introCount += 1
 
-
-    tkprint(f"sent message to AP (msg #{introCount}), data: {lastData}")
-    if lastData == b'reply':
-        tkprint("Connected to AP")
-        return
+    tkprint(f"sent message to AP (msg #{introCount})")
     if introCount == 3: tkprint("unable to connect to AP, try resetting it")
     else: app.after(1500, introToAP, introCount)
 
@@ -1057,7 +1065,7 @@ def introToAP(introCount):
 def checkQueue(q_in):
     global killThreads, app
     if (not q_in.empty() and not killThreads):
-        #tkprint("checking q_in")
+        tkprint("checking q_in")
         #grab the item
         #process the info
         #mark it complete
@@ -1098,9 +1106,11 @@ def manualControl():
 
                 if get_wifi_info()["SSID"] != name_of_AP:
                     wifi_connected = False
+                    accessPoint_connected = False
 
                 if not wifi_connected and not bypass_wifi:
                     getMyIP()
+                    
                     setup_sock()
                     
                 if not controller:
@@ -1139,7 +1149,7 @@ def manualControl():
                         drones[i].pitch = 1500
                         drones[i].roll = 1500
                         drones[i].yaw = 1500
-                        drones[i].navHold = 1500
+                        drones[i].navHold = navHold
                         drones[i].killswitch = killswitch
                         drones[i].armVar = 1500
                         sendMessage(drones[i].ipAddress, drones[i].port, manMsgConstruct(i))
@@ -1154,7 +1164,9 @@ def setup_sock():
     global app, sock, UDP_PORT, UDP_IP
     try: sock.close()
     except: pass
+
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
     try:
         sock.setblocking(0)
         sock.bind((UDP_IP, UDP_PORT))
@@ -1175,34 +1187,40 @@ def swarmControl():
 
 #recieves messages on a seperate thread
 def listen(q_out, q_in):
-    global killThreads, lastData, wifi_connected
+    global killThreads, lastData, accessPoint_connected
     tkprint("Listener Thread initiated")
     while not killThreads:
         time.sleep(0.00002) # lags spikes can happen if Threads are running while True loops, a delay seems to fix this
         #check if we need to stop--grab from q_in  
         data = b""    #the b prefix makes it byte data
-        # if (not q_in.empty()):
-        #     qIn = q_in.get()
+        if (not q_in.empty()):
+            qIn = q_in.get()
         try:
             data, addr = sock.recvfrom(1024)
         except:
             pass
+
         try: strData = data.decode("utf-8")
         except Exception as e:
             tkprint(f"I failed to decode data! {strData}")
-
-        if wifi_connected:
-            lastData = data
-        else:
-            lastData = 'incorrect wifi'
-
+        
+    
         try:
-            #tkprint("Received message %s" % data)
+            if data == b"" or not wifi_connected: continue
+
+            tkprint("Received message %s" % data)
+            if data == b'reply': accessPoint_connected = True
+            if wifi_connected:
+                lastData = data
+            else:
+                lastData = b""
+
             # strData = strData + "|" + addr[0] + "|" + str(addr[1])#the message, the ip, the port
             strData = addr[0] + "*" + str(addr[1]) + "*" + strData#the ip, the port, the message
             # the message is pipe (|) delimited. The ip, port, and message are * delimited
             q_out.put(strData) #this sends the message to the main thread
         except: pass
+
     tkprint("Listener thread Terminated")
 
 #runs everything inside of it after the app launches so we have access to the UI
