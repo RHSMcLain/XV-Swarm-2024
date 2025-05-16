@@ -4,6 +4,8 @@
 
 char ReplyBuffer[] = "Drone 1";
 char packetBuffer[256]; 
+int reqUpdate = 10000;   //how often to update drone data
+long lastUpdate = 0;
 
 WifiComs wifi(ident);
 FcComs msp; 
@@ -28,16 +30,47 @@ void setup(){
     msp.begin(9600);
     Serial.begin(9600);
     wifi.WifiConnection(ReplyBuffer);
-    for(int i = 0; i < 3; i++){
-        msp.commandMSP(MSP_SET_RAW_RC, rc_values, 16);
-        delay(100);
-    }
+    // for(int i = 0; i < 3; i++){
+    //     msp.commandMSP(MSP_SET_RAW_RC, rc_values, 16);
+    //     delay(100);
+    // }
+    wifi.waypointArr[0].alt = 5000;
+    wifi.waypointArr[0].flag = NAV_WP_FLAG_LAST;
+    wifi.waypointArr[0].lat = (45.454165) * 10000000;
+    wifi.waypointArr[0].lon = 0x100000000 + (-122.685459* 10000000);
+    wifi.waypointArr[0].action = NAV_WP_ACTION_WAYPOINT;
+    wifi.waypointArr[0].p1 = 0;
+    wifi.waypointArr[0].p2 = 0;
+    wifi.waypointArr[0].p3 = 0;
+    wifi.newWaypoints = true;
 }
 
 void loop(){
-    wifi.WifiConnection(ReplyBuffer);
-    wifi.Listen(packetBuffer);
-    //msp.readGPSData();
+    //wifi.WifiConnection(ReplyBuffer);
+    //wifi.Listen(packetBuffer);
+    if(reqUpdate < millis() - lastUpdate){
+      // msp.readGPSData();
+      // msp.readAttitudeData();
+      // msp.sendWaypoints(wifi.waypointArr);
+      // msp.reqMSP(100, 0, 0);
+      // Serial.print("Ident  - ");
+
+      // while(Serial1.available()){
+      //   Serial.print(String(Serial1.read()));
+      //   Serial.print("  ");
+      // }
+      // Serial.println();
+      // delay(100);
+      // msp.reqMSP(106, 0, 0);
+      // Serial.print("GPS - ");
+      // while(Serial1.available()){
+      //   Serial.print(String(Serial1.read()));
+      //   Serial.print("  ");
+      // }
+      Serial.println("\n");
+      lastUpdate = millis();
+      wifi.newWaypoints = true;
+    }
     if(wifi.newWaypoints){
         msp.sendWaypoints(wifi.waypointArr);
         wifi.newWaypoints = false;
@@ -84,7 +117,7 @@ void loop(){
         flashing = false;
         break;
     }
-
+  delay(100);
 }
 
 void RcSet(uint16_t pitch, uint16_t roll, uint16_t throttle, uint16_t yaw, uint16_t navHold, uint16_t armVar, uint16_t unused, uint16_t killswitch){

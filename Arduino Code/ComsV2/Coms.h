@@ -2,11 +2,22 @@
 #include <WiFiNINA.h>                    //https://github.com/arduino-libraries/WiFiNINA/tree/master
 #include <WiFiUDP.h>
 
-#define MSP_ATTITUDE 108
-#define MSP_SET_RAW_RC 200
-#define MSP_RAW_GPS 106
-#define MSP_WP 118
-#define MSP_SET_WP 209 
+#define MSP_ATTITUDE    108
+#define MSP_SET_RAW_RC  200
+#define MSP_RAW_GPS     106
+#define MSP_WP          118
+#define MSP_SET_WP      209
+
+#define NAV_WP_FLAG_LAST 165
+#define NAV_WP_FLAG_HOME 72
+
+#define NAV_WP_ACTION_WAYPOINT  1
+#define NAV_WP_ACTION_HOLD_TIME 3
+#define NAV_WP_ACTION_RTH       4
+#define NAV_WP_ACTION_SET_POI   5
+#define NAV_WP_ACTION_JUMP      6
+#define NAV_WP_ACTION_SET_HEAD  7
+#define NAV_WP_ACTION_LAND      8
 
 #define localPort 2390
 // #define handShake "HND|-1|Betsy"
@@ -29,12 +40,12 @@ class SearchArea{
 
 class Waypoint{
     public:
+        uint8_t action;      //What to do, land, rth, etc.
         uint32_t lat;       //degrees
         uint32_t lon;       //degrees
-        uint32_t alt;       //meters
-        uint16_t heading;   //degrees
-        uint16_t time;      //time to wait seconds
-        uint8_t flag;       //unused (0)
+        uint32_t alt;       //cm
+        uint16_t p1, p2, p3;   //action valuse
+        uint8_t flag;       //Last, home, etc.
     private:
 };
 

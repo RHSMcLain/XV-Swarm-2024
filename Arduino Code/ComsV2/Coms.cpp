@@ -35,7 +35,8 @@ void FcComs::reqMSP(uint8_t req, uint8_t *data, uint8_t n_bytes){
 
   uint8_t checksum = 0;
 
-  Serial1.write((byte *) "$M>", 3);
+  Serial1.write((byte *) "$M<", 3);
+  
   Serial1.write(n_bytes);
   checksum ^= n_bytes;
 
@@ -48,8 +49,8 @@ void FcComs::reqMSP(uint8_t req, uint8_t *data, uint8_t n_bytes){
 void FcComs::sendWaypoints(Waypoint wp[]){
   uint8_t checksum = 0;
   uint8_t n_bytes = 0;
-  uint8_t size = sizeof(wp);
-  n_bytes = size*18;
+  uint8_t size = 1;//sizeof(wp);
+  n_bytes = size*21;
 
   Serial1.write((byte *) "$M<", 3);
   Serial1.write(n_bytes);
@@ -59,8 +60,12 @@ void FcComs::sendWaypoints(Waypoint wp[]){
   checksum ^= MSP_SET_WP;
 
   for(uint8_t i = 0; i < size; i++){
-    Serial1.write(i);
-    checksum ^= i;
+    //id
+    Serial1.write(i+1);
+    checksum ^= i+1;
+    //action
+    Serial1.write(wp[i].action);
+    checksum ^= wp[i].action;
     //lat creates array of each byte
     uint8_t lat[4] = {
       ((uint32_t)wp[i].lat >> 0) & 0xFF, 
@@ -71,6 +76,7 @@ void FcComs::sendWaypoints(Waypoint wp[]){
     //for writes and checksums each byte
     for(uint8_t x = 0; x < 4; x++){
       Serial1.write(lat[x]);
+      Serial.println(lat[x]);
       checksum ^= lat[x];
     }
     //lon
@@ -82,6 +88,7 @@ void FcComs::sendWaypoints(Waypoint wp[]){
     };
     for(uint8_t x = 0; x < 4; x++){
       Serial1.write(lon[x]);
+      Serial.println(lon[x]);
       checksum ^= lon[x];
     }
     //alt
@@ -93,28 +100,42 @@ void FcComs::sendWaypoints(Waypoint wp[]){
     };
     for(uint8_t x = 0; x < 4; x++){
       Serial1.write(alt[x]);
+      Serial.println(alt[x]);
       checksum ^= alt[x];
     }
-    //heading
-    uint8_t head[2] = {
-      ((uint16_t)wp[i].heading >> 0) & 0xFF,
-      ((uint16_t)wp[i].heading >> 8) & 0xFF
+    //p1
+    uint8_t p1[2] = {
+      ((uint16_t)wp[i].p1 >> 0) & 0xFF,
+      ((uint16_t)wp[i].p1 >> 8) & 0xFF
     };
     for(uint8_t x = 0; x < 2; x++){
-      Serial1.write(head[x]);
-      checksum ^= head[x];
+      Serial1.write(p1[x]);
+      Serial.println(p1[x]);
+      checksum ^= p1[x];
     }
-    //time to wait
-    uint8_t time[2] = {
-      ((uint16_t)wp[i].time >> 0) & 0xFF,
-      ((uint16_t)wp[i].time >> 8) & 0xFF
+    //p2
+    uint8_t p2[2] = {
+      ((uint16_t)wp[i].p2 >> 0) & 0xFF,
+      ((uint16_t)wp[i].p2 >> 8) & 0xFF
     };
     for(uint8_t x = 0; x < 2; x++){
-      Serial1.write(time[x]);
-      checksum ^= time[x];
+      Serial1.write(p2[x]);
+      Serial.println(p2[x]);
+      checksum ^= p2[x];
+    }
+    //p3
+    uint8_t p3[2] = {
+      ((uint16_t)wp[i].p3 >> 0) & 0xFF,
+      ((uint16_t)wp[i].p3 >> 8) & 0xFF
+    };
+    for(uint8_t x = 0; x < 2; x++){
+      Serial1.write(p3[x]);
+      Serial.println(p3[x]);
+      checksum ^= p3[x];
     }
     //flag
     Serial1.write(wp[i].flag);
+    Serial.println(wp[i].flag);
     checksum ^= wp[i].flag;
   }
   Serial1.write(checksum);
@@ -173,6 +194,9 @@ void FcComs::readAttitudeData(){
   msp_attitude.roll = rollRec;
   msp_attitude.pitch = pitchRec;
   msp_attitude.yaw = yawRec;
+  Serial.print("Roll: " + String(rollRec/10.0));
+  Serial.print(" Pitch: " + String(pitchRec/10.0));
+  Serial.println(" Yaw: " + String(yawRec));
 }
 
 void FcComs::readGPSData(){
@@ -188,18 +212,14 @@ void FcComs::readGPSData(){
   uint16_t gpsCourse;
 
   while (Serial1.available()) {
-    count += 1;
+    count ++;
     byte first;
     byte second;
     byte third;
     byte fourth;
     switch (count) {
       //first five bytes are header-type informatin, so start at 6
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-    case 5:
+    case 1 ... 5:
       Serial1.read();
       break;
     case 6: //Fix, 1 is yes, 0 is no
@@ -256,9 +276,14 @@ void FcComs::readGPSData(){
       gpsCourse += first;
       break;
     case 13:
-      Serial1.read();
+      while(Serial1.available()){
+        Serial1.read();
+      }
       break;
     }
+  }
+  if(gpsFix > 2 || numSat > 30){
+    return;
   }
   msp_raw_gps.gpsFix = gpsFix;
   msp_raw_gps.numSat = numSat;
@@ -266,7 +291,14 @@ void FcComs::readGPSData(){
   msp_raw_gps.lon = lon;
   msp_raw_gps.gpsAlt = gpsAlt;
   msp_raw_gps.gpsSpeed = gpsSpeed;
-  msp_raw_gps.gpsCourse = gpsCourse;
+  msp_raw_gps.gpsCourse = gpsCourse / 10;
+  Serial.print("Fix: " + String(gpsFix));
+  Serial.print(" NumSat: " + String(numSat));
+  Serial.print(" Lat: " + String(lat/10000000.0, 5));
+  Serial.print(" Lon: " + String(180 - lon/10000000.0, 5));
+  Serial.print(" GPSALT: " + String(gpsAlt));
+  Serial.print(" SOG: " + String(gpsSpeed));
+  Serial.println(" GPSCourse: " + String(gpsCourse/10.0));
 }
 
 Arduino_h::IPAddress bsip;
@@ -332,9 +364,9 @@ PrevMessage_h WifiComs::parseMessage(char buffer[]){
             token = strtok(NULL, "|"); 
             waypointArr[wpNum].alt = atoi(token);
             token = strtok(NULL, "|"); 
-            waypointArr[wpNum].heading = atoi(token);
+            waypointArr[wpNum].action = atoi(token);
             token = strtok(NULL, "|"); 
-            waypointArr[wpNum].time = atoi(token);
+            waypointArr[wpNum].p1 = atoi(token);
             token = strtok(NULL, "|"); 
             waypointArr[wpNum].flag = atoi(token);
             token = strtok(NULL, "|"); 
