@@ -379,7 +379,7 @@ class App(customtkinter.CTk):
         self.bypassControllerButton = Button(self.testingButtonBar, text="Bypass Controller", command=self.bypassController)
         self.bypassWifiButton =       Button(self.testingButtonBar, text="Bypass Wifi",       command=self.bypass_wifi)
         self.addTestDroneButton =     Button(self.testingButtonBar, text="Add Test Drone",    command=lambda:addDrone("Test Drone #" + str(random.randint(100, 1000)), "10.20.18.23", 85))
-        self.testingButton2 =         Button(self.testingButtonBar, text="")
+        self.navHoldToggleButton =    Button(self.testingButtonBar, text="Toggle NavHold",    command=self.toggleNavHold)
 
         # Aligning all parts of the UI
 
@@ -391,11 +391,11 @@ class App(customtkinter.CTk):
         self.displaySwarmVariablesButton.grid(row=2, column=0)
         self.putNextButtonHere.grid          (row=3, column=0)
 
-        self.testingButtonBar.grid      (row=1, column=3, padx=10, rowspan=4)
-        self.bypassControllerButton.grid(row=0, column=0)
-        self.bypassWifiButton.grid      (row=1, column=0)
-        self.addTestDroneButton.grid    (row=2, column=0)
-        self.testingButton2.grid        (row=3, column=0)
+        self.testingButtonBar.grid           (row=1, column=3, padx=10, rowspan=4)
+        self.bypassControllerButton.grid     (row=0, column=0)
+        self.bypassWifiButton.grid           (row=1, column=0)
+        self.addTestDroneButton.grid         (row=2, column=0)
+        self.navHoldToggleButton.grid        (row=3, column=0)
 
         self.leftButtonBar.grid(row=0, column=0, pady=(10, 0), rowspan=4, sticky="nsew") #far left frame
         self.leftButtonBar.grid_rowconfigure(5, weight=1)
