@@ -1,5 +1,6 @@
 __pycache__
 .vscode
 *.pyc
+.DS_Store
 c_cpp_properties.json
 settings.json
