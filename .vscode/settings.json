@@ -15,6 +15,7 @@
         "regex": "cpp",
         "xutility": "cpp",
         "mutex": "cpp",
-        "stop_token": "cpp"
+        "stop_token": "cpp",
+        "cmath": "cpp"
     }
 }

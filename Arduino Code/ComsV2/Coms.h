@@ -53,8 +53,8 @@ class SearchArea{
 class Waypoint{
     public:
         uint8_t action;      // What to do at this waypoint (land, RTH, etc.)
-        uint32_t lat;        // Latitude in degrees * 10,000,000
-        uint32_t lon;        // Longitude in degrees * 10,000,000
+        uint32_t lat;        // Latitude in degrees * 10 000 000
+        uint32_t lon;        // Longitude in degrees * 10 000 000
         uint32_t alt;        // Altitude in centimeters
         uint16_t p1, p2, p3; // Action parameters (p3 is a bitfield)
         uint8_t flag;        // Flags (last, home, etc.)
