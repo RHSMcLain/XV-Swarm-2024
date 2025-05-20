@@ -1,9 +1,5 @@
 #include "Coms.h"
 
-void FcComs::begin(int speed){
-    Serial1.begin(speed);
-}
-
 void FcComs::commandMSP(uint8_t cmd, uint16_t data[], uint8_t n_cbytes){
 
   uint8_t checksum = 0;
@@ -154,23 +150,33 @@ void FcComs::readAttitudeData(){
   int16_t rollRec;
   int16_t pitchRec;
   int16_t yawRec;
+  uint8_t checksum = 0;
 
   while (Serial1.available()){
     count += 1;
     byte first;
     byte second;
+    uint8_t n_bytes = 0;
     switch (count) {
       //first five bytes are header-type informatin, so start at 6
     case 1:
     case 2:
     case 3:
-    case 4:
-    case 5:
       Serial1.read();
+      break;
+    case 4:
+      n_bytes = Serial1.read();
+      checksum ^= n_bytes;
+      Serial.println("Recived attitude bytes: " + String(n_bytes));
+      break;
+    case 5:
+      checksum ^= Serial1.read();
       break;
     case 6:
       first = Serial1.read();
       second = Serial1.read();
+      checksum ^= first;
+      checksum ^= second;
       rollRec = second;
       rollRec <<= 8;
       rollRec += first;
@@ -178,6 +184,8 @@ void FcComs::readAttitudeData(){
     case 7:
       first = Serial1.read();
       second = Serial1.read();
+      checksum ^= first;
+      checksum ^= second;
       pitchRec = second;
       pitchRec <<= 8;
       pitchRec += first;
@@ -185,12 +193,19 @@ void FcComs::readAttitudeData(){
     case 8:
       first = Serial1.read();
       second = Serial1.read();
+      checksum ^= first;
+      checksum ^= second;
       yawRec = second;
       yawRec <<= 8;
       yawRec += first;
       break;
     case 9:
-      Serial1.read();
+      if(checksum = Serial1.read()){
+        Serial.println("Checksum is correct for attitude");
+      }
+      else{
+        Serial.println("Checksum is incorrect for attitude");
+      }
       break;
     }
   }
@@ -213,6 +228,7 @@ void FcComs::readGPSData(){
   uint16_t gpsAlt;
   uint16_t gpsSpeed;
   uint16_t gpsCourse;
+  uint8_t checksum = 0;
 
   while (Serial1.available()) {
     count ++;
@@ -220,22 +236,39 @@ void FcComs::readGPSData(){
     byte second;
     byte third;
     byte fourth;
+    uint8_t n_bytes = 0;
     switch (count) {
       //first five bytes are header-type informatin, so start at 6
-    case 1 ... 5:
+    case 1:
+    case 2:
+    case 3:
       Serial1.read();
+      break;
+    case 4:
+      n_bytes = Serial1.read();
+      checksum ^= n_bytes;
+      Serial.println("Recived gps bytes: " + String(n_bytes));
+      break;
+    case 5:
+      checksum ^= Serial1.read();
       break;
     case 6: //Fix, 1 is yes, 0 is no
       gpsFix = Serial1.read();
+      checksum ^= gpsFix;
       break;
     case 7: //Number of satellites
       numSat = Serial1.read();
+      checksum ^= numSat;
       break;  
     case 8: //Combine latitude bytes
       first = Serial1.read();
       second = Serial1.read();
       third = Serial1.read();
       fourth = Serial1.read();
+      checksum ^= first;
+      checksum ^= second;
+      checksum ^= third;
+      checksum ^= fourth;
       lat = fourth;
       lat <<= 8;
       lat += third;
@@ -249,6 +282,10 @@ void FcComs::readGPSData(){
       second = Serial1.read();
       third = Serial1.read();
       fourth = Serial1.read();
+      checksum ^= first;
+      checksum ^= second;
+      checksum ^= third;
+      checksum ^= fourth;
       lon = fourth;
       lon <<= 8;
       lon += third;
@@ -260,6 +297,8 @@ void FcComs::readGPSData(){
     case 10: //Altitude in meters
       first = Serial1.read();
       second = Serial1.read();
+      checksum ^= first;
+      checksum ^= second;
       gpsAlt = second;
       gpsAlt <<= 8;
       gpsAlt += first;
@@ -267,6 +306,8 @@ void FcComs::readGPSData(){
     case 11: //Speed in cm/s
       first = Serial1.read();
       second = Serial1.read();
+      checksum ^= first;
+      checksum ^= second;
       gpsSpeed = second;
       gpsSpeed <<= 8;
       gpsSpeed += first;
@@ -274,11 +315,19 @@ void FcComs::readGPSData(){
     case 12: //Degrees times 10
       first = Serial1.read();
       second = Serial1.read();
+      checksum ^= first;
+      checksum ^= second;
       gpsCourse = second;
       gpsCourse <<= 8;
       gpsCourse += first;
       break;
     case 13:
+      if(checksum == Serial1.read()){
+        Serial.println("Checksum is correct for GPS");
+      }
+      else{
+        Serial.println("Checksum is incorrect for GPS");
+      }
       while(Serial1.available()){
         Serial1.read();
       }
@@ -454,32 +503,36 @@ int WifiComs::GenerateSearchPath(SearchArea searchArea){
   Serial.println(spread);
   Serial.println(laps);
   switch(search){
-    case *"N":
+    case *"N": // Northward search pattern
       for(int i = 1; i/4 < laps; i+=4){
+        // Set latitude for each leg of the lap
         path[i].lat = 10000000*(searchArea.searchBounds[0].y + viewDeg);
         path[i+1].lat = 10000000*(searchArea.searchBounds[1].y - viewDeg);
         path[i+2].lat = 10000000*(searchArea.searchBounds[1].y - viewDeg);
         path[i+3].lat = 10000000*(searchArea.searchBounds[0].y + viewDeg);
       }
       break;
-    case *"E":
+    case *"E": // Eastward search pattern
       for(int i = 1; i/4 < laps; i+=4){
+        // Set longitude for each leg of the lap
         path[i].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + viewDeg);
         path[i+1].lon = 0x100000000 + 10000000*(searchArea.searchBounds[1].x - viewDeg);
         path[i+2].lon = 0x100000000 + 10000000*(searchArea.searchBounds[1].x - viewDeg);
         path[i+3].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + viewDeg);
       }
       break;
-    case *"S":
+    case *"S": // Southward search pattern
       for(int i = 1; i/4 < laps; i+=4){
+        // Set latitude for each leg of the lap
         path[i].lat = 10000000*(searchArea.searchBounds[0].y - viewDeg);
         path[i+1].lat = 10000000*(searchArea.searchBounds[1].y + viewDeg);
         path[i+2].lat = 10000000*(searchArea.searchBounds[1].y + viewDeg);
         path[i+3].lat = 10000000*(searchArea.searchBounds[0].y - viewDeg);
       }
       break;
-    case *"W":
+    case *"W": // Westward search pattern
       for(int i = 1; i/4 < laps; i+=4){
+        // Set longitude for each leg of the lap
         path[i].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - viewDeg);
         path[i+1].lon = 0x100000000 + 10000000*(searchArea.searchBounds[1].x + viewDeg);
         path[i+2].lon = 0x100000000 + 10000000*(searchArea.searchBounds[1].x + viewDeg);
@@ -487,37 +540,42 @@ int WifiComs::GenerateSearchPath(SearchArea searchArea){
       }
       break;
   }
+  // Adjust path for spread direction
   switch(spread){
-    case *"N":
+    case *"N": // Spread north
       for(int i = 1; i/4 < laps; i+=4){
-        path[i].lat = 10000000*(searchArea.searchBounds[0].y + i*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+1].lat = 10000000*(searchArea.searchBounds[0].y + i*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+2].lat = 10000000*(searchArea.searchBounds[0].y + 2*i*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+3].lat = 10000000*(searchArea.searchBounds[0].y + 2*i*(viewDeg*2*(searchArea.droneId+.5)));
+        // Offset latitude for each lap to spread north
+        path[i].lat = 10000000*(searchArea.searchBounds[0].y + floor(i)/4*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+1].lat = 10000000*(searchArea.searchBounds[0].y + floor(i)*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+2].lat = 10000000*(searchArea.searchBounds[0].y + 2*floor(i)*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+3].lat = 10000000*(searchArea.searchBounds[0].y + 2*floor(i)*(viewDeg*2*(searchArea.droneId+.5)));
       }
       break;
-    case *"E":
+    case *"E": // Spread east
       for(int i = 1; i/4 < laps; i+=4){
-        path[i].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + i*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+1].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + i*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+2].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + 2*i*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+3].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + 2*i*(viewDeg*2*(searchArea.droneId+.5)));
+        // Offset longitude for each lap to spread east
+        path[i].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + floor(i)*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+1].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + floor(i)*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+2].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + 2*floor(i)*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+3].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + 2*floor(i)*(viewDeg*2*(searchArea.droneId+.5)));
       }
       break;
-    case *"S":
+    case *"S": // Spread south
       for(int i = 1; i/4 < laps; i+=4){
-        path[i].lat = 10000000*(searchArea.searchBounds[0].y - i*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+1].lat = 10000000*(searchArea.searchBounds[0].y - i*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+2].lat = 10000000*(searchArea.searchBounds[0].y - 2*i*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+3].lat = 10000000*(searchArea.searchBounds[0].y - 2*i*(viewDeg*2*(searchArea.droneId+.5)));
+        // Offset latitude for each lap to spread south
+        path[i].lat = 10000000*(searchArea.searchBounds[0].y - floor(i)*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+1].lat = 10000000*(searchArea.searchBounds[0].y - floor(i)*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+2].lat = 10000000*(searchArea.searchBounds[0].y - 2*floor(i)*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+3].lat = 10000000*(searchArea.searchBounds[0].y - 2*floor(i)*(viewDeg*2*(searchArea.droneId+.5)));
       }
       break;
-    case *"W":
+    case *"W": // Spread west
       for(int i = 1; i/4 < laps; i+=4){
-        path[i].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - i*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+1].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - i*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+2].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - 2*i*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+3].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - 2*i*(viewDeg*2*(searchArea.droneId+.5)));
+        // Offset longitude for each lap to spread west
+        path[i].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - floor(i)*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+1].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - floor(i)*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+2].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - 2*floor(i)*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+3].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - 2*floor(i)*(viewDeg*2*(searchArea.droneId+.5)));
       }
       break;
   }

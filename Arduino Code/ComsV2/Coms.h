@@ -25,35 +25,58 @@
 
 class Vector2D{
     public:
-        double x;
-        double y;
+        double x; // Longitude or X coordinate
+        double y; // Latitude or Y coordinate
+        Vector2D() : x(0), y(0) {} // Default constructor
+        Vector2D(double x, double y){
+            this->x = x;
+            this->y = y;
+        }
 };
 
 class SearchArea{
     public:
-        int dronesSearching;
-        int droneId;
-        double viewDistance;    //Meters
-        Vector2D searchBounds[2];
+        int dronesSearching;      // Number of drones searching this area
+        int droneId;              // ID of this drone
+        double viewDistance;      // View distance in meters
+        Vector2D searchBounds[2]; // Two points defining the search area bounds
+        SearchArea(int dronesSearching, int droneId, double viewDistance, Vector2D point1, Vector2D point2){
+            this->dronesSearching = dronesSearching;
+            this->droneId = droneId;
+            this->viewDistance = viewDistance;
+            searchBounds[0] = point1;
+            searchBounds[1] = point2;
+        }
     private:
 };
 
 class Waypoint{
     public:
-        uint8_t action;      //What to do, land, rth, etc.
-        uint32_t lat;       //degrees
-        uint32_t lon;       //degrees
-        uint32_t alt;       //cm
-        uint16_t p1, p2, p3;   //action valuse
-        uint8_t flag;       //Last, home, etc.
+        uint8_t action;      // What to do at this waypoint (land, RTH, etc.)
+        uint32_t lat;        // Latitude in degrees * 10,000,000
+        uint32_t lon;        // Longitude in degrees * 10,000,000
+        uint32_t alt;        // Altitude in centimeters
+        uint16_t p1, p2, p3; // Action parameters (p3 is a bitfield)
+        uint8_t flag;        // Flags (last, home, etc.)
+        Waypoint() : action(0), lat(0), lon(0), alt(0), p1(0), p2(0), p3(0), flag(0) {}
+        Waypoint(uint8_t action, uint32_t lat, uint32_t lon, uint32_t alt, uint16_t p1, uint16_t p2, uint16_t p3, uint8_t flag){
+            this->action = action;
+            this->lat = lat * 10000000;
+            this->lon = 0x100000000 + lon * 10000000;
+            this->alt = alt;
+            this->p1 = p1;
+            this->p2 = p2;
+            this->p3 = p3;
+            this->flag = flag;
+        }
     private:
 };
 
 class msp_attitude_h{
     public:
-        int16_t roll;       //degrees / 10
-        int16_t pitch;      //degrees / 10
-        int16_t yaw;        //degrees
+        int16_t roll;   // Roll angle (degrees / 10)
+        int16_t pitch;  // Pitch angle (degrees / 10)
+        int16_t yaw;    // Yaw angle (degrees)
     private:
 };
 
@@ -121,7 +144,9 @@ class WifiComs{
 
 class FcComs{
     public:
-        void begin(int speed);
+        FcComs(int baudRate){
+            Serial1.begin(baudRate);
+        }
 
         void commandMSP(uint8_t cmd, uint16_t data[], uint8_t n_cbytes);
 

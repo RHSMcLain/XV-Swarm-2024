@@ -9,10 +9,10 @@ int pathLength = 1;
 long lastUpdate = 0;
 
 WifiComs wifi(ident);
-FcComs msp; 
-SearchArea searchArea;
-Vector2D point1;
-Vector2D point2;
+FcComs msp(9600); 
+Vector2D point1(-122.685830, 45.454398);
+Vector2D point2(-122.685349, 45.453885);
+SearchArea searchArea(1, 1, 2, point1, point2);
 
 uint16_t rc_values[8] = {//rc channel values
     1500,
@@ -31,58 +31,33 @@ int blinkT = 100;       //time between state switches (ms)
 long lastBlink = 0;     //time of last state switch (ms)
 
 void setup(){
-    Serial.begin(115200);
-    while(!Serial);
+    Serial.begin(115200); // Start serial communication for debugging
+    while(!Serial){
+        if(millis() > 5000){ // Wait for serial or timeout after 5 seconds
+            break;
+        }
+    }
     Serial.println("setup");
-    pinMode(LED_BUILTIN, OUTPUT);
-    msp.begin(9600);
+    pinMode(LED_BUILTIN, OUTPUT); // Set built-in LED as output
     Serial.println("msp");
-    wifi.WifiConnection(ReplyBuffer);
-    // for(int i = 0; i < 3; i++){
-    //     msp.commandMSP(MSP_SET_RAW_RC, rc_values, 16);
-    //     delay(100);
-    // }
-    if(false){
-        wifi.waypointArr[0].alt = 500;
-        wifi.waypointArr[0].flag = 0;
-        wifi.waypointArr[0].lat = (45.454165) * 10000000;
-        wifi.waypointArr[0].lon = 0x100000000 + (-122.685459* 10000000);
-        wifi.waypointArr[0].action = NAV_WP_ACTION_WAYPOINT;
-        wifi.waypointArr[0].p1 = 0;
-        wifi.waypointArr[0].p2 = 0;
-        wifi.waypointArr[0].p3 = 0;
-        wifi.waypointArr[1].alt = 500;
-        wifi.waypointArr[1].flag = NAV_WP_FLAG_LAST;
-        wifi.waypointArr[1].lat = (45.455165) * 10000000;
-        wifi.waypointArr[1].lon = 0x100000000 + (-122.686459* 10000000);
-        wifi.waypointArr[1].action = NAV_WP_ACTION_WAYPOINT;
-        wifi.waypointArr[1].p1 = 0;
-        wifi.waypointArr[1].p2 = 0;
-        wifi.waypointArr[1].p3 = 0;
+    wifi.WifiConnection(ReplyBuffer); // Attempt WiFi connection
+    for(int i = 0; i < 3; i++){
+        msp.commandMSP(MSP_SET_RAW_RC, rc_values, 16); // Send initial RC values
+        delay(100);
     }
-    if(true){
-        point1.x = -122.685830;
-        point1.y = 45.454398;
-        point2.x = -122.685349;
-        point2.y = 45.453885;
-        Serial.println("points");
-        searchArea.viewDistance = 2;
-        searchArea.dronesSearching = 1;
-        searchArea.searchBounds[0] = point1;
-        searchArea.searchBounds[1] = point2;
-        searchArea.droneId = 1;
-        Serial.println("search area");
-        pathLength = wifi.GenerateSearchPath(searchArea);
-        Serial.println("waypoints");
-    }
-    wifi.newWaypoints = true;
+    //custom waypoints
+    //wifi.waypointArr[0] = Waypoint(NAV_WP_ACTION_WAYPOINT, 0x100000000 + (-122.685830* 10000000), (45.454398) * 10000000, 500, 0, 0, 0, 0);
+    //wifi.waypointArr[1] = Waypoint(NAV_WP_ACTION_WAYPOINT, 0x100000000 + (-122.685349* 10000000), (45.453885) * 10000000, 500, 0, 0, 0, NAV_WP_FLAG_LAST);
+    Serial.println("search area");
+    pathLength = wifi.GenerateSearchPath(searchArea); // Generate search path and waypoints
+    Serial.println("waypoints");
+    wifi.newWaypoints = true; // Flag to send new waypoints
 }
 
 void loop(){
-    // Serial.println("loop");
-    //wifi.WifiConnection(ReplyBuffer);
-    //wifi.Listen(packetBuffer);
-    if(reqUpdate < millis() - lastUpdate){
+    //wifi.WifiConnection(ReplyBuffer); // Optionally reconnect WiFi
+    //wifi.Listen(packetBuffer); // Optionally listen for new messages
+    if(reqUpdate < millis() - lastUpdate){ // Time to update drone data?
       // msp.readGPSData();
       // msp.readAttitudeData();
       // msp.sendWaypoints(wifi.waypointArr);
@@ -103,13 +78,14 @@ void loop(){
       // }
       Serial.println("\n");
       lastUpdate = millis();
-      wifi.newWaypoints = true;
+      wifi.newWaypoints = true; // Request new waypoints to be sent
     }
     if(wifi.newWaypoints){
-        msp.sendWaypoints(wifi.waypointArr, pathLength);
+        msp.sendWaypoints(wifi.waypointArr, pathLength); // Send waypoints to flight controller
         wifi.newWaypoints = false;
     }
     if(wifi.PrevMessage.cmd == "MAN"){
+        // Manual mode: update RC values from received message
         rc_values[0] = wifi.PrevMessage.pitch;
         rc_values[1] = wifi.PrevMessage.roll;
         rc_values[2] = wifi.PrevMessage.throttle;
@@ -118,7 +94,7 @@ void loop(){
         rc_values[5] = wifi.PrevMessage.armVar;
         rc_values[6] = 1700;
         rc_values[7] = wifi.PrevMessage.killswitch;
-        msp.commandMSP(MSP_SET_RAW_RC, rc_values, 16);
+        msp.commandMSP(MSP_SET_RAW_RC, rc_values, 16); // Send RC values
         for(int i = 0; i < 8; i++){
           Serial.print(rc_values[i]);
           Serial.print("  ");
@@ -128,33 +104,35 @@ void loop(){
         }
     }
     else if(wifi.PrevMessage.cmd == "SWM"){
+        // Swarm mode: set RC values for autonomous operation
         if(wifi.state == "active"){
             RcSet(1500, 1500, 885, 1500, 1500, 1700, 1500, 1500);
         }
     }
     if((millis() - lastBlink > blinkT) && flashing){
-        LightSR();
+        LightSR(); // Toggle LED for status indication
     }
     else{
-        digitalWrite(LED_BUILTIN, HIGH);
+        digitalWrite(LED_BUILTIN, HIGH); // Keep LED on
     }
-    switch (wifi.wifiState){    //switch depending on the drones state
+    switch (wifi.wifiState){    //switch depending on the drone's state
     case 1:
-        flashing = true;
+        flashing = true; // Fast blink
         blinkT = 100;
         break;
     case 3:
-        flashing = true;
+        flashing = true; // Slow blink
         blinkT = 1000;
         break;
     case 5:
-        flashing = false;
+        flashing = false; // LED solid
         break;
     }
-  delay(100);
+  delay(10); // Main loop delay
 }
 
 void RcSet(uint16_t pitch, uint16_t roll, uint16_t throttle, uint16_t yaw, uint16_t navHold, uint16_t armVar, uint16_t unused, uint16_t killswitch){
+    // Helper to set RC values
     rc_values[0] = pitch;
     rc_values[1] = roll;
     rc_values[2] = throttle;
@@ -165,12 +143,12 @@ void RcSet(uint16_t pitch, uint16_t roll, uint16_t throttle, uint16_t yaw, uint1
     rc_values[7] = killswitch;
 }
 
-void LightSR(){ //built in light as indicator sr latch
+void LightSR(){ //built in light as indicator SR latch
     if(light){
-        digitalWrite(LED_BUILTIN, HIGH);
+        digitalWrite(LED_BUILTIN, HIGH); // LED on
     }
     else{
-        digitalWrite(LED_BUILTIN, LOW);
+        digitalWrite(LED_BUILTIN, LOW); // LED off
     }
-    light ^= 1;
+    light ^= 1; // Toggle light state
 }
