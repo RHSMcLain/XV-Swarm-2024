@@ -5,10 +5,15 @@
 char ReplyBuffer[] = "Drone 1";
 char packetBuffer[256]; 
 int reqUpdate = 10000;   //how often to update drone data
+int pathLength = 1;
 long lastUpdate = 0;
 
 WifiComs wifi(ident);
 FcComs msp; 
+SearchArea searchArea;
+Vector2D point1;
+Vector2D point2;
+
 uint16_t rc_values[8] = {//rc channel values
     1500,
     1500, 
@@ -26,26 +31,55 @@ int blinkT = 100;       //time between state switches (ms)
 long lastBlink = 0;     //time of last state switch (ms)
 
 void setup(){
+    Serial.begin(115200);
+    while(!Serial);
+    Serial.println("setup");
     pinMode(LED_BUILTIN, OUTPUT);
     msp.begin(9600);
-    Serial.begin(9600);
+    Serial.println("msp");
     wifi.WifiConnection(ReplyBuffer);
     // for(int i = 0; i < 3; i++){
     //     msp.commandMSP(MSP_SET_RAW_RC, rc_values, 16);
     //     delay(100);
     // }
-    wifi.waypointArr[0].alt = 5000;
-    wifi.waypointArr[0].flag = NAV_WP_FLAG_LAST;
-    wifi.waypointArr[0].lat = (45.454165) * 10000000;
-    wifi.waypointArr[0].lon = 0x100000000 + (-122.685459* 10000000);
-    wifi.waypointArr[0].action = NAV_WP_ACTION_WAYPOINT;
-    wifi.waypointArr[0].p1 = 0;
-    wifi.waypointArr[0].p2 = 0;
-    wifi.waypointArr[0].p3 = 0;
+    if(false){
+        wifi.waypointArr[0].alt = 500;
+        wifi.waypointArr[0].flag = 0;
+        wifi.waypointArr[0].lat = (45.454165) * 10000000;
+        wifi.waypointArr[0].lon = 0x100000000 + (-122.685459* 10000000);
+        wifi.waypointArr[0].action = NAV_WP_ACTION_WAYPOINT;
+        wifi.waypointArr[0].p1 = 0;
+        wifi.waypointArr[0].p2 = 0;
+        wifi.waypointArr[0].p3 = 0;
+        wifi.waypointArr[1].alt = 500;
+        wifi.waypointArr[1].flag = NAV_WP_FLAG_LAST;
+        wifi.waypointArr[1].lat = (45.455165) * 10000000;
+        wifi.waypointArr[1].lon = 0x100000000 + (-122.686459* 10000000);
+        wifi.waypointArr[1].action = NAV_WP_ACTION_WAYPOINT;
+        wifi.waypointArr[1].p1 = 0;
+        wifi.waypointArr[1].p2 = 0;
+        wifi.waypointArr[1].p3 = 0;
+    }
+    if(true){
+        point1.x = -122.685830;
+        point1.y = 45.454398;
+        point2.x = -122.685349;
+        point2.y = 45.453885;
+        Serial.println("points");
+        searchArea.viewDistance = 2;
+        searchArea.dronesSearching = 1;
+        searchArea.searchBounds[0] = point1;
+        searchArea.searchBounds[1] = point2;
+        searchArea.droneId = 1;
+        Serial.println("search area");
+        pathLength = wifi.GenerateSearchPath(searchArea);
+        Serial.println("waypoints");
+    }
     wifi.newWaypoints = true;
 }
 
 void loop(){
+    // Serial.println("loop");
     //wifi.WifiConnection(ReplyBuffer);
     //wifi.Listen(packetBuffer);
     if(reqUpdate < millis() - lastUpdate){
@@ -72,7 +106,7 @@ void loop(){
       wifi.newWaypoints = true;
     }
     if(wifi.newWaypoints){
-        msp.sendWaypoints(wifi.waypointArr);
+        msp.sendWaypoints(wifi.waypointArr, pathLength);
         wifi.newWaypoints = false;
     }
     if(wifi.PrevMessage.cmd == "MAN"){

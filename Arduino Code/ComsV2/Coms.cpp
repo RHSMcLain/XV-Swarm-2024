@@ -46,23 +46,21 @@ void FcComs::reqMSP(uint8_t req, uint8_t *data, uint8_t n_bytes){
   Serial1.write(checksum);
 }
 
-void FcComs::sendWaypoints(Waypoint wp[]){
-  uint8_t checksum = 0;
-  uint8_t n_bytes = 0;
-  uint8_t size = 1;//sizeof(wp);
-  n_bytes = size*21;
+void FcComs::sendWaypoints(Waypoint wp[],uint8_t size){
+  // uint8_t size = sizeof(wp);
+  for(uint8_t i = 1; i <= size; i++){
+    uint8_t checksum = 0;
+    uint8_t n_bytes = 21;
 
-  Serial1.write((byte *) "$M<", 3);
-  Serial1.write(n_bytes);
-  checksum ^= n_bytes;
+    Serial1.write((byte *) "$M<", 3);
+    Serial1.write(n_bytes);
+    checksum ^= n_bytes;
 
-  Serial1.write(MSP_SET_WP);
-  checksum ^= MSP_SET_WP;
-
-  for(uint8_t i = 0; i < size; i++){
+    Serial1.write(MSP_SET_WP);
+    checksum ^= MSP_SET_WP;
     //id
-    Serial1.write(i+1);
-    checksum ^= i+1;
+    Serial1.write(i);
+    checksum ^= i;
     //action
     Serial1.write(wp[i].action);
     checksum ^= wp[i].action;
@@ -76,7 +74,7 @@ void FcComs::sendWaypoints(Waypoint wp[]){
     //for writes and checksums each byte
     for(uint8_t x = 0; x < 4; x++){
       Serial1.write(lat[x]);
-      Serial.println(lat[x]);
+      // Serial.println(lat[x]);
       checksum ^= lat[x];
     }
     //lon
@@ -88,7 +86,7 @@ void FcComs::sendWaypoints(Waypoint wp[]){
     };
     for(uint8_t x = 0; x < 4; x++){
       Serial1.write(lon[x]);
-      Serial.println(lon[x]);
+      // Serial.println(lon[x]);
       checksum ^= lon[x];
     }
     //alt
@@ -100,7 +98,7 @@ void FcComs::sendWaypoints(Waypoint wp[]){
     };
     for(uint8_t x = 0; x < 4; x++){
       Serial1.write(alt[x]);
-      Serial.println(alt[x]);
+      // Serial.println(alt[x]);
       checksum ^= alt[x];
     }
     //p1
@@ -110,7 +108,7 @@ void FcComs::sendWaypoints(Waypoint wp[]){
     };
     for(uint8_t x = 0; x < 2; x++){
       Serial1.write(p1[x]);
-      Serial.println(p1[x]);
+      // Serial.println(p1[x]);
       checksum ^= p1[x];
     }
     //p2
@@ -120,7 +118,7 @@ void FcComs::sendWaypoints(Waypoint wp[]){
     };
     for(uint8_t x = 0; x < 2; x++){
       Serial1.write(p2[x]);
-      Serial.println(p2[x]);
+      // Serial.println(p2[x]);
       checksum ^= p2[x];
     }
     //p3
@@ -130,17 +128,22 @@ void FcComs::sendWaypoints(Waypoint wp[]){
     };
     for(uint8_t x = 0; x < 2; x++){
       Serial1.write(p3[x]);
-      Serial.println(p3[x]);
+      // Serial.println(p3[x]);
       checksum ^= p3[x];
     }
     //flag
     Serial1.write(wp[i].flag);
-    Serial.println(wp[i].flag);
+    // Serial.println(wp[i].flag);
+    Serial.println(i);
     checksum ^= wp[i].flag;
-  }
-  Serial1.write(checksum);
-  while(Serial1.available()){
-    Serial1.read();
+    Serial1.write(checksum);
+    while(Serial1.available()){
+      Serial1.read();
+    }
+    // if(wp[i].flag == NAV_WP_FLAG_LAST){
+    //   return;
+    // }
+    delay(50);
   }
 }
 
@@ -406,7 +409,7 @@ BSIPMessage_h WifiComs::parseBSIP(char buffer[]){
     return msg;  
 }
 
-Waypoint WifiComs::GenerateSearchPath(SearchArea searchArea){
+int WifiComs::GenerateSearchPath(SearchArea searchArea){
   int shapePoints = sizeof(searchArea.searchBounds);
   char search = *"N";
   char spread = *"E";
@@ -427,14 +430,15 @@ Waypoint WifiComs::GenerateSearchPath(SearchArea searchArea){
     else{
       spread = *"E";
     }
-    laps = ceil(abs(northSouth)/(viewDeg*searchArea.dronesSearching*2));
+    laps = floor(abs(northSouth)/(viewDeg*searchArea.dronesSearching*4));
+    Serial.println("northSouth");
   }
   else{
     if(eastWest > 0){
-      search = *"S";
+      search = *"W";
     }
     else{
-      search = *"N";
+      search = *"E";
     }
     if(northSouth > 0){
       spread = *"S";
@@ -442,62 +446,101 @@ Waypoint WifiComs::GenerateSearchPath(SearchArea searchArea){
     else{
       spread = *"N";
     }
-    laps = ceil(abs(eastWest)/(viewDeg*searchArea.dronesSearching*2));
+    laps = floor(abs(eastWest)/(viewDeg*searchArea.dronesSearching*4));
+    Serial.println("eastWest");
   }
-  Waypoint path[16];
+  Waypoint path[128];
+  Serial.print(search);
+  Serial.println(spread);
+  Serial.println(laps);
   switch(search){
     case *"N":
-      for(int i = 1; i/4 < laps; i+4){
-        path[i].lat = searchArea.searchBounds[0].x + viewDeg;
-        path[i+1].lat = searchArea.searchBounds[1].x - viewDeg;
-        path[i+2].lat = searchArea.searchBounds[1].x - viewDeg;
-        path[i+3].lat = searchArea.searchBounds[0].x + viewDeg;
+      for(int i = 1; i/4 < laps; i+=4){
+        path[i].lat = 10000000*(searchArea.searchBounds[0].y + viewDeg);
+        path[i+1].lat = 10000000*(searchArea.searchBounds[1].y - viewDeg);
+        path[i+2].lat = 10000000*(searchArea.searchBounds[1].y - viewDeg);
+        path[i+3].lat = 10000000*(searchArea.searchBounds[0].y + viewDeg);
       }
       break;
     case *"E":
-      for(int i = 1; i/4 < laps; i+4){
-        path[i].lon = searchArea.searchBounds[0].y + viewDeg;
-        path[i+1].lon = searchArea.searchBounds[1].y - viewDeg;
-        path[i+2].lon = searchArea.searchBounds[1].y - viewDeg;
-        path[i+3].lon = searchArea.searchBounds[0].y + viewDeg;
+      for(int i = 1; i/4 < laps; i+=4){
+        path[i].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + viewDeg);
+        path[i+1].lon = 0x100000000 + 10000000*(searchArea.searchBounds[1].x - viewDeg);
+        path[i+2].lon = 0x100000000 + 10000000*(searchArea.searchBounds[1].x - viewDeg);
+        path[i+3].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + viewDeg);
       }
       break;
     case *"S":
-      for(int i = 1; i/4 < laps; i+4){
-        path[i].lat = searchArea.searchBounds[0].x - viewDeg;
-        path[i+1].lat = searchArea.searchBounds[1].x + viewDeg;
-        path[i+2].lat = searchArea.searchBounds[1].x + viewDeg;
-        path[i+3].lat = searchArea.searchBounds[0].x - viewDeg;
+      for(int i = 1; i/4 < laps; i+=4){
+        path[i].lat = 10000000*(searchArea.searchBounds[0].y - viewDeg);
+        path[i+1].lat = 10000000*(searchArea.searchBounds[1].y + viewDeg);
+        path[i+2].lat = 10000000*(searchArea.searchBounds[1].y + viewDeg);
+        path[i+3].lat = 10000000*(searchArea.searchBounds[0].y - viewDeg);
       }
       break;
     case *"W":
-      for(int i = 1; i/4 < laps; i+4){
-        path[i].lon = searchArea.searchBounds[0].y - viewDeg;
-        path[i+1].lon = searchArea.searchBounds[1].y + viewDeg;
-        path[i+2].lon = searchArea.searchBounds[1].y + viewDeg;
-        path[i+3].lon = searchArea.searchBounds[0].y - viewDeg;
+      for(int i = 1; i/4 < laps; i+=4){
+        path[i].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - viewDeg);
+        path[i+1].lon = 0x100000000 + 10000000*(searchArea.searchBounds[1].x + viewDeg);
+        path[i+2].lon = 0x100000000 + 10000000*(searchArea.searchBounds[1].x + viewDeg);
+        path[i+3].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - viewDeg);
       }
       break;
   }
   switch(spread){
     case *"N":
-      for(int i = 1; i/4 < laps; i+4){}
-      path[1].lat = searchArea.searchBounds[0].x + (viewDeg*2*(searchArea.droneId+.5));
+      for(int i = 1; i/4 < laps; i+=4){
+        path[i].lat = 10000000*(searchArea.searchBounds[0].y + i*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+1].lat = 10000000*(searchArea.searchBounds[0].y + i*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+2].lat = 10000000*(searchArea.searchBounds[0].y + 2*i*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+3].lat = 10000000*(searchArea.searchBounds[0].y + 2*i*(viewDeg*2*(searchArea.droneId+.5)));
+      }
       break;
     case *"E":
-      for(int i = 1; i/4 < laps; i+4){}
-      path[1].lon = searchArea.searchBounds[0].y + (viewDeg*2*(searchArea.droneId+.5));
+      for(int i = 1; i/4 < laps; i+=4){
+        path[i].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + i*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+1].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + i*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+2].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + 2*i*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+3].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + 2*i*(viewDeg*2*(searchArea.droneId+.5)));
+      }
       break;
     case *"S":
-      for(int i = 1; i/4 < laps; i+4){}
-      path[1].lat = searchArea.searchBounds[0].x - (viewDeg*2*(searchArea.droneId+.5));
+      for(int i = 1; i/4 < laps; i+=4){
+        path[i].lat = 10000000*(searchArea.searchBounds[0].y - i*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+1].lat = 10000000*(searchArea.searchBounds[0].y - i*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+2].lat = 10000000*(searchArea.searchBounds[0].y - 2*i*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+3].lat = 10000000*(searchArea.searchBounds[0].y - 2*i*(viewDeg*2*(searchArea.droneId+.5)));
+      }
       break;
     case *"W":
-      for(int i = 1; i/4 < laps; i+4){}
-      path[1].lon = searchArea.searchBounds[0].y - (viewDeg*2*(searchArea.droneId+.5));
+      for(int i = 1; i/4 < laps; i+=4){
+        path[i].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - i*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+1].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - i*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+2].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - 2*i*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+3].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - 2*i*(viewDeg*2*(searchArea.droneId+.5)));
+      }
       break;
   }
-
+  Serial.println("generate path");
+  for(int i = 1; i <= (laps*4); i++){
+    Serial.println(path[i].lat/10000000.0, 6);
+    Serial.println((path[i].lon - 0x100000000)/10000000.0, 6);
+    waypointArr[i].lat = path[i].lat;
+    waypointArr[i].lon = path[i].lon;
+    waypointArr[i].alt = 500;
+    waypointArr[i].action = NAV_WP_ACTION_WAYPOINT;
+    waypointArr[i].p1 = 0;
+    waypointArr[i].p2 = 0;
+    waypointArr[i].p3 = 0;
+    if(i == laps*4){
+      waypointArr[i].flag = NAV_WP_FLAG_LAST;
+    }
+    else{
+      waypointArr[i].flag = 0;
+    }
+    Serial.println(i);
+  }
+  return laps*4;
 }
 
 void WifiComs::SendMessage(char msg[]){

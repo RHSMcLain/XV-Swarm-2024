@@ -102,7 +102,7 @@ class WifiComs{
 
         void SendMessage(char msg[]);
 
-        Waypoint GenerateSearchPath(SearchArea searchArea);
+        int GenerateSearchPath(SearchArea searchArea);
 
         WifiComs(char hnd[]){
             handShake = hnd;
@@ -110,7 +110,7 @@ class WifiComs{
 
         PrevMessage_h PrevMessage;
         BSIPMessage_h BSIPMessage;
-        Waypoint waypointArr[16];
+        Waypoint waypointArr[128];
         int wifiState = 0;
         Arduino_h::String state = "inactive";
         bool newWaypoints = false;
@@ -127,7 +127,7 @@ class FcComs{
 
         void reqMSP(uint8_t req, uint8_t *data, uint8_t n_bytes);
 
-        void sendWaypoints(Waypoint wp[]);
+        void sendWaypoints(Waypoint wp[], uint8_t size);
 
         void readAttitudeData();
 
