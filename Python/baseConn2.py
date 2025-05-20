@@ -76,14 +76,10 @@ MAN IP yaw pitch roll throttle killswitch armVar navHold
 #TODO:
 fail safes: out of wifi range, landing drone before allowing a disable
 autoland feature where drone lands itself slowly <-- this is done when AP is disconnected, but an auto land button would be good
-IntroToAP still sends 3 messages even if its allready connected
-
-Connencts to the wifi maybe successfully probably not, throws errors sometimes and crashes when you connect to AP
 
 the reason for all of the glitchiness in the console + MAN/SWM displays is they delete lines before reading them and
 the deletions don't sync with the monitor refresh rate, so you get frames where the text hasn't been inserted
 No easy way to solve this
-
 '''
 
 #attempts to connect to the a flightstick
@@ -149,8 +145,11 @@ class tkConsole():
     def check_sent_messages(self):
         global messages_sent
         self.enable()
-        if messages_sent > 1 and self.textbox.get(2.0, 3.0)[:13] == "message count": self.textbox.delete(2.0, 3.0)
-        self.textbox.insert("2.0", f"message count: {messages_sent}\n")
+        if messages_sent > 1 and self.textbox.get(2.0, 3.0)[:13] == "message count":
+            self.textbox.delete(2.15, f"2.{messages_sent + 15}")
+            self.textbox.insert(2.15, str(messages_sent))
+        else:
+            self.textbox.insert(2.0, f"message count: {messages_sent}")
         self.config["master"].updateManualDisplay()
         self.disable()
     def stick_not_connected(self):
@@ -333,13 +332,12 @@ class App(customtkinter.CTk):
 
         self.leftButtonBar = customtkinter.CTkFrame(self, width=140, corner_radius=0, fg_color=self.cget("fg_color")) #Holds left buttons (killswitch, connect to ap, text drone, bypass controller, and mode switch)
         
-        self.droneDisplay = customtkinter.CTkTextbox(self, activate_scrollbars=False, font=("Monaco", 20), width=305, spacing3=17, spacing1=19, fg_color=colorPalette.droneDisplay) #Orange bar left of console that displays drone throttle, pitch, yaw, etc.
+        self.droneDisplay = customtkinter.CTkTextbox(self, activate_scrollbars=False, font=("Monaco", 20), text_color="black", width=305, spacing3=17, spacing1=19, fg_color=colorPalette.droneDisplay) #Orange bar left of console that displays drone throttle, pitch, yaw, etc.
 
         #Buttons in left button bar
         self.killswitchbutton =       Button(self.leftButtonBar, text="Kill Drones",       command=lambda:self.killswitch(), fg_color=colorPalette.buttonRed, hover_color=colorPalette.buttonRedHover)
         self.connectToAPButton =      Button(self.leftButtonBar, text="Connect To AP",     command=lambda:introToAP(0))
-        
-        self.manualControlSwitch = tkSwitch(self.leftButtonBar, MODEManual, MODESwarm, leftText="Manual", rightText="Swarm") #switch for Manual and Swarm modes in left button bar
+        self.manualControlSwitch =  tkSwitch(self.leftButtonBar, MODEManual, MODESwarm, leftText="Manual", rightText="Swarm") #switch for Manual and Swarm modes in left button bar
 
         self.throttleBar = customtkinter.CTkFrame(self) #Holds all components of the in-display throttle system left of the drone display (far right)
         #These are the components in the throttle bar
