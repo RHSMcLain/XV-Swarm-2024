@@ -7,7 +7,7 @@
 #define MSP_WP 118
 #define MSP_SET_WP 209                 
 
-char handShake[] = "HND|-1|Christine";
+char handShake[] = "HND|-1|Verne";
 
 char ssid[] = "XV_Basestation";          //  network SSID (name)
 int status = WL_IDLE_STATUS;             // the Wi-Fi radio's status
@@ -19,7 +19,6 @@ char packetBuffer[256];                  //buffer to hold incoming packet
 WiFiUDP Udp;
 unsigned int localPort = 2390;
 char  ReplyBuffer[] = "Drone 1";
-char state[];
 int wifiState = 0;                       //Wifi connection state
 bool firstConnectFrame = false;          //First Loop while connected to wifi           
 IPAddress bsip; //holds the base station ip address     
@@ -48,10 +47,8 @@ int blinkSpeed = 10;
 bool lightOn = false;
 bool bootComplete = false;               //Finished Drone Booting sequence
 bool enabled = false;
-Waypoint waypointArr[16];
 
-
-uint16_t rc_values[16];
+uint16_t rc_values[8];
 long start;
 
 struct{
@@ -72,7 +69,7 @@ struct{
 
 
 
-struct PrevMessage{
+struct ManualControlMessage{
   IPAddress sourceIP;
   String cmd;
   double yaw;
@@ -88,17 +85,6 @@ struct BSIPMessage{
   String cmd;
   IPAddress BSIP;
 };
-
-class Waypoint{
-  public:
-      uint32_t lat;
-      uint32_t lon;
-      uint32_t alt;
-      uint16_t heading;
-      uint16_t time;
-      uint8_t flag;
-  private:
-}
 
 void commandMSP(uint8_t cmd, uint16_t data[], uint8_t n_cbytes){
 
@@ -302,10 +288,10 @@ void MSPLoop(){
   rc_values[3] = yaw;
   rc_values[4] = navHold;
   rc_values[5] = armVar;
-  rc_values[6] = 1700;
+  rc_values[6] = 1500;
   rc_values[7] = killswitch;
   rc_values[9] = 1600;
-  commandMSP(MSP_SET_RAW_RC, rc_values, (2*sizeof(rc_Values)));
+  commandMSP(MSP_SET_RAW_RC, rc_values, 16);
 }
 
 void setup(){
@@ -331,6 +317,7 @@ void setup(){
   start = millis();
   delay(250);
   Serial1.begin(9600);
+  Serial.begin(9600);
   rc_values[0] = 1500;
   rc_values[1] = 1500;
   rc_values[2] = 885;
@@ -339,13 +326,12 @@ void setup(){
   rc_values[5] = 1000;
   rc_values[6] = 1500;
   rc_values[7] = 1500;
-  rc_values[8] = 1000;
   rc_values[9] = 1600;
-  for(int i = 0; i <= 3; i++){
-    commandMSP(MSP_SET_RAW_RC, rc_values, (2*sizeof(rc_Values)));
-  }
+  commandMSP(MSP_SET_RAW_RC, rc_values, 16);
+  commandMSP(MSP_SET_RAW_RC, rc_values, 16);
+  commandMSP(MSP_SET_RAW_RC, rc_values, 16);
   delay(500);
-  commandMSP(MSP_SET_RAW_RC, rc_values, (2*sizeof(rc_Values)));
+  commandMSP(MSP_SET_RAW_RC, rc_values, 16);
 }//end setup
 
 void loop() {
@@ -395,7 +381,7 @@ void loop() {
     updateTime = millis();
   }
   // else if (state == 5) {
-  //   //call parsePrevMessage and process the results
+  //   //call parsemanualcontrolmessage and process the results
   //   //but do it in listen
   //   // Serial.println(roll);
   //   // Serial.println(yaw);
@@ -591,14 +577,11 @@ void MillisStuff() { //specifies whatever this stuff is for use in the loop, to 
   }
 }
 
-PrevMessage parseMessage(char buffer[]){
-  PrevMessage msg;
+ManualControlMessage parseMessage(char buffer[]){
+  ManualControlMessage msg;
   char *token;
   token = strtok(buffer, "|");
   int i = 0;
-  int wpNum = 0;
-  int length;
-  char lastWp;
   while(token != 0){
     //Serial.println(token);
     switch(i){
@@ -632,43 +615,19 @@ PrevMessage parseMessage(char buffer[]){
           break;
       }
       else if(msg.cmd == "SWM"){
-        case 2:
-          state = atoi(token);
-          break;
-        case 3:
-          length = atoi(token);
-          break;
-        case 4:
-          do{
-            wpNum = token;
-            token = strtok(NULL, "|"); 
-            waypointArr.[wpNum].lon = token;
-            token = strtok(NULL, "|"); 
-            waypointArr.[wpNum].lat = token;
-            token = strtok(NULL, "|"); 
-            waypointArr.[wpNum].alt = token;
-            token = strtok(NULL, "|"); 
-            waypointArr.[wpNum].heading = token;
-            token = strtok(NULL, "|"); 
-            waypointArr.[wpNum].time = token;
-            token = strtok(NULL, "|"); 
-            waypointArr.[wpNum].flag = token;
-            token = strtok(NULL, "|"); 
-            lastWp = token;
-          }while(lastWp == "loop");
-          break;
+        
       }
     }
+    roll = msg.roll;
+    pitch = msg.pitch;
+    throttle = msg.throttle;
+    yaw = msg.yaw;
+    killswitch = msg.killswitch;
+    armVar = msg.armVar;
+    navHold = msg.navHold;
     i++;
     token = strtok(NULL, "|"); 
   }
-  roll = msg.roll;
-  pitch = msg.pitch;
-  throttle = msg.throttle;
-  yaw = msg.yaw;
-  killswitch = msg.killswitch;
-  armVar = msg.armVar;
-  navHold = msg.navHold;
   return msg;  
 //HAS REQUIRED PACKETS FROM LISTEN, CODE FOR MANUAL MODE HERE --------------
 //Currently does not include a break, repeats loop forever
@@ -719,7 +678,7 @@ void Listen(){
         }
       }
       else if (wifiState == 5){
-        PrevMessage msg = parseMessage(packetBuffer);
+        ManualControlMessage msg = parseMessage(packetBuffer);
         if(serialUSB)
         {
           Serial.print("packet: ");
