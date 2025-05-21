@@ -144,15 +144,14 @@ class WifiComs{
 
 class FcComs{
     public:
-        FcComs(int baudRate){
-            Serial1.begin(baudRate);
-        }
+        
+        void begin(int baudRate);
 
         void commandMSP(uint8_t cmd, uint16_t data[], uint8_t n_cbytes);
 
         void reqMSP(uint8_t req, uint8_t *data, uint8_t n_bytes);
 
-        void sendWaypoints(Waypoint wp[], uint8_t size);
+        void sendWaypoints(Waypoint wp[], uint8_t size, uint8_t start);
 
         void readAttitudeData();
 

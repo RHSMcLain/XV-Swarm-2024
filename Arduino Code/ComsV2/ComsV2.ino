@@ -8,10 +8,11 @@ int reqUpdate = 10000;   //how often to update drone data
 int pathLength = 1;
 long lastUpdate = 0;
 
+FcComs msp; 
 WifiComs wifi(ident);
-FcComs msp(9600); 
-Vector2D point1(-122.685830, 45.454398);
+Vector2D point1(-122.685728, 45.454396);
 Vector2D point2(-122.685349, 45.453885);
+Waypoint home(NAV_WP_ACTION_WAYPOINT, -122.685679, 45.454211, 500, 0, 0, 0, NAV_WP_FLAG_HOME); // Home waypoint
 SearchArea searchArea(1, 1, 2, point1, point2);
 
 uint16_t rc_values[8] = {//rc channel values
@@ -32,11 +33,15 @@ long lastBlink = 0;     //time of last state switch (ms)
 
 void setup(){
     Serial.begin(115200); // Start serial communication for debugging
+    msp.begin(9600);
     while(!Serial){
         if(millis() > 5000){ // Wait for serial or timeout after 5 seconds
             break;
         }
     }
+    //home Waypoint
+    wifi.waypointArr[0] = home;
+    msp.sendWaypoints(wifi.waypointArr, 1, 0);
     Serial.println("setup");
     pinMode(LED_BUILTIN, OUTPUT); // Set built-in LED as output
     Serial.println("msp");
@@ -58,30 +63,17 @@ void loop(){
     //wifi.WifiConnection(ReplyBuffer); // Optionally reconnect WiFi
     //wifi.Listen(packetBuffer); // Optionally listen for new messages
     if(reqUpdate < millis() - lastUpdate){ // Time to update drone data?
-      // msp.readGPSData();
-      // msp.readAttitudeData();
-      // msp.sendWaypoints(wifi.waypointArr);
-      // msp.reqMSP(100, 0, 0);
-      // Serial.print("Ident  - ");
-
-      // while(Serial1.available()){
-      //   Serial.print(String(Serial1.read()));
-      //   Serial.print("  ");
-      // }
-      // Serial.println();
-      // delay(100);
-      // msp.reqMSP(106, 0, 0);
-      // Serial.print("GPS - ");
-      // while(Serial1.available()){
-      //   Serial.print(String(Serial1.read()));
-      //   Serial.print("  ");
-      // }
-      Serial.println("\n");
-      lastUpdate = millis();
-      wifi.newWaypoints = true; // Request new waypoints to be sent
+        while(Serial1.available()){
+            Serial1.read();
+        }
+        msp.readGPSData();
+        msp.readAttitudeData();
+        Serial.println();
+        lastUpdate = millis();
+        // wifi.newWaypoints = true; // Request new waypoints to be sent
     }
     if(wifi.newWaypoints){
-        msp.sendWaypoints(wifi.waypointArr, pathLength); // Send waypoints to flight controller
+        msp.sendWaypoints(wifi.waypointArr, pathLength, 1); // Send waypoints to flight controller
         wifi.newWaypoints = false;
     }
     if(wifi.PrevMessage.cmd == "MAN"){

@@ -1,5 +1,9 @@
 #include "Coms.h"
 
+void FcComs::begin(int baudRate){
+  Serial1.begin(baudRate);
+}
+
 void FcComs::commandMSP(uint8_t cmd, uint16_t data[], uint8_t n_cbytes){
 
   uint8_t checksum = 0;
@@ -42,9 +46,9 @@ void FcComs::reqMSP(uint8_t req, uint8_t *data, uint8_t n_bytes){
   Serial1.write(checksum);
 }
 
-void FcComs::sendWaypoints(Waypoint wp[],uint8_t size){
+void FcComs::sendWaypoints(Waypoint wp[], uint8_t size, uint8_t start){
   // uint8_t size = sizeof(wp);
-  for(uint8_t i = 1; i <= size; i++){
+  for(uint8_t i = start; i <= size; i++){
     uint8_t checksum = 0;
     uint8_t n_bytes = 21;
 
@@ -130,7 +134,7 @@ void FcComs::sendWaypoints(Waypoint wp[],uint8_t size){
     //flag
     Serial1.write(wp[i].flag);
     // Serial.println(wp[i].flag);
-    Serial.println(i);
+    // Serial.println(i);
     checksum ^= wp[i].flag;
     Serial1.write(checksum);
     while(Serial1.available()){
@@ -146,7 +150,7 @@ void FcComs::sendWaypoints(Waypoint wp[],uint8_t size){
 void FcComs::readAttitudeData(){
   byte count = 0;
   reqMSP(MSP_ATTITUDE, 0, 0);
-  delay(10);
+  delay(50);
   int16_t rollRec;
   int16_t pitchRec;
   int16_t yawRec;
@@ -159,9 +163,7 @@ void FcComs::readAttitudeData(){
     uint8_t n_bytes = 0;
     switch (count) {
       //first five bytes are header-type informatin, so start at 6
-    case 1:
-    case 2:
-    case 3:
+    case 1 ... 3:
       Serial1.read();
       break;
     case 4:
@@ -200,7 +202,7 @@ void FcComs::readAttitudeData(){
       yawRec += first;
       break;
     case 9:
-      if(checksum = Serial1.read()){
+      if(checksum == Serial1.read()){
         Serial.println("Checksum is correct for attitude");
       }
       else{
@@ -220,7 +222,7 @@ void FcComs::readAttitudeData(){
 void FcComs::readGPSData(){
   byte count = 0;
   reqMSP(MSP_RAW_GPS, 0, 0);
-  delay(10);
+  delay(50);
   uint8_t gpsFix;
   uint8_t numSat;
   uint32_t lat;
@@ -239,9 +241,7 @@ void FcComs::readGPSData(){
     uint8_t n_bytes = 0;
     switch (count) {
       //first five bytes are header-type informatin, so start at 6
-    case 1:
-    case 2:
-    case 3:
+    case 1 ... 3:
       Serial1.read();
       break;
     case 4:
@@ -327,9 +327,6 @@ void FcComs::readGPSData(){
       }
       else{
         Serial.println("Checksum is incorrect for GPS");
-      }
-      while(Serial1.available()){
-        Serial1.read();
       }
       break;
     }
@@ -479,7 +476,7 @@ int WifiComs::GenerateSearchPath(SearchArea searchArea){
     else{
       spread = *"E";
     }
-    laps = floor(abs(northSouth)/(viewDeg*searchArea.dronesSearching*4));
+    laps = floor(abs(northSouth)/(viewDeg*searchArea.dronesSearching*8));
     Serial.println("northSouth");
   }
   else{
@@ -502,6 +499,10 @@ int WifiComs::GenerateSearchPath(SearchArea searchArea){
   Serial.print(search);
   Serial.println(spread);
   Serial.println(laps);
+  if(laps > 32){
+    Serial.println("ERROR - LAPS EXCEDED 32 - LAPS: " +String(laps));
+    return 0;
+  }
   switch(search){
     case *"N": // Northward search pattern
       for(int i = 1; i/4 < laps; i+=4){
@@ -541,41 +542,50 @@ int WifiComs::GenerateSearchPath(SearchArea searchArea){
       break;
   }
   // Adjust path for spread direction
+  int leg = 1;
   switch(spread){
     case *"N": // Spread north
       for(int i = 1; i/4 < laps; i+=4){
         // Offset latitude for each lap to spread north
-        path[i].lat = 10000000*(searchArea.searchBounds[0].y + ((i+3)/4)*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+1].lat = 10000000*(searchArea.searchBounds[0].y + ((i+3)/4)*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+2].lat = 10000000*(searchArea.searchBounds[0].y + 2*((i+3)/4)*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+3].lat = 10000000*(searchArea.searchBounds[0].y + 2*((i+3)/4)*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i].lat = 10000000*(searchArea.searchBounds[0].y + leg*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+1].lat = 10000000*(searchArea.searchBounds[0].y + leg*(viewDeg*2*(searchArea.droneId+.5)));
+        leg++;
+        path[i+2].lat = 10000000*(searchArea.searchBounds[0].y + leg*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+3].lat = 10000000*(searchArea.searchBounds[0].y + leg*(viewDeg*2*(searchArea.droneId+.5)));
+        leg++;
       }
       break;
     case *"E": // Spread east
       for(int i = 1; i/4 < laps; i+=4){
         // Offset longitude for each lap to spread east
-        path[i].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + ((i+3)/4)*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+1].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + ((i+3)/4)*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+2].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + 2*((i+3)/4)*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+3].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + 2*((i+3)/4)*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + leg*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+1].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + leg*(viewDeg*2*(searchArea.droneId+.5)));
+        leg++;
+        path[i+2].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + leg*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+3].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + leg*(viewDeg*2*(searchArea.droneId+.5)));
+        leg++;
       }
       break;
     case *"S": // Spread south
       for(int i = 1; i/4 < laps; i+=4){
         // Offset latitude for each lap to spread south
-        path[i].lat = 10000000*(searchArea.searchBounds[0].y - ((i+3)/4)*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+1].lat = 10000000*(searchArea.searchBounds[0].y - ((i+3)/4)*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+2].lat = 10000000*(searchArea.searchBounds[0].y - 2*((i+3)/4)*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+3].lat = 10000000*(searchArea.searchBounds[0].y - 2*((i+3)/4)*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i].lat = 10000000*(searchArea.searchBounds[0].y - leg*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+1].lat = 10000000*(searchArea.searchBounds[0].y - leg*(viewDeg*2*(searchArea.droneId+.5)));
+        leg++;
+        path[i+2].lat = 10000000*(searchArea.searchBounds[0].y - leg*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+3].lat = 10000000*(searchArea.searchBounds[0].y - leg*(viewDeg*2*(searchArea.droneId+.5)));
+        leg++;
       }
       break;
     case *"W": // Spread west
       for(int i = 1; i/4 < laps; i+=4){
         // Offset longitude for each lap to spread west
-        path[i].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - ((i+3)/4)*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+1].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - ((i+3)/4)*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+2].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - 2*((i+3)/4)*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+3].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - 2*((i+3)/4)*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - leg*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+1].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - leg*(viewDeg*2*(searchArea.droneId+.5)));
+        leg++;
+        path[i+2].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - leg*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+3].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - leg*(viewDeg*2*(searchArea.droneId+.5)));
+        leg++;
       }
       break;
   }
