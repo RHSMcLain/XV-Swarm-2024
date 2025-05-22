@@ -134,6 +134,7 @@ class WifiComs{
         PrevMessage_h PrevMessage;
         BSIPMessage_h BSIPMessage;
         Waypoint waypointArr[128];
+        int countDis = 0;
         int wifiState = 0;
         Arduino_h::String state = "inactive";
         bool newWaypoints = false;

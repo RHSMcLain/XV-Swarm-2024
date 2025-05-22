@@ -595,7 +595,7 @@ int WifiComs::GenerateSearchPath(SearchArea searchArea){
     Serial.println((path[i].lon - 0x100000000)/10000000.0, 6);
     waypointArr[i].lat = path[i].lat;
     waypointArr[i].lon = path[i].lon;
-    waypointArr[i].alt = 500;
+    waypointArr[i].alt = 150;
     waypointArr[i].action = NAV_WP_ACTION_WAYPOINT;
     waypointArr[i].p1 = 0;
     waypointArr[i].p2 = 0;
@@ -679,6 +679,7 @@ int WifiComs::WifiConnection(char ReplyBuffer[]){
 int WifiComs::Listen(char packetBuffer[255]){
     int packetSize = Udp.parsePacket();
     if(packetSize){
+      countDis = millis();
       //Serial.print("Received packet of size ");
       //Serial.println(packetSize);
       //Serial.print("From ");
@@ -712,7 +713,11 @@ int WifiComs::Listen(char packetBuffer[255]){
           wifiState = 5;
           return 5;
         }
-      }    
+      }
+      else if(PrevMessage.armVar >= 1500 && (millis() - countDis) > 1000){
+        Serial.println("No packet received");
+        PrevMessage.armVar = 1000;
+      }
     }
     return wifiState;
 }
