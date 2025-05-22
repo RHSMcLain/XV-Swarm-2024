@@ -82,13 +82,13 @@ class msp_attitude_h{
 
 class msp_raw_gps_h{
     public:
-        uint8_t gpsFix;     //0 or 1
-        uint8_t numSat;     //number of satalites
-        uint32_t lat;       //degrees * 10,000,000
-        uint32_t lon;       //degrees * 10,000,000
-        uint16_t gpsAlt;    //meters
-        uint16_t gpsSpeed;  //cm / seconds
-        uint16_t gpsCourse; //degrees
+        uint8_t gpsFix;     // 0 - 2
+        uint8_t numSat;     // Number of satalites
+        uint32_t lat;       // Degrees * 10,000,000
+        uint32_t lon;       // Degrees * 10,000,000
+        uint16_t gpsAlt;    // Centimeters
+        uint16_t gpsSpeed;  // cm / seconds
+        uint16_t gpsCourse; // Degrees
     private:
 };
 
