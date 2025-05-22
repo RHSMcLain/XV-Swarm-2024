@@ -679,6 +679,7 @@ int WifiComs::WifiConnection(char ReplyBuffer[]){
 int WifiComs::Listen(char packetBuffer[255]){
     int packetSize = Udp.parsePacket();
     if(packetSize){
+      countDis = millis();
       //Serial.print("Received packet of size ");
       //Serial.println(packetSize);
       //Serial.print("From ");
@@ -712,7 +713,11 @@ int WifiComs::Listen(char packetBuffer[255]){
           wifiState = 5;
           return 5;
         }
-      }    
+      }
+      else if(PrevMessage.armVar >= 1500 && (millis() - countDis) > 1000){
+        Serial.println("No packet received");
+        PrevMessage.armVar = 1000;
+      }
     }
     return wifiState;
 }
