@@ -595,7 +595,7 @@ int WifiComs::GenerateSearchPath(SearchArea searchArea){
     Serial.println((path[i].lon - 0x100000000)/10000000.0, 6);
     waypointArr[i].lat = path[i].lat;
     waypointArr[i].lon = path[i].lon;
-    waypointArr[i].alt = 500;
+    waypointArr[i].alt = 150;
     waypointArr[i].action = NAV_WP_ACTION_WAYPOINT;
     waypointArr[i].p1 = 0;
     waypointArr[i].p2 = 0;
