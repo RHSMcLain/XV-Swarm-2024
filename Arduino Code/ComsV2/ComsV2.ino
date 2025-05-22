@@ -60,8 +60,8 @@ void setup(){
 }
 
 void loop(){
-    //wifi.WifiConnection(ReplyBuffer); // Optionally reconnect WiFi
-    //wifi.Listen(packetBuffer); // Optionally listen for new messages
+    wifi.WifiConnection(ReplyBuffer); // Optionally reconnect WiFi
+    wifi.Listen(packetBuffer); // Optionally listen for new messages
     if(reqUpdate < millis() - lastUpdate){ // Time to update drone data?
         while(Serial1.available()){
             Serial1.read();
