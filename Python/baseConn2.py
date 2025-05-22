@@ -20,7 +20,7 @@ global listenerThread
 global killThreads # bool, becomes True when we terminate the app
 global ongoing_swarm_flight, canceling_swarm_flight
 
-global time_start
+global time_start, time_start2
 global qFromComms
 global qToComms
 global lastData
@@ -53,6 +53,7 @@ maxDrones = 8
 removeDroneSelection = False
 messages_sent = 0
 time_start = datetime.datetime.now()
+time_start2 = datetime.datetime.now()
 ongoing_swarm_flight = False
 canceling_swarm_flight = False
 wifi_connected = False
@@ -125,31 +126,31 @@ class tkConsole():
         self.textbox.grid(row=row, column=column)
 
         self.textbox.tag_config("red", foreground="red")
-        self.textbox.insert("0.0", " "*17 +"- - - - - - - CONSOLE - - - - - - -" +"\n")
+        self.textbox.insert(1.0, " "*17 +"- - - - - - - CONSOLE - - - - - - -")
 
         self.disable()
     
     def log(self, text):
         global messages_sent
-        self.enable()
-        self.textbox.insert("2.0", text + "\n")
-        self.disable()
         messages_sent = 0
+        self.enable()
+        self.textbox.insert(2.0, f"\n{text}")
+        self.disable()
     def error(self, text):
         global messages_sent
-        self.enable()
-        self.textbox.insert("2.0", text + "\n")
-        self.textbox.tag_add("red", "2.0", "3.0")
-        self.disable()
         messages_sent = 0
+        self.enable()
+        self.textbox.insert(2.0, f"\n{text}")
+        self.textbox.tag_add("red", 3.0, 4.0)
+        self.disable()
     def check_sent_messages(self):
         global messages_sent
         self.enable()
-        if messages_sent > 1 and self.textbox.get(2.0, 3.0)[:13] == "message count":
-            self.textbox.delete(2.15, f"2.{messages_sent + 15}")
-            self.textbox.insert(2.15, str(messages_sent))
+        if messages_sent > 1 and "message count: " in self.textbox.get(3.0, 4.0):
+            self.textbox.delete(3.15, f"3.{messages_sent + 15}")
+            self.textbox.insert(3.15, f"{messages_sent}")
         else:
-            self.textbox.insert(2.0, f"message count: {messages_sent}")
+            self.textbox.insert(2.0, f"\nmessage count: {messages_sent}")
         self.config["master"].updateManualDisplay()
         self.disable()
     def stick_not_connected(self):
@@ -171,7 +172,7 @@ class tkConsole():
     def clear(self):
         self.enable()
         self.textbox.delete(1.0, customtkinter.END)
-        app.console.textbox.insert("0.0", " "*17 +"- - - - - - - CONSOLE - - - - - - -" +"\n")
+        app.console.textbox.insert(0.0, " "*17 +"- - - - - - - CONSOLE - - - - - - -")
         self.disable()
 #Aesthetically pleasing button
 class Button():
@@ -332,7 +333,7 @@ class App(customtkinter.CTk):
 
         self.leftButtonBar = customtkinter.CTkFrame(self, width=140, corner_radius=0, fg_color=self.cget("fg_color")) #Holds left buttons (killswitch, connect to ap, text drone, bypass controller, and mode switch)
         
-        self.droneDisplay = customtkinter.CTkTextbox(self, activate_scrollbars=False, font=("Monaco", 20), text_color="black", width=305, spacing3=17, spacing1=19, fg_color=colorPalette.droneDisplay) #Orange bar left of console that displays drone throttle, pitch, yaw, etc.
+        self.droneDisplay = customtkinter.CTkTextbox(self, activate_scrollbars=False, font=("Monaco", 20), text_color="black", width=320, spacing3=17, spacing1=19, fg_color=colorPalette.droneDisplay) #Orange bar left of console that displays drone throttle, pitch, yaw, etc.
 
         #Buttons in left button bar
         self.killswitchbutton =       Button(self.leftButtonBar, text="Kill Drones",       command=lambda:self.killswitch(), fg_color=colorPalette.buttonRed, hover_color=colorPalette.buttonRedHover)
@@ -404,9 +405,9 @@ class App(customtkinter.CTk):
 
         self.manualControlSwitch.grid(row=4, column=0)
         self.console.grid            (row=0, column=1, padx=10, pady=10)
-        self.droneDisplay.grid       (row=0, column=2, padx=(5, 10), pady=10, sticky="ns")
+        self.droneDisplay.grid       (row=0, column=2, pady=10, sticky="ns")
 
-        self.throttleBar.grid          (row=0, column=3, pady=10, rowspan=2, sticky="nw") #far right frame
+        self.throttleBar.grid          (row=0, column=3, padx=10, pady=10, rowspan=2, sticky="nw") #far right frame
         self.throttleSlider.grid       (row=1, column=0, pady=15)
         self.throttleDisplay.grid      (row=0, column=0)
         self.displayThrottleSwitch.grid(row=2, column=0, pady=(20, 0))
@@ -526,12 +527,12 @@ class App(customtkinter.CTk):
         for display in self.swarm_drone_displays:
             i+=1
 
-            if manualYes:
-                text = "Manual Mode"
-            elif drones[i]:
-                text = f"{drones[i].name}\nIP: {drones[i].ipAddress}\nPORT:     {drones[i].port}\nYaw:      {drones[i].yaw}\nPitch:    {drones[i].pitch}\nRoll:     {drones[i].roll}\nThrottle: {drones[i].throttle}\nArmVar:   {drones[i].armVar}\nNavHold:  {drones[i].navHold}"
-            else:
-                text = "Not Connected"
+            text = "Not Connected"
+            drone_selector = drones[i]
+
+            if drone_selector:
+                if drone_selector.state != "inactive":
+                    text = f"{drone_selector.name}\nIP: {drone_selector.ipAddress}\nPORT:     {drone_selector.port}\nYaw:      {drone_selector.yaw}\nPitch:    {drone_selector.pitch}\nRoll:     {drone_selector.roll}\nThrottle: {drone_selector.throttle}\nArmVar:   {drone_selector.armVar}\nNavHold:  {drone_selector.navHold}"
             
             try: # throws an error if you close the window while this is running
                 if text.replace("\n", "") != display.get(1.0, customtkinter.END).replace("\n", ""):
@@ -541,6 +542,8 @@ class App(customtkinter.CTk):
                     display.insert(1.0 , text)
                     display.tag_add("center", 1.0, customtkinter.END)
                     display.configure(state="disabled")
+                else:
+                    print("passin gas")
             except:pass
     #ignores the errors coming from the wifi connecting, and wrong wifi
     def bypass_wifi(self):
@@ -1081,10 +1084,17 @@ def checkQueue(q_in):
     if not killThreads: app.after(700, checkQueue, q_in)
     else: tkprint("checkQueue loop exited")
 
+def appLoop():
+    global app, killThreads
+    app.update_swarm_varibles_display()
+    app.updateManualDisplay()
+    if not killThreads: app.after(200, appLoop)
+    else: tkprint("appLoop exited")
+
 #runs a while True loop on a separate thread, recieves flighstick inputs and sends outputs. Funny enough it also calls swarm control, so this more like a main loop.
 def manualControl():
     global manualYes, killswitch, throttle, yaw, roll, pitch, armVar, navHold, app
-    global sock, killThreads, usingAppThrottle, appThrottle, time_start, bypass_controller, controller
+    global sock, killThreads, usingAppThrottle, appThrottle, time_start, time_start2, bypass_controller, controller
     global sock, wifi_connected, name_of_AP, UDP_IP, UDP_PORT, bypass_wifi
     tkprint("Manual Control Thread initiated")
     while not killThreads: #continously loop until killThreads is true
@@ -1104,7 +1114,6 @@ def manualControl():
 
                 if get_wifi_info()["SSID"] != name_of_AP:
                     wifi_connected = False
-                    accessPoint_connected = False
 
                 if not wifi_connected and not bypass_wifi:
                     getMyIP()
@@ -1115,18 +1124,16 @@ def manualControl():
                     if not bypass_controller: app.console.stick_not_connected()
                     connect_flightStick()
                 time_start = datetime.datetime.now()
-                
+            if((datetime.datetime.now() - time_start2) > datetime.timedelta(seconds=1)):
+                time_start2 = datetime.datetime.now()
 
         if(manualYes):
-            app.updateManualDisplay()
             if(usingAppThrottle):
                 throttle = appThrottle * 10 + 1000
         else:
             appThrottle = 0
             swarmControl() # <-- if manualYes is false it calls swarm control
         
-        app.update_swarm_varibles_display()
-
         one_drone_armed = False
         for i in range(0, 8):
             if drones[i]:
@@ -1155,7 +1162,7 @@ def manualControl():
         if not one_drone_armed:
             armVar = 1500
 
-        time.sleep(0.00002)
+        time.sleep(0.000001)
     tkprint("Manual Control Thread terminated")
 
 def setup_sock():
@@ -1241,6 +1248,7 @@ def runAfterAppLaunch():
     listenerThread = Thread(target=listen, args=(qFromComms, qToComms))
     listenerThread.start()
 
+    app.after(1000, appLoop)
     app.after(1000, checkQueue, qFromComms)
 
 #adjusting the size of the app
