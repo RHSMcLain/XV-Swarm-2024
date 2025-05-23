@@ -5,3 +5,6 @@ pip3 install netifaces
 pip3 install pynput
 pip3 install PIL
 pip3 install hidapi
+
+py -3 -mpip install netifaces
+worked for me after installing C++ buildtools after you modify it to include somthin idk

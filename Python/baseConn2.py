@@ -7,7 +7,6 @@ import customtkinter, tkinter
 from   Resources.FlightStickCode.FlightStick import FlightStick
 from   Resources.Statics import colorPalette
 from   Resources.Drone import Drone
-from   PIL import Image
 
 global manualYes # manual mode boolean
 global appThrottle # value 0 - 100
@@ -16,15 +15,12 @@ global controller, bypass_controller, bypass_wifi # controller boolean for if a 
 
 global UDP_IP, UDP_PORT, ip, sock, os_name, wifi_connected, name_of_AP # ip is our ip, os_name is mac or windows
 global manualControlThread
-global listenerThread
+global listenerThread, lastData
 global killThreads # bool, becomes True when we terminate the app
 global ongoing_swarm_flight, canceling_swarm_flight
 
 global time_start, time_start2
-global qFromComms
-global qToComms
-global lastData
-global accessPoint_connected
+global qFromComms, qToComms
 
 global app, removeDroneSelection, messages_sent
 
@@ -589,7 +585,7 @@ class App(customtkinter.CTk):
             else:self.displayThrottleSwitch.deselect()
             return
         if not manualYes: #can't have the display throttle be on in swarm mode
-            tkprint("app throttle only available in manual mode")
+            if not runFunction: tkprint("app throttle only available in manual mode")
             self.displayThrottleSwitch.deselect()
             usingAppThrottle = False
             self.updateThrottleDisplay(0, self)
