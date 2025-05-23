@@ -204,6 +204,9 @@ void FcComs::readAttitudeData(){
     case 9:
       if(checksum == Serial1.read()){
         Serial.println("Checksum is correct for attitude");
+        msp_attitude.roll = rollRec;
+        msp_attitude.pitch = pitchRec;
+        msp_attitude.yaw = yawRec;
       }
       else{
         Serial.println("Checksum is incorrect for attitude");
@@ -211,9 +214,6 @@ void FcComs::readAttitudeData(){
       break;
     }
   }
-  msp_attitude.roll = rollRec;
-  msp_attitude.pitch = pitchRec;
-  msp_attitude.yaw = yawRec;
   Serial.print("Roll: " + String(rollRec/10.0));
   Serial.print(" Pitch: " + String(pitchRec/10.0));
   Serial.println(" Yaw: " + String(yawRec));
@@ -446,9 +446,9 @@ BSIPMessage_h WifiComs::parseBSIP(char buffer[]){
           msg.cmd = token;
           break;
         case 1:
-          msg.BSIP = token;
+          msg.BSIP.fromString(token);
           break;        
-        }
+      }
       i++;
       token = strtok(NULL, "|"); 
     }

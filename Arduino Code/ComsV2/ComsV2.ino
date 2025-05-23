@@ -4,6 +4,7 @@
 
 char ReplyBuffer[] = "Drone 1";
 char packetBuffer[256]; 
+bool mspTelemetry = true; // Flag to enable/disable telemetry
 int reqUpdate = 10000;   //how often to update drone data
 int pathLength = 1;
 long lastUpdate = 0;
@@ -12,7 +13,7 @@ FcComs msp;
 WifiComs wifi(ident);
 Vector2D point1(-122.685728, 45.454396);
 Vector2D point2(-122.685349, 45.453885);
-Waypoint home(NAV_WP_ACTION_WAYPOINT, -122.685679, 45.454211, 500, 0, 0, 0, NAV_WP_FLAG_HOME); // Home waypoint
+Waypoint home(NAV_WP_ACTION_LAND, -122.685679, 45.454211, 500, 0, 0, 0, NAV_WP_FLAG_HOME); // Home waypoint
 SearchArea searchArea(1, 1, 2, point1, point2);
 
 uint16_t rc_values[8] = {//rc channel values
@@ -35,7 +36,7 @@ void setup(){
     Serial.begin(115200); // Start serial communication for debugging
     msp.begin(9600);
     while(!Serial){
-        if(millis() > 5000){ // Wait for serial or timeout after 5 seconds
+        if(millis() > 2000){ // Wait for serial or timeout after 2 seconds
             break;
         }
     }
@@ -62,7 +63,7 @@ void setup(){
 void loop(){
     wifi.WifiConnection(ReplyBuffer); // Optionally reconnect WiFi
     wifi.Listen(packetBuffer); // Optionally listen for new messages
-    if(reqUpdate < millis() - lastUpdate){ // Time to update drone data?
+    if(reqUpdate < millis() - lastUpdate && mspTelemetry){ // Time to update drone data?
         while(Serial1.available()){
             Serial1.read();
         }
@@ -100,6 +101,14 @@ void loop(){
         if(wifi.state == "active"){
             RcSet(1500, 1500, 885, 1500, 1500, 1700, 1500, 1500);
         }
+    }
+    else{
+        // Default RC values
+        RcSet(1500, 1500, 885, 1500, 1500, 1500, 1500, 1500);
+        msp.commandMSP(MSP_SET_RAW_RC, rc_values, 16); // Send default RC values
+        while (Serial1.available()){
+            Serial1.read();
+        }  
     }
     if((millis() - lastBlink > blinkT) && flashing){
         LightSR(); // Toggle LED for status indication
