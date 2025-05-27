@@ -66,9 +66,10 @@ drones = [None]*8 # empty drone slots are represented as None, allways an array 
 Cody Webb made this, Bjorn didn't help one bit
 I helped some :(
 
-armvar is armed at 1575, disarmed at 1500
+!! DOES NOT WORK ON MAC !! 
+Something about multithreading and mac not liking globals and objects being passed between them.
 
-MAN IP yaw pitch roll throttle killswitch armVar navHold
+manual MSG: MAN IP yaw pitch roll throttle killswitch armVar navHold
 
 #TODO:
 fail safes: out of wifi range, landing drone before allowing a disable
@@ -76,7 +77,7 @@ autoland feature where drone lands itself slowly <-- this is done when AP is dis
 
 the reason for all of the glitchiness in the console + MAN/SWM displays is they delete lines before reading them and
 the deletions don't sync with the monitor refresh rate, so you get frames where the text hasn't been inserted
-No easy way to solve this
+No easy way to solve this HA I SOLVED IT >:D
 '''
 
 #attempts to connect to the a flightstick
@@ -414,7 +415,7 @@ class App(customtkinter.CTk):
 
         #Placing text in the textboxes on bootup
         self.droneDisplay.tag_config("center", justify="center")
-        self.droneDisplay.insert(0.0, "\n\nAwaiting Display Update")
+        self.droneDisplay.insert(1.0, f"Yaw:      {1500}\nPitch:    {1500}\nRoll:     {1500}\nThrottle: {1000}\nArmVar:   {1500}\nNavHold:  {1000}")
         self.droneDisplay.tag_add("center", 0.0, customtkinter.END)
         self.droneDisplay.configure(state="disabled")
 
@@ -514,7 +515,7 @@ class App(customtkinter.CTk):
         self.displaying_swarm_variables = True
     
     def update_swarm_varibles_display(self):
-        global drones, manualYes
+        global drones, manualYes, killswitch
 
         if not self.displaying_swarm_variables: return
 
@@ -527,7 +528,9 @@ class App(customtkinter.CTk):
             drone_selector = drones[i]
 
             if drone_selector:
-                if drone_selector.state != "inactive":
+                if killswitch >= 1700:
+                    text = f"{drone_selector.name}\n- DRONE KILLED -"
+                elif drone_selector.state != "inactive":
                     text = f"{drone_selector.name}\nIP: {drone_selector.ipAddress}\nPORT:     {drone_selector.port}\nYaw:      {drone_selector.yaw}\nPitch:    {drone_selector.pitch}\nRoll:     {drone_selector.roll}\nThrottle: {drone_selector.throttle}\nArmVar:   {drone_selector.armVar}\nNavHold:  {drone_selector.navHold}"
             
             try: # throws an error if you close the window while this is running
@@ -538,8 +541,6 @@ class App(customtkinter.CTk):
                     display.insert(1.0 , text)
                     display.tag_add("center", 1.0, customtkinter.END)
                     display.configure(state="disabled")
-                else:
-                    print("passin gas")
             except:pass
     #ignores the errors coming from the wifi connecting, and wrong wifi
     def bypass_wifi(self):
@@ -611,14 +612,15 @@ class App(customtkinter.CTk):
     #grabs the manual mode variables and displays them in the orange display
     def updateManualDisplay(self):
         global throttle, roll, yaw, pitch, armVar, navHold
-        displayText = f"Yaw:      {yaw}\nPitch:    {pitch}\nRoll:     {roll}\nThrottle: {throttle}\nArmVar:   {armVar}\nNavHold:  {navHold}"
-        if displayText.replace(" ", "").replace("\n", "") != self.droneDisplay.get("1.0", customtkinter.END).replace(" ", "").replace("\n", ""): #if its not the same message
-            self.droneDisplay.configure(state="normal")
-            self.droneDisplay.tag_config("center", justify="center")
-            self.droneDisplay.delete(0.0, customtkinter.END)
-            self.droneDisplay.insert(0.0, displayText)
-            self.droneDisplay.tag_add("center", 0.0, customtkinter.END)
-            self.droneDisplay.configure(state="disabled")
+        self.droneDisplay.configure(state="normal")
+        
+        l = [yaw, pitch, roll, throttle, armVar, navHold]
+
+        for i in range(0, 6):
+            self.droneDisplay.delete(f"{i+1}.10", f"{i+1}.14")
+            self.droneDisplay.insert(f"{i+1}.10", l[i])
+
+        self.droneDisplay.configure(state="disabled")
     #toggles the variable that tells the drone buttons to delete themselves if clicked
     def select_drone_for_removal(self):
         global removeDroneSelection, droneCount, ongoing_swarm_flight
@@ -972,7 +974,12 @@ def get_open_drone_index():
 
 #adds a drone object to array: drones
 def addDrone(name, ipAdr, port):
-    global droneCount, app, drones
+    global droneCount, app, drones, killswitch
+
+    if killswitch >= 1700:
+        app.console.error("KILLSWITCH is active, failed to add drone!")
+        return
+
     open_drone_index = get_open_drone_index() #returning -1 means all slots are filled
 
     if open_drone_index == -1:
@@ -1084,7 +1091,7 @@ def appLoop():
     global app, killThreads
     app.update_swarm_varibles_display()
     app.updateManualDisplay()
-    if not killThreads: app.after(200, appLoop)
+    if not killThreads: app.after(50, appLoop)
     else: tkprint("appLoop exited")
 
 #runs a while True loop on a separate thread, recieves flighstick inputs and sends outputs. Funny enough it also calls swarm control, so this more like a main loop.
@@ -1096,7 +1103,7 @@ def manualControl():
     while not killThreads: #continously loop until killThreads is true
 
         if not usingAppThrottle: # if we are not using the in-app throttle
-            if controller: # if the controller is connected, read the outputs and load the manual global variables
+            if controller and killswitch < 1700: # if the controller is connected, read the outputs and load the manual global variables
                 try:
                     fs.readFlightStick(fs)
                     yaw = clamp(round(fs.yaw)) - 4 # fucking scuffed
@@ -1122,13 +1129,12 @@ def manualControl():
                 time_start = datetime.datetime.now()
             if((datetime.datetime.now() - time_start2) > datetime.timedelta(seconds=1)):
                 time_start2 = datetime.datetime.now()
-
-        if(manualYes):
-            if(usingAppThrottle):
+        elif killswitch < 1700:
                 throttle = appThrottle * 10 + 1000
-        else:
+
+        if not manualYes:
             appThrottle = 0
-            swarmControl() # <-- if manualYes is false it calls swarm control
+            if killswitch < 1700: swarmControl() # <-- if manualYes is false it calls swarm control
         
         one_drone_armed = False
         for i in range(0, 8):
@@ -1186,7 +1192,7 @@ def swarmControl():
         if drone and drone.state == "active":
             sendMessage(drone.ipAddress, drone.port, manMsgConstruct(drone.id))
 
-#recieves messages on a seperate thread
+#recieves messages on a seperate thread, don't fuck with this, i've tried
 def listen(q_out, q_in):
     global killThreads, lastData, accessPoint_connected
     tkprint("Listener Thread initiated")
