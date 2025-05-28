@@ -1,3 +1,63 @@
+'''
+ ________  ________  ________  _______   ________  ________  ________   ________     _______     
+|\   __  \|\   __  \|\   ____\|\  ___ \ |\   ____\|\   __  \|\   ___  \|\   ___  \  /  ___  \    
+\ \  \|\ /\ \  \|\  \ \  \___|\ \   __/|\ \  \___|\ \  \|\  \ \  \\ \  \ \  \\ \  \/__/|_/  /|   
+ \ \   __  \ \   __  \ \_____  \ \  \_|/_\ \  \    \ \  \\\  \ \  \\ \  \ \  \\ \  \__|//  / /   
+  \ \  \|\  \ \  \ \  \|____|\  \ \  \_|\ \ \  \____\ \  \\\  \ \  \\ \  \ \  \\ \  \  /  /_/__  
+   \ \_______\ \__\ \__\____\_\  \ \_______\ \_______\ \_______\ \__\\ \__\ \__\\ \__\|\________\
+    \|_______|\|__|\|__|\_________\|_______|\|_______|\|_______|\|__| \|__|\|__| \|__| \|_______|
+                       \|_________|                                                                                                    
+
+First off don't touch the networking (anything envolving socket, platform, subprocess and netifaces)
+because it tends to break things. Secondly this program doesn't enjoy Mac, something about threading.
+
+3 different threads will startup once you run this program ( see runAfterAppLaunch() ):
+    - App thread
+        This is the main thread that does not run from a separate Thread from the threading library
+        The entire UI runs on this thread, the app in the UI ( see class App() )
+            - App loop
+                This is a loop that updates the app's manual variables display, and swarm display.
+            - Check Queue
+                This function recursively runs on the main thread, it checks incoming information about
+                drone connections which it runs through handshake() to connect drones to the UI.
+    - Listener thread
+        This is running on a separate thread and is checking if we are receiving any information from
+        the drones. Currently this is just the initial connection.
+    - Manual thread
+        The big boi, manual thread controls the manual control of the drones, but also everything else.
+        It grabs the data coming from the flightstick and slaps those into the globals. It then every 5 
+        seconds attempts to connect to the basestation wifi and the flight stick if either are disconnected.
+            - Swarm Test Control
+                We have a swarm test function (something like commanding the drones to go up then down) and 
+                the manual control sends all swarm drones those messages if it is in that state.
+        If manual mode is enabled it grabs the active drone and sends it the flight stick or in-app throttle
+        data to the drone.
+
+        
+HOW TO FLY A DRONE IN MANUAL:
+    1. Get yer drone and connect a battery
+    2. plug in the access point (AP) and flightstick (optional) to the pc
+    3. Start baseConn2.py
+    4. Switch into manual mode, click Connect to AP
+    5. Reset the drone arduino and wait for the drone to show up on the UI
+    6. Click on the drones button in the App (turn it yellow), make sure throttle is at 1000 
+    7. If it arms successfully you can now control it with the stick or throttle
+after every step make sure to pray to the drone gods (optional)
+
+If anything doesn't work try reuploading the arduino code.
+Test for faulty motors in inav, and faulty arduinos in arduino IDE.
+Otherwise it's a hardware issue and I wish you the best of luck.
+
+Throttle Power:
+1000: armed, lowest power
+1500-1600: lifting off the ground
+1700: flying
+1700+: flying too fast
+2000: crashing
+
+'''
+
+
 import socket, platform, subprocess
 import netifaces as ni
 from   threading import Thread
@@ -17,7 +77,7 @@ global UDP_IP, UDP_PORT, ip, sock, os_name, wifi_connected, name_of_AP # ip is o
 global manualControlThread
 global listenerThread, lastData
 global killThreads # bool, becomes True when we terminate the app
-global ongoing_swarm_flight, canceling_swarm_flight
+global ongoing_swarm_test_flight, ongoing_waypoint_swarm_flight, canceling_flight
 
 global time_start, time_start2
 global qFromComms, qToComms
@@ -50,8 +110,9 @@ removeDroneSelection = False
 messages_sent = 0
 time_start = datetime.datetime.now()
 time_start2 = datetime.datetime.now()
-ongoing_swarm_flight = False
-canceling_swarm_flight = False
+ongoing_swarm_test_flight = False
+ongoing_waypoint_swarm_flight = False
+canceling_flight = False
 wifi_connected = False
 accessPoint_connected = False
 lastData = ''
@@ -78,6 +139,9 @@ autoland feature where drone lands itself slowly <-- this is done when AP is dis
 the reason for all of the glitchiness in the console + MAN/SWM displays is they delete lines before reading them and
 the deletions don't sync with the monitor refresh rate, so you get frames where the text hasn't been inserted
 No easy way to solve this HA I SOLVED IT >:D
+
+WAYPOINTS ARE JUST PRINTING WHAT THEY ARE GOING TO SEND, NOT SENDING ANYTHING!
+
 '''
 
 #attempts to connect to the a flightstick
@@ -268,9 +332,9 @@ class droneActiveButton():
         self.droneButton.configure(fg_color=self.currentColor, hover_color=self.currentHoverColor)
 
     def onClick(self):
-        global removeDroneSelection, drones, ongoing_swarm_flight, app
+        global removeDroneSelection, drones, ongoing_swarm_test_flight, app
 
-        if ongoing_swarm_flight:
+        if ongoing_swarm_test_flight:
             app.console.error("Failsafe: ONGOING SWARM FLIGHT, BUTTONS DISABLED")
             return
 
@@ -336,6 +400,7 @@ class App(customtkinter.CTk):
         self.killswitchbutton =       Button(self.leftButtonBar, text="Kill Drones",       command=lambda:self.killswitch(), fg_color=colorPalette.buttonRed, hover_color=colorPalette.buttonRedHover)
         self.connectToAPButton =      Button(self.leftButtonBar, text="Connect To AP",     command=lambda:introToAP(0))
         self.manualControlSwitch =  tkSwitch(self.leftButtonBar, MODEManual, MODESwarm, leftText="Manual", rightText="Swarm") #switch for Manual and Swarm modes in left button bar
+        self.sendWaypointsButton =    Button(self.leftButtonBar, text="Send Waypoints",    command=initiate_waypoints)
 
         self.throttleBar = customtkinter.CTkFrame(self) #Holds all components of the in-display throttle system left of the drone display (far right)
         #These are the components in the throttle bar
@@ -398,7 +463,7 @@ class App(customtkinter.CTk):
 
         self.killswitchbutton.grid      (row=0, column=0)
         self.connectToAPButton.grid     (row=1, column=0)
-
+        self.sendWaypointsButton.grid   (row=3, column=0)
 
         self.manualControlSwitch.grid(row=4, column=0)
         self.console.grid            (row=0, column=1, padx=10, pady=10)
@@ -431,12 +496,12 @@ class App(customtkinter.CTk):
         self.after(100, runAfterAppLaunch) #delay enough for the mainloop to start
     #creates a popup window asking user if they want to quit the app
     def attemptTerminateApp(self):
-        global ongoing_swarm_flight
+        global ongoing_swarm_test_flight
         
         if self.attemptingTerminate:
             tkprint("allready attempting to terminate")
             return
-        if ongoing_swarm_flight:
+        if ongoing_swarm_test_flight:
             self.console.error("Failsafe: ONGOING SWARM FLIGHT")
             return
         
@@ -623,8 +688,8 @@ class App(customtkinter.CTk):
         self.droneDisplay.configure(state="disabled")
     #toggles the variable that tells the drone buttons to delete themselves if clicked
     def select_drone_for_removal(self):
-        global removeDroneSelection, droneCount, ongoing_swarm_flight
-        if ongoing_swarm_flight:
+        global removeDroneSelection, droneCount, ongoing_swarm_test_flight
+        if ongoing_swarm_test_flight:
             self.console.error("Drone buttons disabled during swarm flight")
             return
         if droneCount == 0: 
@@ -671,7 +736,51 @@ def swmMsgConstruct(droneNum):
             store + (drones[droneNum].waypointArr[i].message +"|" +"loop" +"|")
         else:
             store + (drones[droneNum].waypointArr[i].message +"|" +"end" +"|")
-    return ("SWM|" +ip +"|" +drones[droneNum].state +"|" +length +"|" +store)
+    return "SWM|" +ip +"|" +drones[droneNum].state +"|" +length +"|" +store
+
+def active_drone_count(i=0):
+    global drones
+    for drone in drones: 
+        if drone: i += 1
+    return i
+
+#2 points lat long, search between, how many drones, what drone it is, alt of search
+
+def waypointConstruct(id, num, lat1, long1, lat2, long2, alt):
+    global drones, app
+
+    if not drones[id]: 
+        app.console.error("!!! ERROR: WAYPOINT CONSTSRUCT ID DOESNT EXIST !!!")
+        return
+
+    swarm_count = active_drone_count()
+
+    return f"WAY|{drones[id].ipAddress}|{num}|{lat1}|{long1}|{lat2}|{long2}|{swarm_count}|{alt}|"
+
+def initiate_waypoints():
+    global drones, app, droneCount
+
+    if not detectActiveDrone() or droneCount == 0:
+        app.console.error("No drones to send waypoints")
+        return
+
+    tkprint("sending waypoints")
+
+    lat1  = 1.11
+    long1 = 2.22
+    lat2  = 3.33
+    long2 = 4.44
+
+    alt   = 20
+
+    i = 0
+    for drone in drones:
+        if drone:
+            if drone.state == "active":
+                i += 1
+                construct = waypointConstruct(drone.id, i, lat1, long1, lat2, long2, alt)
+                for k in range(0, 3):
+                    print(construct) #send msg here
 
 #Detects the operating system and grabs the computers IP for networking between the AP and drones
 def getMyIP():
@@ -727,8 +836,8 @@ def get_wifi_info():
 
 #Sends the packets of instructions to the drone
 def sendMessage(ipAddress, port, msg):
-    global sock, throttle, app, messages_sent, canceling_swarm_flight
-    if canceling_swarm_flight:
+    global sock, throttle, app, messages_sent, canceling_flight
+    if canceling_flight:
         print("canceling swarm flight")
     else:
         print(f"sendMessage -- IP: {ipAddress}, PORT: {port}\n{msg}\n=====================")
@@ -816,18 +925,18 @@ def MODEManual():
 
 # slowly increases throttle to 1550, stays there to 1 second, then goes to 1400 for 5 seconds and disarms at 11s
 def swarmTest3(start_time=0, r=True):
-    global app, ongoing_swarm_flight, canceling_swarm_flight
+    global app, ongoing_swarm_test_flight, canceling_flight
 
-    if canceling_swarm_flight: return
+    if canceling_flight: return
 
     if not detectActiveDrone():
         tkprint("no active drones to test swarm")
         return
     
-    if r and ongoing_swarm_flight:
+    if r and ongoing_swarm_test_flight:
         app.console.error("Failsafe: ALLREADY AN ONGOING SWARM FIGHT")
         return
-    else: ongoing_swarm_flight = True
+    else: ongoing_swarm_test_flight = True
 
     # first itteration arm all drones (0s)
     if r: 
@@ -860,13 +969,13 @@ def swarmTest3(start_time=0, r=True):
         app.after(10, swarmTest3, start_time, False)
     else:
         tkprint("swarm test 2 ended")
-        ongoing_swarm_flight = False
+        ongoing_swarm_test_flight = False
 
 # send it 1450 throttle then disconnects AP
 def cancel_swarm_flight():
-    global canceling_swarm_flight
+    global canceling_flight
     tkprint("!!! CANCELING SWARM FLIGHT !!!")    
-    canceling_swarm_flight = True
+    canceling_flight = True
 
     send_to_swarm(1500, 1500, 1500, 1450, 1000)
 
@@ -1134,7 +1243,7 @@ def manualControl():
 
         if not manualYes:
             appThrottle = 0
-            if killswitch < 1700: swarmControl() # <-- if manualYes is false it calls swarm control
+            if killswitch < 1700 and ongoing_swarm_test_flight: swarmControlTest() # <-- if manualYes is false it calls swarm control
         
         one_drone_armed = False
         for i in range(0, 8):
@@ -1186,11 +1295,20 @@ def setup_sock():
     #tkprint("UDP IP is " + str(UDP_IP))
 
 # runs continuously when manualYes is false
-def swarmControl():
+def swarmControlTest():
     global drones
     for drone in drones:
         if drone and drone.state == "active":
             sendMessage(drone.ipAddress, drone.port, manMsgConstruct(drone.id))
+    
+def search_control(lat1, long1, lat2, long2, alt):
+    droneNum = 1
+    global drones
+    for drone in drones:
+        if drone and drone.state == "active":
+            waypointConstruct(drone.id, droneNum, lat1, long1, lat2, long2, alt)
+            droneNum += 1
+            tkprint("waypoint sent to {drone.name}")
 
 #recieves messages on a seperate thread, don't fuck with this, i've tried
 def listen(q_out, q_in):
