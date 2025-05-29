@@ -82,6 +82,8 @@ global ongoing_swarm_test_flight, ongoing_waypoint_swarm_flight, canceling_fligh
 global time_start, time_start2
 global qFromComms, qToComms
 
+global lat1, long1, lat2, long2, alt
+
 global app, removeDroneSelection, messages_sent
 
 global pitch, roll, yaw, throttle, navHold, armVar, killswitch # manual control variables
@@ -385,6 +387,7 @@ class App(customtkinter.CTk):
 
         self.attemptingTerminate = False
         self.displaying_swarm_variables = False
+        self.setting_waypoints = False
         self.swarm_drone_displays = []
 
         #killswitch, connect to ap, add test drone, bypass controller, Manual UDP Console and Send USP Message, Mode and Stage Control
@@ -400,6 +403,7 @@ class App(customtkinter.CTk):
         self.killswitchbutton =       Button(self.leftButtonBar, text="Kill Drones",       command=lambda:self.killswitch(), fg_color=colorPalette.buttonRed, hover_color=colorPalette.buttonRedHover)
         self.connectToAPButton =      Button(self.leftButtonBar, text="Connect To AP",     command=lambda:introToAP(0))
         self.manualControlSwitch =  tkSwitch(self.leftButtonBar, MODEManual, MODESwarm, leftText="Manual", rightText="Swarm") #switch for Manual and Swarm modes in left button bar
+        self.set_waypoints_button =   Button(self.leftButtonBar, text="Set Waypoints",     command=self.set_waypoints_popup)
         self.sendWaypointsButton =    Button(self.leftButtonBar, text="Send Waypoints",    command=initiate_waypoints)
 
         self.throttleBar = customtkinter.CTkFrame(self) #Holds all components of the in-display throttle system left of the drone display (far right)
@@ -463,6 +467,7 @@ class App(customtkinter.CTk):
 
         self.killswitchbutton.grid      (row=0, column=0)
         self.connectToAPButton.grid     (row=1, column=0)
+        self.set_waypoints_button.grid  (row=2, column=0)
         self.sendWaypointsButton.grid   (row=3, column=0)
 
         self.manualControlSwitch.grid(row=4, column=0)
@@ -541,6 +546,33 @@ class App(customtkinter.CTk):
     def destroyPopup(self, popup):
         self.attemptingTerminate = False
         popup.destroy()
+
+    def set_waypoints_popup(self):
+        global lat1, long1, lat2, long2, alt
+
+        if self.setting_waypoints:
+            tkprint("allready setting waypoints")
+            return
+        
+        waypoints_popup = customtkinter.CTkToplevel()
+        waypoints_popup.title("Setting Waypoints")
+        waypoints_popup.attributes("-topmost", True)
+
+        waypoints_popup.geometry(f"{600}x{300}")
+
+        def on_closing():
+            self.setting_waypoints = False
+            waypoints_popup.destroy()  # Destroy the popup window
+        
+        waypoints_popup.protocol("WM_DELETE_WINDOW", on_closing)
+
+        latLongText  = customtkinter.CTkTextbox(waypoints_popup, font=("Monaco", 25), text_color="black")
+
+        latLongText.insert(1.0, "Lat  1:\nLong 1:\nLat  2:\nLong 2:")
+
+        latLongText.pack()
+
+        self.setting_waypoints = True
 
     def display_swarm_variables_popup(self):
         global drones
@@ -755,7 +787,9 @@ def waypointConstruct(id, num, lat1, long1, lat2, long2, alt):
 
     swarm_count = active_drone_count()
 
-    return f"WAY|{ip}|{num}|{lat1}|{long1}|{lat2}|{long2}|{swarm_count}|{alt}|"
+    see_distance = 2
+
+    return f"WAY|{ip}|{num}|{lat1}|{long1}|{lat2}|{long2}|{swarm_count}|{see_distance}|{alt}|"
 
 def initiate_waypoints():
     global drones, app, droneCount
@@ -766,12 +800,12 @@ def initiate_waypoints():
 
     tkprint("sending waypoints")
 
-    lat1  = 1.11
-    long1 = 2.22
-    lat2  = 3.33
-    long2 = 4.44
+    lat1  = 45.454396
+    long1 = -122.685728
+    lat2  = 45.453885
+    long2 = -122.685349
 
-    alt   = 20
+    alt   = 500
 
     i = 0
     for drone in drones:
@@ -779,8 +813,8 @@ def initiate_waypoints():
             if drone.state == "active":
                 i += 1
                 construct = waypointConstruct(drone.id, i, lat1, long1, lat2, long2, alt)
-                for k in range(0, 3):
-                    print(construct) #send msg here
+                print(construct) #send msg here
+                sendMessage(drone.ipAddress, drone.port, construct)
 
 #Detects the operating system and grabs the computers IP for networking between the AP and drones
 def getMyIP():
@@ -1300,15 +1334,6 @@ def swarmControlTest():
     for drone in drones:
         if drone and drone.state == "active":
             sendMessage(drone.ipAddress, drone.port, manMsgConstruct(drone.id))
-    
-def search_control(lat1, long1, lat2, long2, alt):
-    droneNum = 1
-    global drones
-    for drone in drones:
-        if drone and drone.state == "active":
-            waypointConstruct(drone.id, droneNum, lat1, long1, lat2, long2, alt)
-            droneNum += 1
-            tkprint("waypoint sent to {drone.name}")
 
 #recieves messages on a seperate thread, don't fuck with this, i've tried
 def listen(q_out, q_in):
