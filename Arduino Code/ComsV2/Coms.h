@@ -38,10 +38,16 @@ class SearchArea{
     public:
         int dronesSearching;      // Number of drones searching this area
         int droneId;              // ID of this drone
+        int alt;                  // Altitude in centimeters
         double viewDistance;      // View distance in meters
         Vector2D searchBounds[2]; // Two points defining the search area bounds
-        SearchArea(int dronesSearching, int droneId, double viewDistance, Vector2D point1, Vector2D point2){
+        SearchArea() : dronesSearching(0), alt(0), droneId(0), viewDistance(0) {
+            searchBounds[0] = Vector2D();
+            searchBounds[1] = Vector2D();
+        }
+        SearchArea(int dronesSearching, int alt, int droneId, double viewDistance, Vector2D point1, Vector2D point2){
             this->dronesSearching = dronesSearching;
+            this->alt = alt;
             this->droneId = droneId;
             this->viewDistance = viewDistance;
             searchBounds[0] = point1;
@@ -103,6 +109,7 @@ class PrevMessage_h{
         double killswitch;
         double armVar;
         double navHold;
+        SearchArea searchArea; // Search area for swarm mode
     private:
 };
 

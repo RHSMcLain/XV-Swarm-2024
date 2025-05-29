@@ -357,9 +357,8 @@ bool firstconnectframe = false;
 
 PrevMessage_h WifiComs::parseMessage(char buffer[]){
     PrevMessage_h msg;
-    char *token;
+    char* token = strtok(buffer, "|");
     //Serial.println(buffer);
-    token = strtok(buffer, "|");
     int i = 0;
     int wpNum = 0;
     int length;
@@ -374,13 +373,17 @@ PrevMessage_h WifiComs::parseMessage(char buffer[]){
           msg.sourceIP = token;
           break;
         case 2:
-          if(msg.cmd == "SWM"){
+          if(msg.cmd == "WAY"){
             i = 8;
             state = token;
           }
-          else{
+          else if(msg.cmd == "MAN"){
             msg.yaw = atoi(token);  
-          }     
+          }
+          else{
+            //ERROR - Command not recognized
+            Serial.println("ERROR - Command not recognized: " + String(msg.cmd));
+          }  
           break;
         case 3:
           msg.pitch = atoi(token);  //pitch
@@ -402,26 +405,28 @@ PrevMessage_h WifiComs::parseMessage(char buffer[]){
           break;
         case 9:
           length = atoi(token);
-          break;
+          while(token != 0) token = strtok(NULL, "|");
+          return msg;
         case 10:
-          do{
-            wpNum = atoi(token);
-            token = strtok(NULL, "|"); 
-            waypointArr[wpNum].lon = atoi(token);
-            token = strtok(NULL, "|"); 
-            waypointArr[wpNum].lat = atoi(token);
-            token = strtok(NULL, "|"); 
-            waypointArr[wpNum].alt = atoi(token);
-            token = strtok(NULL, "|"); 
-            waypointArr[wpNum].action = atoi(token);
-            token = strtok(NULL, "|"); 
-            waypointArr[wpNum].p1 = atoi(token);
-            token = strtok(NULL, "|"); 
-            waypointArr[wpNum].flag = atoi(token);
-            token = strtok(NULL, "|"); 
-            lastWp = *token;
-            token = strtok(NULL, "|");
-          }while(lastWp == *"loop");
+          msg.searchArea.droneId = atoi(token); 
+          break;
+        case 11:
+          msg.searchArea.searchBounds[0].y = atof(token);
+          break;
+        case 12:
+          msg.searchArea.searchBounds[0].x = atof(token);
+          break;
+        case 13:
+          msg.searchArea.searchBounds[1].y = atof(token);
+          break;
+        case 14:
+          msg.searchArea.searchBounds[1].x = atof(token);
+          break;
+        case 15:
+          msg.searchArea.dronesSearching = atoi(token);
+          break;
+        case 16:
+          msg.searchArea.alt = atof(token);
           newWaypoints = true;
           break;
       }
@@ -593,18 +598,9 @@ int WifiComs::GenerateSearchPath(SearchArea searchArea){
   for(int i = 1; i <= (laps*4); i++){
     Serial.println(path[i].lat/10000000.0, 6);
     Serial.println((path[i].lon - 0x100000000)/10000000.0, 6);
-    waypointArr[i].lat = path[i].lat;
-    waypointArr[i].lon = path[i].lon;
-    waypointArr[i].alt = 150;
-    waypointArr[i].action = NAV_WP_ACTION_WAYPOINT;
-    waypointArr[i].p1 = 0;
-    waypointArr[i].p2 = 0;
-    waypointArr[i].p3 = 0;
+    waypointArr[i] = Waypoint(NAV_WP_ACTION_WAYPOINT, path[i].lat, path[i].lon, searchArea.alt, 0, 0, 0, 0);
     if(i == laps*4){
       waypointArr[i].flag = NAV_WP_FLAG_LAST;
-    }
-    else{
-      waypointArr[i].flag = 0;
     }
     Serial.println(i);
   }

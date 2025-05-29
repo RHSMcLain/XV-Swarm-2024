@@ -747,7 +747,7 @@ def active_drone_count(i=0):
 #2 points lat long, search between, how many drones, what drone it is, alt of search
 
 def waypointConstruct(id, num, lat1, long1, lat2, long2, alt):
-    global drones, app
+    global drones, app, ip
 
     if not drones[id]: 
         app.console.error("!!! ERROR: WAYPOINT CONSTSRUCT ID DOESNT EXIST !!!")
@@ -755,7 +755,7 @@ def waypointConstruct(id, num, lat1, long1, lat2, long2, alt):
 
     swarm_count = active_drone_count()
 
-    return f"WAY|{drones[id].ipAddress}|{num}|{lat1}|{long1}|{lat2}|{long2}|{swarm_count}|{alt}|"
+    return f"WAY|{ip}|{num}|{lat1}|{long1}|{lat2}|{long2}|{swarm_count}|{alt}|"
 
 def initiate_waypoints():
     global drones, app, droneCount

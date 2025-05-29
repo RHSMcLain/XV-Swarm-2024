@@ -14,7 +14,7 @@ WifiComs wifi(ident);
 Vector2D point1(-122.685728, 45.454396);
 Vector2D point2(-122.685349, 45.453885);
 Waypoint home(NAV_WP_ACTION_LAND, -122.685679, 45.454211, 500, 0, 0, 0, NAV_WP_FLAG_HOME); // Home waypoint
-SearchArea searchArea(1, 1, 2, point1, point2);
+SearchArea searchArea(1, 150, 1, 2, point1, point2);
 
 uint16_t rc_values[8] = {//rc channel values
     1500,
@@ -35,11 +35,7 @@ long lastBlink = 0;     //time of last state switch (ms)
 void setup(){
     Serial.begin(115200); // Start serial communication for debugging
     msp.begin(9600);
-    while(!Serial){
-        if(millis() > 2000){ // Wait for serial or timeout after 2 seconds
-            break;
-        }
-    }
+    while(!Serial && millis() < 2000);// Wait for serial to be ready or timeout after 2 seconds  
     //home Waypoint
     wifi.waypointArr[0] = home;
     msp.sendWaypoints(wifi.waypointArr, 1, 0);
@@ -54,9 +50,6 @@ void setup(){
     //custom waypoints
     //wifi.waypointArr[0] = Waypoint(NAV_WP_ACTION_WAYPOINT, 0x100000000 + (-122.685830* 10000000), (45.454398) * 10000000, 500, 0, 0, 0, 0);
     //wifi.waypointArr[1] = Waypoint(NAV_WP_ACTION_WAYPOINT, 0x100000000 + (-122.685349* 10000000), (45.453885) * 10000000, 500, 0, 0, 0, NAV_WP_FLAG_LAST);
-    Serial.println("search area");
-    pathLength = wifi.GenerateSearchPath(searchArea); // Generate search path and waypoints
-    Serial.println("waypoints");
     wifi.newWaypoints = true; // Flag to send new waypoints
 }
 
@@ -74,6 +67,7 @@ void loop(){
         // wifi.newWaypoints = true; // Request new waypoints to be sent
     }
     if(wifi.newWaypoints){
+        pathLength = wifi.GenerateSearchPath(searchArea); // Generate new search path
         msp.sendWaypoints(wifi.waypointArr, pathLength, 1); // Send waypoints to flight controller
         wifi.newWaypoints = false;
     }
