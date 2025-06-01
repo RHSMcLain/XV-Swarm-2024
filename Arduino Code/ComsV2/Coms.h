@@ -134,8 +134,8 @@ class WifiComs{
 
         int GenerateSearchPath(SearchArea searchArea);
 
-        WifiComs(char hnd[]){
-            handShake = hnd;
+        WifiComs(char handShake[]){
+            this->handShake = handShake;
         }
 
         PrevMessage_h PrevMessage;
