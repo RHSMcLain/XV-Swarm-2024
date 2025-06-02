@@ -566,7 +566,7 @@ class App(customtkinter.CTk):
         
         waypoints_popup.protocol("WM_DELETE_WINDOW", on_closing)
 
-        
+
  
 
     def display_swarm_variables_popup(self):
@@ -1290,7 +1290,7 @@ def manualControl():
                         sendMessage(drones[activeDrone].ipAddress, drones[activeDrone].port, manMsgConstruct(activeDrone))
                         one_drone_armed = True
                     elif manualYes:
-                        drones[i].throttle = 1000
+                        drones[i].throttle = throttle
                         drones[i].pitch = 1500
                         drones[i].roll = 1500
                         drones[i].yaw = 1500
