@@ -566,13 +566,8 @@ class App(customtkinter.CTk):
         
         waypoints_popup.protocol("WM_DELETE_WINDOW", on_closing)
 
-        latLongText  = customtkinter.CTkTextbox(waypoints_popup, font=("Monaco", 25), text_color="black")
-
-        latLongText.insert(1.0, "Lat  1:\nLong 1:\nLat  2:\nLong 2:")
-
-        latLongText.pack()
-
-        self.setting_waypoints = True
+        
+ 
 
     def display_swarm_variables_popup(self):
         global drones
