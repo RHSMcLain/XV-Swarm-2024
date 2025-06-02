@@ -450,7 +450,7 @@ PrevMessage_h WifiComs::parseMessage(char buffer[]){
 
 BSIPMessage_h WifiComs::parseBSIP(char buffer[]){
     BSIPMessage_h msg;
-    char *token;
+    char* token;
     token = strtok(buffer, "|");
     int i = 0;
     // Serial.println("In parseBSIP");

@@ -20,7 +20,6 @@
 #define NAV_WP_ACTION_LAND      8
 
 #define localPort 2390
-// #define handShake "HND|-1|Betsy"
 #define ssid "XV_Basestation"
 
 class Vector2D{
