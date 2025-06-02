@@ -370,7 +370,7 @@ PrevMessage_h WifiComs::parseMessage(char buffer[]){
           msg.cmd = token;
           break;
         case 1:
-          msg.sourceIP = token;
+          msg.sourceIP = *token;
           break;
         case 2:
           if(msg.cmd == "WAY"){
