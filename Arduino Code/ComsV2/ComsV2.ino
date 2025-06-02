@@ -50,24 +50,23 @@ void setup(){
     //custom waypoints
     //wifi.waypointArr[0] = Waypoint(NAV_WP_ACTION_WAYPOINT, 0x100000000 + (-122.685830* 10000000), (45.454398) * 10000000, 500, 0, 0, 0, 0);
     //wifi.waypointArr[1] = Waypoint(NAV_WP_ACTION_WAYPOINT, 0x100000000 + (-122.685349* 10000000), (45.453885) * 10000000, 500, 0, 0, 0, NAV_WP_FLAG_LAST);
-    wifi.newWaypoints = true; // Flag to send new waypoints
+    // wifi.newWaypoints = true; // Flag to send new waypoints
 }
 
 void loop(){
     wifi.WifiConnection(ReplyBuffer); // Optionally reconnect WiFi
     wifi.Listen(packetBuffer); // Optionally listen for new messages
     if(reqUpdate < millis() - lastUpdate && mspTelemetry){ // Time to update drone data?
-        while(Serial1.available()){
-            Serial1.read();
-        }
-        msp.readGPSData();
-        msp.readAttitudeData();
-        Serial.println();
+        while(Serial1.available()) Serial1.read();
+        // msp.readGPSData();
+        // msp.readAttitudeData();
+        // Serial.println();
         lastUpdate = millis();
         // wifi.newWaypoints = true; // Request new waypoints to be sent
     }
     if(wifi.newWaypoints){
-        pathLength = wifi.GenerateSearchPath(searchArea); // Generate new search path
+        Serial.println("New Waypoints");
+        pathLength = wifi.GenerateSearchPath(wifi.PrevMessage.searchArea); // Generate new search path
         msp.sendWaypoints(wifi.waypointArr, pathLength, 1); // Send waypoints to flight controller
         wifi.newWaypoints = false;
     }
@@ -82,13 +81,13 @@ void loop(){
         rc_values[6] = 1700;
         rc_values[7] = wifi.PrevMessage.killswitch;
         msp.commandMSP(MSP_SET_RAW_RC, rc_values, 16); // Send RC values
-        for(int i = 0; i < 8; i++){
-          Serial.print(rc_values[i]);
-          Serial.print("  ");
-          if(i == 7){
-            Serial.println();
-          }
-        }
+        // for(int i = 0; i < 8; i++){
+        //   Serial.print(rc_values[i]);
+        //   Serial.print("  ");
+        //   if(i == 7){
+        //     Serial.println();
+        //   }
+        // }
     }
     else if(wifi.PrevMessage.cmd == "SWM"){
         // Swarm mode: set RC values for autonomous operation

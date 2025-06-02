@@ -102,13 +102,13 @@ class PrevMessage_h{
     public:
         Arduino_h::IPAddress sourceIP;  //Source of ip
         Arduino_h::String cmd;          //Command (manual or swarm)
-        double yaw;
-        double pitch;
-        double roll;
-        double throttle;
-        double killswitch;
-        double armVar;
-        double navHold;
+        int yaw;
+        int pitch;
+        int roll;
+        int throttle;
+        int killswitch;
+        int armVar;
+        int navHold;
         SearchArea searchArea; // Search area for swarm mode
     private:
 };

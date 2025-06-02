@@ -357,8 +357,8 @@ bool firstconnectframe = false;
 
 PrevMessage_h WifiComs::parseMessage(char buffer[]){
     PrevMessage_h msg;
+    // Serial.println(buffer);
     char* token = strtok(buffer, "|");
-    //Serial.println(buffer);
     int i = 0;
     int wpNum = 0;
     int length;
@@ -374,17 +374,21 @@ PrevMessage_h WifiComs::parseMessage(char buffer[]){
           break;
         case 2:
           if(msg.cmd == "WAY"){
-            i = 8;
-            state = token;
+            i = 9;
+            Serial.println("Waypoints Recived");
+            msg.searchArea.droneId = atoi(token); 
+            Serial.println(msg.searchArea.droneId);
+            break;
           }
           else if(msg.cmd == "MAN"){
-            msg.yaw = atoi(token);  
+            msg.yaw = atoi(token);
+            break;  
           }
           else{
             //ERROR - Command not recognized
             Serial.println("ERROR - Command not recognized: " + String(msg.cmd));
+            break;
           }  
-          break;
         case 3:
           msg.pitch = atoi(token);  //pitch
           break;
@@ -408,25 +412,31 @@ PrevMessage_h WifiComs::parseMessage(char buffer[]){
           while(token != 0) token = strtok(NULL, "|");
           return msg;
         case 10:
-          msg.searchArea.droneId = atoi(token); 
+          msg.searchArea.searchBounds[0].y = atof(token);
+          Serial.println(String(msg.searchArea.searchBounds[0].y));
           break;
         case 11:
-          msg.searchArea.searchBounds[0].y = atof(token);
+          msg.searchArea.searchBounds[0].x = atof(token);
+          Serial.println(String(msg.searchArea.searchBounds[0].x));
           break;
         case 12:
-          msg.searchArea.searchBounds[0].x = atof(token);
+          msg.searchArea.searchBounds[1].y = atof(token);
+          Serial.println(String(msg.searchArea.searchBounds[1].y));
           break;
         case 13:
-          msg.searchArea.searchBounds[1].y = atof(token);
+          msg.searchArea.searchBounds[1].x = atof(token);
+          Serial.println(String(msg.searchArea.searchBounds[1].x));
           break;
         case 14:
-          msg.searchArea.searchBounds[1].x = atof(token);
+          msg.searchArea.dronesSearching = atoi(token);
+          Serial.println(msg.searchArea.dronesSearching);
           break;
         case 15:
-          msg.searchArea.dronesSearching = atoi(token);
-          break;
+          msg.searchArea.viewDistance = atoi(token);
+          Serial.println(msg.searchArea.viewDistance);
         case 16:
           msg.searchArea.alt = atof(token);
+          Serial.println(msg.searchArea.alt);
           newWaypoints = true;
           break;
       }
@@ -685,6 +695,7 @@ int WifiComs::Listen(char packetBuffer[255]){
       //Serial.println(Udp.remotePort());
       // read the packet into packetBufffer
       int len = Udp.read(packetBuffer, 255);
+      Serial.println(packetBuffer);
       //Serial.println(packetBuffer);
       if (len > 0) {
         packetBuffer[len] = 0;
