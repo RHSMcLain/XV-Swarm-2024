@@ -384,6 +384,10 @@ PrevMessage_h WifiComs::parseMessage(char buffer[]){
             msg.yaw = atoi(token);
             break;  
           }
+          else if(msg.cmd == "SWM"){
+            Serial.println("Swarm Mode");
+            msg.state = token;
+          }
           else{
             //ERROR - Command not recognized
             Serial.println("ERROR - Command not recognized: " + String(msg.cmd));

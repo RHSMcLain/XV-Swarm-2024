@@ -109,6 +109,7 @@ class PrevMessage_h{
         int armVar;
         int navHold;
         SearchArea searchArea; // Search area for swarm mode
+        Arduino_h::String state; // State of the drone (active, inactive, etc.)
     private:
 };
 
