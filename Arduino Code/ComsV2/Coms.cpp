@@ -417,19 +417,19 @@ PrevMessage_h WifiComs::parseMessage(char buffer[]){
           return msg;
         case 10:
           msg.searchArea.searchBounds[0].y = atof(token);
-          Serial.println(String(msg.searchArea.searchBounds[0].y));
+          Serial.println(msg.searchArea.searchBounds[0].y);
           break;
         case 11:
           msg.searchArea.searchBounds[0].x = atof(token);
-          Serial.println(String(msg.searchArea.searchBounds[0].x));
+          Serial.println(msg.searchArea.searchBounds[0].x);
           break;
         case 12:
           msg.searchArea.searchBounds[1].y = atof(token);
-          Serial.println(String(msg.searchArea.searchBounds[1].y));
+          Serial.println(msg.searchArea.searchBounds[1].y);
           break;
         case 13:
           msg.searchArea.searchBounds[1].x = atof(token);
-          Serial.println(String(msg.searchArea.searchBounds[1].x));
+          Serial.println(msg.searchArea.searchBounds[1].x);
           break;
         case 14:
           msg.searchArea.dronesSearching = atoi(token);
@@ -485,7 +485,7 @@ int WifiComs::GenerateSearchPath(SearchArea searchArea){
   if(abs(northSouth) > abs(eastWest)){
     if(northSouth > 0){
       search = *"S";
-    }
+    } 
     else{
       search = *"N";
     }

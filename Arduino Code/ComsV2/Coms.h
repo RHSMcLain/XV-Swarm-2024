@@ -110,8 +110,8 @@ class PrevMessage_h{
         int killswitch;
         int armVar;
         int navHold;
-        SearchArea searchArea; // Search area for swarm mode
-        String state; // State of the drone (active, inactive, etc.)
+        SearchArea searchArea;  // Search area for swarm mode
+        String state;           // State of the drone (active, inactive, etc.)
         PrevMessage_h() : yaw(0), pitch(0), roll(0), throttle(0), killswitch(0), armVar(0), navHold(0) {
             state = "inactive";
             cmd = "NULL";
@@ -159,7 +159,6 @@ class WifiComs{
 
 class FcComs{
     public:
-        
         void begin(int baudRate);
 
         void commandMSP(uint8_t cmd, uint16_t data[], uint8_t n_cbytes);

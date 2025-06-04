@@ -99,10 +99,10 @@ void loop(){
 	}
 	else if(wifi.PrevMessage.cmd == "SWM"){
 		// Swarm mode: set RC values for autonomous operation
-		if(wifi.state == "active"){
+		if(wifi.PrevMessage.state == "active"){
 			RcSet(1500, 1500, 885, 1500, 1600, 1700, 1500, 1500);
 		}
-		else if(wifi.state == "inactive"){
+		else if(wifi.PrevMessage.state == "inactive"){
 			RcSet(1500, 1500, 885, 1500, 1500, 1700, 1500, 1500);
 		}
 		else{
