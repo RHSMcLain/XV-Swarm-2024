@@ -350,7 +350,7 @@ void FcComs::readGPSData(){
   Serial.println(" GPSCourse: " + String(gpsCourse/10.0));
 }
 
-Arduino_h::IPAddress bsip;
+IPAddress bsip;
 int connectTime = 0;
 WiFiUDP Udp;
 bool firstconnectframe = false;
@@ -690,17 +690,12 @@ int WifiComs::Listen(char packetBuffer[255]){
     int packetSize = Udp.parsePacket();
     if(packetSize){
       countDis = millis();
-      //Serial.print("Received packet of size ");
-      //Serial.println(packetSize);
-      //Serial.print("From ");
-      Arduino_h::IPAddress remoteIp = Udp.remoteIP();
-      //Serial.print(remoteIp);
-      //Serial.print(", port ");
-      //Serial.println(Udp.remotePort());
+      //Serial.print("Received packet of size " +String(packetSize) +" From ");
+      IPAddress remoteIp = Udp.remoteIP();
+      //Serial.println(String(remoteIp) +" at port " +String(Udp.remotePort()));
       // read the packet into packetBufffer
       int len = Udp.read(packetBuffer, 255);
       Serial.println(packetBuffer);
-      //Serial.println(packetBuffer);
       if (len > 0) {
         packetBuffer[len] = 0;
         if (wifiState == 3){
@@ -711,15 +706,13 @@ int WifiComs::Listen(char packetBuffer[255]){
           msg = BSIPMessage;
           if (msg.cmd == "BSIP"){
             bsip = msg.BSIP;
-            // Serial.print("Base Station IP: ");
-            // Serial.println(bsip);
+            // Serial.println("Base Station IP: " +String(bsip));
             wifiState = 4;
             Serial.println("State: 3 -> 4");
             return 4;
           }
         }
         else if (wifiState == 5){
-          // Serial.println(packetBuffer);
           PrevMessage = parseMessage(packetBuffer);
           wifiState = 5;
           return 5;

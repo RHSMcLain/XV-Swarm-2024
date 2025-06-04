@@ -1,6 +1,8 @@
 #include <Arduino.h>
 #include <WiFiNINA.h>                    //https://github.com/arduino-libraries/WiFiNINA/tree/master
 #include <WiFiUDP.h>
+#define String Arduino_h::String
+#define IPAddress Arduino_h::IPAddress
 
 #define MSP_ATTITUDE    108
 #define MSP_SET_RAW_RC  200
@@ -99,8 +101,8 @@ class msp_raw_gps_h{
 
 class PrevMessage_h{
     public:
-        Arduino_h::IPAddress sourceIP;  //Source of ip
-        Arduino_h::String cmd;          //Command (manual or swarm)
+        IPAddress sourceIP;  //Source of ip
+        String cmd;          //Command (manual or swarm)
         int yaw;
         int pitch;
         int roll;
@@ -109,14 +111,20 @@ class PrevMessage_h{
         int armVar;
         int navHold;
         SearchArea searchArea; // Search area for swarm mode
-        Arduino_h::String state; // State of the drone (active, inactive, etc.)
+        String state; // State of the drone (active, inactive, etc.)
+        PrevMessage_h() : yaw(0), pitch(0), roll(0), throttle(0), killswitch(0), armVar(0), navHold(0) {
+            state = "inactive";
+            cmd = "NULL";
+            sourceIP = IPAddress(0, 0, 0, 0); // Default IP 0.0.0.0 (Error)
+            searchArea = SearchArea();
+        }
     private:
 };
 
 class BSIPMessage_h{
     public:
-        Arduino_h::String cmd;      //Command
-        Arduino_h::IPAddress BSIP;  //Ip of the basestation
+        String cmd;      //Command
+        IPAddress BSIP;  //Ip of the basestation
     private:
 };
 
@@ -143,7 +151,6 @@ class WifiComs{
         Waypoint waypointArr[128];
         int countDis = 0;
         int wifiState = 0;
-        Arduino_h::String state = "inactive";
         bool newWaypoints = false;
         
     private:
