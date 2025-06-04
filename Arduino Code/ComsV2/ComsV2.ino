@@ -18,7 +18,7 @@
 char ReplyBuffer[] = "Drone 1";
 char packetBuffer[256]; 
 bool mspTelemetry = true; // Flag to enable/disable telemetry
-int reqUpdate = 10000;   //how often to update drone data
+int reqUpdate = 5000;   //how often to update drone data
 int pathLength = 1;
 long lastUpdate = 0;
 
