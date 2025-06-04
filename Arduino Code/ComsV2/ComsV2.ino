@@ -17,8 +17,8 @@
 
 char ReplyBuffer[] = "Drone 1";
 char packetBuffer[256]; 
-bool mspTelemetry = true; // Flag to enable/disable telemetry
-int reqUpdate = 5000;   //how often to update drone data
+bool mspTelemetry = true;   // Flag to enable/disable telemetry
+int reqUpdate = 5000;       //how often to update drone data
 int pathLength = 1;
 long lastUpdate = 0;
 
@@ -63,8 +63,8 @@ void setup(){
     pathLength = wifi.GenerateSearchPath(searchArea); // Generate new search path
     msp.sendWaypoints(wifi.waypointArr, pathLength, 1);
     //custom waypoints
-    //wifi.waypointArr[0] = Waypoint(NAV_WP_ACTION_WAYPOINT, 0x100000000 + (-122.685830* 10000000), (45.454398) * 10000000, 500, 0, 0, 0, 0);
-    //wifi.waypointArr[1] = Waypoint(NAV_WP_ACTION_WAYPOINT, 0x100000000 + (-122.685349* 10000000), (45.453885) * 10000000, 500, 0, 0, 0, NAV_WP_FLAG_LAST);
+    //wifi.waypointArr[0] = Waypoint(NAV_WP_ACTION_WAYPOINT, -122.685830, 45.454398, 500, 0, 0, 0, 0);
+    //wifi.waypointArr[1] = Waypoint(NAV_WP_ACTION_WAYPOINT, -122.685349, 45.453885, 500, 0, 0, 0, NAV_WP_FLAG_LAST);
     // wifi.newWaypoints = true; // Flag to send new waypoints
 }
 
@@ -96,13 +96,6 @@ void loop(){
         rc_values[6] = 1700;
         rc_values[7] = wifi.PrevMessage.killswitch;
         msp.commandMSP(MSP_SET_RAW_RC, rc_values, 16); // Send RC values
-        // for(int i = 0; i < 8; i++){
-        //   Serial.print(rc_values[i]);
-        //   Serial.print("  ");
-        //   if(i == 7){
-        //     Serial.println();
-        //   }
-        // }
     }
     else if(wifi.PrevMessage.cmd == "SWM"){
         // Swarm mode: set RC values for autonomous operation
