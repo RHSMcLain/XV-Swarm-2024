@@ -510,7 +510,7 @@ int WifiComs::GenerateSearchPath(SearchArea searchArea){
     laps = floor(abs(eastWest)/(viewDeg*searchArea.dronesSearching*4));
     Serial.println("eastWest");
   }
-  Waypoint path[128];
+  Vector2D path[128];
   Serial.print(search);
   Serial.println(spread);
   Serial.println(laps);
@@ -522,37 +522,37 @@ int WifiComs::GenerateSearchPath(SearchArea searchArea){
     case *"N": // Northward search pattern
       for(int i = 1; i/4 < laps; i+=4){
         // Set latitude for each leg of the lap
-        path[i].lat = 10000000*(searchArea.searchBounds[0].y + viewDeg);
-        path[i+1].lat = 10000000*(searchArea.searchBounds[1].y - viewDeg);
-        path[i+2].lat = 10000000*(searchArea.searchBounds[1].y - viewDeg);
-        path[i+3].lat = 10000000*(searchArea.searchBounds[0].y + viewDeg);
+        path[i].y = (searchArea.searchBounds[0].y + viewDeg);
+        path[i+1].y = (searchArea.searchBounds[1].y - viewDeg);
+        path[i+2].y = (searchArea.searchBounds[1].y - viewDeg);
+        path[i+3].y = (searchArea.searchBounds[0].y + viewDeg);
       }
       break;
     case *"E": // Eastward search pattern
       for(int i = 1; i/4 < laps; i+=4){
         // Set longitude for each leg of the lap
-        path[i].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + viewDeg);
-        path[i+1].lon = 0x100000000 + 10000000*(searchArea.searchBounds[1].x - viewDeg);
-        path[i+2].lon = 0x100000000 + 10000000*(searchArea.searchBounds[1].x - viewDeg);
-        path[i+3].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + viewDeg);
+        path[i].x = (searchArea.searchBounds[0].x + viewDeg);
+        path[i+1].x = (searchArea.searchBounds[1].x - viewDeg);
+        path[i+2].x = (searchArea.searchBounds[1].x - viewDeg);
+        path[i+3].x = (searchArea.searchBounds[0].x + viewDeg);
       }
       break;
     case *"S": // Southward search pattern
       for(int i = 1; i/4 < laps; i+=4){
         // Set latitude for each leg of the lap
-        path[i].lat = 10000000*(searchArea.searchBounds[0].y - viewDeg);
-        path[i+1].lat = 10000000*(searchArea.searchBounds[1].y + viewDeg);
-        path[i+2].lat = 10000000*(searchArea.searchBounds[1].y + viewDeg);
-        path[i+3].lat = 10000000*(searchArea.searchBounds[0].y - viewDeg);
+        path[i].y = (searchArea.searchBounds[0].y - viewDeg);
+        path[i+1].y = (searchArea.searchBounds[1].y + viewDeg);
+        path[i+2].y = (searchArea.searchBounds[1].y + viewDeg);
+        path[i+3].y = (searchArea.searchBounds[0].y - viewDeg);
       }
       break;
     case *"W": // Westward search pattern
       for(int i = 1; i/4 < laps; i+=4){
         // Set longitude for each leg of the lap
-        path[i].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - viewDeg);
-        path[i+1].lon = 0x100000000 + 10000000*(searchArea.searchBounds[1].x + viewDeg);
-        path[i+2].lon = 0x100000000 + 10000000*(searchArea.searchBounds[1].x + viewDeg);
-        path[i+3].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - viewDeg);
+        path[i].x = (searchArea.searchBounds[0].x - viewDeg);
+        path[i+1].x = (searchArea.searchBounds[1].x + viewDeg);
+        path[i+2].x = (searchArea.searchBounds[1].x + viewDeg);
+        path[i+3].x = (searchArea.searchBounds[0].x - viewDeg);
       }
       break;
   }
@@ -562,53 +562,53 @@ int WifiComs::GenerateSearchPath(SearchArea searchArea){
     case *"N": // Spread north
       for(int i = 1; i/4 < laps; i+=4){
         // Offset latitude for each lap to spread north
-        path[i].lat = 10000000*(searchArea.searchBounds[0].y + leg*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+1].lat = 10000000*(searchArea.searchBounds[0].y + leg*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i].y = (searchArea.searchBounds[0].y + leg*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+1].y = (searchArea.searchBounds[0].y + leg*(viewDeg*2*(searchArea.droneId+.5)));
         leg++;
-        path[i+2].lat = 10000000*(searchArea.searchBounds[0].y + leg*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+3].lat = 10000000*(searchArea.searchBounds[0].y + leg*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+2].y = (searchArea.searchBounds[0].y + leg*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+3].y = (searchArea.searchBounds[0].y + leg*(viewDeg*2*(searchArea.droneId+.5)));
         leg++;
       }
       break;
     case *"E": // Spread east
       for(int i = 1; i/4 < laps; i+=4){
         // Offset longitude for each lap to spread east
-        path[i].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + leg*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+1].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + leg*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i].x = (searchArea.searchBounds[0].x + leg*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+1].x = (searchArea.searchBounds[0].x + leg*(viewDeg*2*(searchArea.droneId+.5)));
         leg++;
-        path[i+2].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + leg*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+3].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x + leg*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+2].x = (searchArea.searchBounds[0].x + leg*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+3].x = (searchArea.searchBounds[0].x + leg*(viewDeg*2*(searchArea.droneId+.5)));
         leg++;
       }
       break;
     case *"S": // Spread south
       for(int i = 1; i/4 < laps; i+=4){
         // Offset latitude for each lap to spread south
-        path[i].lat = 10000000*(searchArea.searchBounds[0].y - leg*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+1].lat = 10000000*(searchArea.searchBounds[0].y - leg*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i].y = (searchArea.searchBounds[0].y - leg*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+1].y = (searchArea.searchBounds[0].y - leg*(viewDeg*2*(searchArea.droneId+.5)));
         leg++;
-        path[i+2].lat = 10000000*(searchArea.searchBounds[0].y - leg*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+3].lat = 10000000*(searchArea.searchBounds[0].y - leg*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+2].y = (searchArea.searchBounds[0].y - leg*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+3].y = (searchArea.searchBounds[0].y - leg*(viewDeg*2*(searchArea.droneId+.5)));
         leg++;
       }
       break;
     case *"W": // Spread west
       for(int i = 1; i/4 < laps; i+=4){
         // Offset longitude for each lap to spread west
-        path[i].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - leg*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+1].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - leg*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i].x = (searchArea.searchBounds[0].x - leg*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+1].x = (searchArea.searchBounds[0].x - leg*(viewDeg*2*(searchArea.droneId+.5)));
         leg++;
-        path[i+2].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - leg*(viewDeg*2*(searchArea.droneId+.5)));
-        path[i+3].lon = 0x100000000 + 10000000*(searchArea.searchBounds[0].x - leg*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+2].x = (searchArea.searchBounds[0].x - leg*(viewDeg*2*(searchArea.droneId+.5)));
+        path[i+3].x = (searchArea.searchBounds[0].x - leg*(viewDeg*2*(searchArea.droneId+.5)));
         leg++;
       }
       break;
   }
   Serial.println("generate path");
   for(int i = 1; i <= (laps*4); i++){
-    Serial.println(path[i].lat/10000000.0, 6);
-    Serial.println((path[i].lon - 0x100000000)/10000000.0, 6);
-    waypointArr[i] = Waypoint(NAV_WP_ACTION_WAYPOINT, path[i].lat, path[i].lon, searchArea.alt, 0, 0, 0, 0);
+    Serial.println(path[i].y);
+    Serial.println(path[i].x);
+    waypointArr[i] = Waypoint(NAV_WP_ACTION_WAYPOINT, path[i].y, path[i].x, searchArea.alt, 0, 0, 0, 0);
     if(i == laps*4){
       waypointArr[i].flag = NAV_WP_FLAG_LAST;
     }

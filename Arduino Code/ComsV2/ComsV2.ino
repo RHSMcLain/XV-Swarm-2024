@@ -51,7 +51,7 @@ void setup(){
     while(!Serial && millis() < 2000);// Wait for serial to be ready or timeout after 2 seconds  
     //home Waypoint
     wifi.waypointArr[0] = home;
-    msp.sendWaypoints(wifi.waypointArr, 1, 0);
+    //msp.sendWaypoints(wifi.waypointArr, 1, 0);
     Serial.println("setup");
     pinMode(LED_BUILTIN, OUTPUT); // Set built-in LED as output
     Serial.println("msp");
@@ -60,6 +60,8 @@ void setup(){
         msp.commandMSP(MSP_SET_RAW_RC, rc_values, 16); // Send initial RC values
         delay(100);
     }
+    pathLength = wifi.GenerateSearchPath(searchArea); // Generate new search path
+    msp.sendWaypoints(wifi.waypointArr, pathLength, 1);
     //custom waypoints
     //wifi.waypointArr[0] = Waypoint(NAV_WP_ACTION_WAYPOINT, 0x100000000 + (-122.685830* 10000000), (45.454398) * 10000000, 500, 0, 0, 0, 0);
     //wifi.waypointArr[1] = Waypoint(NAV_WP_ACTION_WAYPOINT, 0x100000000 + (-122.685349* 10000000), (45.453885) * 10000000, 500, 0, 0, 0, NAV_WP_FLAG_LAST);
