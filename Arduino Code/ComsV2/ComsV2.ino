@@ -75,12 +75,12 @@ void loop(){
 	if(reqUpdate < millis() - lastUpdate && mspTelemetry){  // Time to update drone data?
 		while(Serial1.available()) Serial1.read();
 		// msp.readGPSData();
-		msp.readAttitudeData();
+		//msp.readAttitudeData();
 		// Serial.println();
 		lastUpdate = millis();
-		if(abs(msp.msp_attitude.pitch) > 15|| abs(msp.msp_attitude.roll) > 15){
-			excedeLimts = true;
-		}
+		// if(abs(msp.msp_attitude.pitch) > 15|| abs(msp.msp_attitude.roll) > 15){
+		// 	excedeLimts = true;
+		// }
 		// wifi.newWaypoints = true; // Request new waypoints to be sent
 	}
 	if(wifi.newWaypoints){
