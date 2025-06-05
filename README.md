@@ -124,10 +124,13 @@ Adam McLain,
 Willem Abbassi, 
 <a href="https://github.com/Kbratland" 
 style="text-decoration: none">Konner Bratland</a>, 
-Dylan Bratt, Nadir Chaer, Sylas Christopher, Thomas Fredricks, Lane Gilliam, Ethan Green, Xilena Hardy, Christian Hanson, Connor Madriago, Assaf Nachum, Leo Novack, Spencer Parsons, David Robinson,
+Dylan Bratt, Nadir Chaer, Sylas Christopher, Thomas Fredricks, Lane Gilliam, Ethan Green, Xilena Hardy, Christian Hanson, <a href="https://github.com/Agupag" 
+style="text-decoration: none">Connor Madriago</a>, Assaf Nachum, Leo Novack, Spencer Parsons, <a href="https://github.com/drobinson-2915" 
+style="text-decoration: none">David Robinson</a>,
 <a href="https://github.com/bjornwroberts" 
 style="text-decoration: none">Bjorn Roberts</a>, 
-Max Symmes, Brendan Vasanth, Cody Webb, and Cyrus Weeden
+Max Symmes, Brendan Vasanth, <a href="https://github.com/KoderMx1" 
+style="text-decoration: none">Cody Webb</a>, and Cyrus Weeden
 ##
 <p align="center">
   <img src="https://github.com/Kbratland/XVBlendFiles/blob/main/800978_final.gif" alt="animated" />
