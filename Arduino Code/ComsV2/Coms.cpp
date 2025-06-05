@@ -207,9 +207,11 @@ void FcComs::readAttitudeData(){
         msp_attitude.roll = rollRec;
         msp_attitude.pitch = pitchRec;
         msp_attitude.yaw = yawRec;
+        msp_attitude.checksum = true;
       }
       else{
         Serial.println("Checksum is incorrect for attitude");
+        msp_attitude.checksum = false;
       }
       break;
     }
@@ -694,7 +696,7 @@ int WifiComs::Listen(char packetBuffer[255]){
       //Serial.println(String(remoteIp) +" at port " +String(Udp.remotePort()));
       // read the packet into packetBufffer
       int len = Udp.read(packetBuffer, 255);
-      Serial.println(packetBuffer);
+      // Serial.println(packetBuffer);
       if (len > 0) {
         packetBuffer[len] = 0;
         if (wifiState == 3){

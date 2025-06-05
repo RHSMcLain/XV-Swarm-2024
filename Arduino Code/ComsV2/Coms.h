@@ -84,6 +84,7 @@ class msp_attitude_h{
         int16_t roll;   // Roll angle (degrees / 10)
         int16_t pitch;  // Pitch angle (degrees / 10)
         int16_t yaw;    // Yaw angle (degrees)
+        bool checksum;  // Checksum for data integrity
     private:
 };
 

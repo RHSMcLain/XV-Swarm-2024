@@ -13,11 +13,12 @@
 
 #include "Coms.h"
 
-#define ident "HND|-1|Betsy"
+#define ident "HND|-1|Deuo"
 
 char ReplyBuffer[] = "Drone 1";
 char packetBuffer[256]; 
 bool mspTelemetry = true;   // Flag to enable/disable telemetry
+bool excedeLimts = false;
 int reqUpdate = 5000;       //how often to update drone data
 int pathLength = 1;
 long lastUpdate = 0;
@@ -60,8 +61,8 @@ void setup(){
 		msp.commandMSP(MSP_SET_RAW_RC, rc_values, 16); // Send initial RC values
 		delay(100);
 	}
-	pathLength = wifi.GenerateSearchPath(searchArea); // Generate new search path
-	msp.sendWaypoints(wifi.waypointArr, pathLength, 1);
+	//pathLength = wifi.GenerateSearchPath(searchArea); // Generate new search path
+	//msp.sendWaypoints(wifi.waypointArr, pathLength, 1);
 	//custom waypoints
 	//wifi.waypointArr[0] = Waypoint(NAV_WP_ACTION_WAYPOINT, -122.685830, 45.454398, 500, 0, 0, 0, 0);
 	//wifi.waypointArr[1] = Waypoint(NAV_WP_ACTION_WAYPOINT, -122.685349, 45.453885, 500, 0, 0, 0, NAV_WP_FLAG_LAST);
@@ -74,9 +75,12 @@ void loop(){
 	if(reqUpdate < millis() - lastUpdate && mspTelemetry){  // Time to update drone data?
 		while(Serial1.available()) Serial1.read();
 		// msp.readGPSData();
-		// msp.readAttitudeData();
+		msp.readAttitudeData();
 		// Serial.println();
 		lastUpdate = millis();
+		if(abs(msp.msp_attitude.pitch) > 15|| abs(msp.msp_attitude.roll) > 15){
+			excedeLimts = true;
+		}
 		// wifi.newWaypoints = true; // Request new waypoints to be sent
 	}
 	if(wifi.newWaypoints){
@@ -85,7 +89,13 @@ void loop(){
 		msp.sendWaypoints(wifi.waypointArr, pathLength, 1); // Send waypoints to flight controller
 		wifi.newWaypoints = false;
 	}
-	if(wifi.PrevMessage.cmd == "MAN"){
+	if(excedeLimts){
+		// If attitude exceeds limits, set RC values to default
+		Serial.println("Exceeding limits, setting RC values to default");
+		RcSet(1500, 1500, 885, 1500, 1500, 1500, 1500, 1500);
+		msp.commandMSP(MSP_SET_RAW_RC, rc_values, 16); // Send default RC values
+	}
+	else if(wifi.PrevMessage.cmd == "MAN"){
 		// Manual mode: update RC values from received message
 		rc_values[0] = wifi.PrevMessage.pitch;
 		rc_values[1] = wifi.PrevMessage.roll;
@@ -112,7 +122,7 @@ void loop(){
 	}
 	else{
 		// Default RC values
-		Serial.println("No command received, setting RC valuse to inactive state");
+		//Serial.println("No command received, setting RC valuse to inactive state");
 		RcSet(1500, 1500, 885, 1500, 1500, 1500, 1500, 1500);
 		msp.commandMSP(MSP_SET_RAW_RC, rc_values, 16); // Send default RC values
 		while (Serial1.available()){
