@@ -389,7 +389,6 @@ PrevMessage_h WifiComs::parseMessage(char buffer[]){
             msg.state = token;
           }
           else{
-            //ERROR - Command not recognized
             Serial.println("ERROR - Command not recognized: " + String(msg.cmd));
             break;
           }  
@@ -610,8 +609,8 @@ int WifiComs::GenerateSearchPath(SearchArea searchArea){
   }
   Serial.println("generate path");
   for(int i = 1; i <= (laps*4); i++){
-    Serial.println(path[i].y);
-    Serial.println(path[i].x);
+    Serial.println(path[i].y, 6);
+    Serial.println(path[i].x, 6);
     waypointArr[i] = Waypoint(NAV_WP_ACTION_WAYPOINT, path[i].y, path[i].x, searchArea.alt, 0, 0, 0, 0);
     if(i == laps*4){
       waypointArr[i].flag = NAV_WP_FLAG_LAST;

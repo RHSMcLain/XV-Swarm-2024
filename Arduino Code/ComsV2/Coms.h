@@ -66,7 +66,7 @@ class Waypoint{
         uint16_t p1, p2, p3; // Action parameters (p3 is a bitfield)
         uint8_t flag;        // Flags (last, home, etc.)
         Waypoint() : action(0), lat(0), lon(0), alt(0), p1(0), p2(0), p3(0), flag(0) {}
-        Waypoint(uint8_t action, uint32_t lat, uint32_t lon, uint32_t alt, uint16_t p1, uint16_t p2, uint16_t p3, uint8_t flag){
+        Waypoint(uint8_t action, double lat, double lon, uint32_t alt, uint16_t p1, uint16_t p2, uint16_t p3, uint8_t flag){
             this->action = action;
             this->lat = lat * 10000000;
             this->lon = 0x100000000 + lon * 10000000;
