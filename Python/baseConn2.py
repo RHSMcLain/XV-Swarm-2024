@@ -54,6 +54,7 @@ Throttle Power:
 1700: flying
 1700+: flying too fast
 2000: crashing
+Created by: Cody Webb, Konner Bratland, Bjorn Roberts, Connor Madriago
 
 '''
 
