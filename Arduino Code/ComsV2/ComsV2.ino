@@ -7,8 +7,8 @@
     *   https://github.com/arduino-libraries/WiFiNINA/tree/master
     *   Accompanying python code running on a computer to send commands
     *   An ESP8622 or similar WiFi module to function as an access point
-    * Created by:
-    * Date:
+    * Created by: Bjorn Roberts
+    * Date: 6/13/25
 */
 
 #include "Coms.h"
