@@ -125,7 +125,8 @@ Willem Abbassi,
 <a href="https://github.com/Kbratland" 
 style="text-decoration: none">Konner Bratland</a>, 
 Dylan Bratt, Nadir Chaer, Sylas Christopher, Thomas Fredricks, Lane Gilliam, Ethan Green, Xilena Hardy, Christian Hanson, <a href="https://github.com/Agupag" 
-style="text-decoration: none">Connor Madriago</a>, Assaf Nachum, Leo Novack, Spencer Parsons, <a href="https://github.com/drobinson-2915" 
+style="text-decoration: none">Connor Madriago</a>,<a href="https://github.com/assafnachum" 
+style="text-decoration: none">Assaf Nachum</a>, Leo Novack, Spencer Parsons, <a href="https://github.com/drobinson-2915" 
 style="text-decoration: none">David Robinson</a>,
 <a href="https://github.com/bjornwroberts" 
 style="text-decoration: none">Bjorn Roberts</a>, 
