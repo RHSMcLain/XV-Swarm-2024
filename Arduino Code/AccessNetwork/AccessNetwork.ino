@@ -1,3 +1,14 @@
+/*
+    * This sketch is for a drone communication system using WiFi.
+    * It is designed to work on an ESP8622 or similar WiFi module
+    * Requires:
+    *   https://github.com/arduino-libraries/WiFiNINA/tree/master
+    *   https://github.com/esp8266/Arduino/tree/master
+    *   Accompanying python code running on a computer to send commands
+    * Created by: Connor Madriago, Max Symmes
+    * Date: 6/13/25
+*/
+
 #include <ESP8266WiFi.h> //https://github.com/esp8266/Arduino/tree/master
 #include <WiFiUDP.h>
 
