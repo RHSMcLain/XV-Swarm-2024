@@ -1,3 +1,16 @@
+/*
+    * This sketch is for a drone communication system using MSP protocol and WiFi.
+    * It handles waypoints, telemetry, and manual control commands.
+    * It includes a search area definition and manages drone states.
+    * It is designed to work on an Arduino Nano 33 IoT.
+    * Requires:
+    *   https://github.com/arduino-libraries/WiFiNINA/tree/master
+    *   Accompanying python code running on a computer to send commands
+    *   An ESP8622 or similar WiFi module to function as an access point
+    * Created by: Bjorn Roberts, Konner Bratland, Connor Madriago
+    * Date: 6/13/25
+*/
+
 #include "Coms.h"
 
 void FcComs::begin(int baudRate){
