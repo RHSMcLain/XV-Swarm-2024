@@ -13,22 +13,22 @@
 
 #include "Coms.h"
 
-#define ident "HND|-1|Deuo"
+#define ident "HND|-1|Deuo" // Handshake identifier
 
 char ReplyBuffer[] = "Drone 1";
-char packetBuffer[256]; 
+char packetBuffer[256]; 	// Buffer to hold incoming packet
 bool mspTelemetry = true;   // Flag to enable/disable telemetry
-bool excedeLimts = false;
-int reqUpdate = 5000;       //how often to update drone data
-int pathLength = 1;
-long lastUpdate = 0;
+bool excedeLimts = false;	// Flag for exceeding attitude limits
+int reqUpdate = 5000;       // How often to update drone data
+int pathLength = 1;		   	// Length of the current waypoint path
+long lastUpdate = 0;		// Time of the last update
 
 FcComs msp; 
 WifiComs wifi(ident);
 Vector2D point1(-122.685728, 45.454396);
 Vector2D point2(-122.685349, 45.453885);
 Waypoint home(NAV_WP_ACTION_LAND, -122.685679, 45.454211, 500, 0, 0, 0, NAV_WP_FLAG_HOME); // Home waypoint
-SearchArea searchArea(1, 150, 1, 2, point1, point2);
+SearchArea searchArea(1, 150, 1, 2, point1, point2); // Default search area
 
 uint16_t rc_values[8] = {//rc channel values
 	1500, // pitch
@@ -41,10 +41,10 @@ uint16_t rc_values[8] = {//rc channel values
 	1500  // killswitch
 };    
 
-bool light = false;     //light is on
-bool flashing = true;   //light should flash
-int blinkT = 100;       //time between state switches (ms)
-long lastBlink = 0;     //time of last state switch (ms)
+bool light = false;     // Light is on
+bool flashing = true;   // Light should flash
+int blinkT = 100;       // Time between state switches (ms)
+long lastBlink = 0;     // Time of last state switch (ms)
 
 void setup(){
 	Serial.begin(115200); // Start serial communication for debugging
@@ -74,14 +74,14 @@ void loop(){
 	wifi.Listen(packetBuffer);                              //Listen for new messages
 	if(reqUpdate < millis() - lastUpdate && mspTelemetry){  // Time to update drone data?
 		while(Serial1.available()) Serial1.read();
-		// msp.readGPSData();
-		//msp.readAttitudeData();
-		// Serial.println();
+		msp.readGPSData();
+		msp.readAttitudeData();
+		Serial.println();
 		lastUpdate = millis();
-		// if(abs(msp.msp_attitude.pitch) > 15|| abs(msp.msp_attitude.roll) > 15){
-		// 	excedeLimts = true;
-		// }
-		// wifi.newWaypoints = true; // Request new waypoints to be sent
+		if(abs(msp.msp_attitude.pitch) > 15|| abs(msp.msp_attitude.roll) > 15){
+			excedeLimts = true;
+		}
+		//wifi.newWaypoints = true; // Request new waypoints to be sent
 	}
 	if(wifi.newWaypoints){
 		Serial.println("New Waypoints");
@@ -122,7 +122,7 @@ void loop(){
 	}
 	else{
 		// Default RC values
-		//Serial.println("No command received, setting RC valuse to inactive state");
+		Serial.println("No command received, setting RC valuse to inactive state");
 		RcSet(1500, 1500, 885, 1500, 1500, 1500, 1500, 1500);
 		msp.commandMSP(MSP_SET_RAW_RC, rc_values, 16); // Send default RC values
 		while (Serial1.available()){

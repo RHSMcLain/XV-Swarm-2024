@@ -463,7 +463,6 @@ PrevMessage_h WifiComs::parseMessage(char buffer[]){
     }
     return msg;
     //HAS REQUIRED PACKETS FROM LISTEN, CODE FOR MANUAL MODE HERE --------------
-    //Currently does not include a break, repeats loop forever
 }
 
 BSIPMessage_h WifiComs::parseBSIP(char buffer[]){
