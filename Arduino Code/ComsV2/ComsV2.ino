@@ -151,8 +151,7 @@ void loop(){
   delay(10); // Main loop delay
 }
 
-void RcSet(uint16_t pitch, uint16_t roll, uint16_t throttle, uint16_t yaw, uint16_t navHold, uint16_t armVar, uint16_t unused, uint16_t killswitch){
-	// Helper to set RC values
+void RcSet(uint16_t pitch, uint16_t roll, uint16_t throttle, uint16_t yaw, uint16_t navHold, uint16_t armVar, uint16_t unused, uint16_t killswitch){ // Helper to set RC values
 	rc_values[0] = pitch;
 	rc_values[1] = roll;
 	rc_values[2] = throttle;

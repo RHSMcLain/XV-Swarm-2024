@@ -11,6 +11,18 @@
     * Date: 6/13/25
 */
 
+/*
+    * Construction of an MSP message:
+    * 1. $M< denotes an outgoing message, $M> denotes an incoming message
+    * 2. cbytes denotes the number of bytes in the payload
+    * 3. cmd denotes the command/data code, find the list used in Coms.h, and other unused codes at https://github.com/betaflight/betaflight/blob/master/src/main/msp/msp_protocol.h
+    * 4. payload is the data being sent, the number of bytes is determined by cbytes
+    * 5. checksum is the XOR of cbytes, cmd, and all bytes in the payload
+    * An example of a message to set the RC values to 1500, 1500, 885, 1500, 1500, 1000, 1500, 1500 would be:
+    * $M<     0x10    0xC8      0x05 0xDC     0x05 0xDC     0x03 0x75     0x05 0xDC     0x05 0xDC     0x03 0xE8     0x05 0xDC     0x05 0xDC     0x45
+    * Header  cbytes  cmd 200   pitch         roll          throttle      yaw           navHold       armVar        unused        killswitch    checksum
+*/
+
 #include "Coms.h"
 
 void FcComs::begin(int baudRate){
@@ -389,6 +401,7 @@ PrevMessage_h WifiComs::parseMessage(char buffer[]){
           break;
         case 2:
           if(msg.cmd == "WAY"){
+            //Not complete or tested!!
             i = 9;
             Serial.println("Waypoints Recived");
             msg.searchArea.droneId = atoi(token); 
@@ -400,6 +413,7 @@ PrevMessage_h WifiComs::parseMessage(char buffer[]){
             break;  
           }
           else if(msg.cmd == "SWM"){
+            //Not complete or tested!!
             Serial.println("Swarm Mode");
             msg.state = token;
           }
@@ -487,7 +501,7 @@ BSIPMessage_h WifiComs::parseBSIP(char buffer[]){
     return msg;  
 }
 
-int WifiComs::GenerateSearchPath(SearchArea searchArea){
+int WifiComs::GenerateSearchPath(SearchArea searchArea){ //Creates an array of waypoints
   int shapePoints = sizeof(searchArea.searchBounds);
   char search = *"N";
   char spread = *"E";
